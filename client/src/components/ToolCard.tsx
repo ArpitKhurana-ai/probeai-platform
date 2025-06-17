@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Tool } from "@shared/schema";
+import type { Tool } from "@shared/types";
 
 interface ToolCardProps {
   tool: Tool & { isLiked?: boolean };

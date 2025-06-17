@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import type { Blog } from "@shared/schema";
+import type { Blog } from "@shared/types";
 
 interface BlogCardProps {
   blog: Blog;

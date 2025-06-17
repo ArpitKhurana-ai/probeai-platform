@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import type { News } from "@shared/schema";
+import type { News } from "./shared/schema";
 
 interface NewsCardProps {
   article: News;

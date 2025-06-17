@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Tool } from "@shared/schema";
+import type { Tool } from "./shared/schema";
 
 interface SearchResults {
   items: Tool[];

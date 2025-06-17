@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertCategorySchema } from "./shared/schema";
+import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
 
 type AdminSection = "dashboard" | "tools" | "categories" | "news" | "blogs" | "videos" | "users";

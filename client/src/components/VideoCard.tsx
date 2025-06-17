@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Play } from "lucide-react";
-import type { Video } from "./shared/schema";
+import type { Video } from "@shared/schema";
 
 interface VideoCardProps {
   video: Video;

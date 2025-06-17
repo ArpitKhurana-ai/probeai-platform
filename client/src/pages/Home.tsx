@@ -63,25 +63,46 @@ const categories = [
 ];
 
 export default function Home() {
-  const { data: featuredTools, isLoading: featuredLoading } = useQuery({
+  const { data: featuredTools, isLoading: featuredLoading, error: featuredError } = useQuery({
     queryKey: ["/api/tools?featured=true&limit=6"],
   });
 
-  const { data: trendingTools, isLoading: trendingLoading } = useQuery({
+  const { data: trendingTools, isLoading: trendingLoading, error: trendingError } = useQuery({
     queryKey: ["/api/tools?hot=true&limit=4"],
   });
 
-  const { data: latestNews, isLoading: newsLoading } = useQuery({
+  const { data: latestNews, isLoading: newsLoading, error: newsError } = useQuery({
     queryKey: ["/api/news?limit=3"],
   });
 
-  const { data: featuredVideos, isLoading: videosLoading } = useQuery({
+  const { data: featuredVideos, isLoading: videosLoading, error: videosError } = useQuery({
     queryKey: ["/api/videos?limit=3"],
   });
 
-  const { data: featuredBlogs, isLoading: blogsLoading } = useQuery({
+  const { data: featuredBlogs, isLoading: blogsLoading, error: blogsError } = useQuery({
     queryKey: ["/api/blogs?limit=3"],
   });
+
+  // Debug logging for production
+  useEffect(() => {
+    console.log('Environment check:', {
+      apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+      hasApiBaseUrl: !!import.meta.env.VITE_API_BASE_URL,
+      mode: import.meta.env.MODE,
+      featuredTools: (featuredTools as any)?.items?.length || 0,
+      trendingTools: (trendingTools as any)?.items?.length || 0,
+      latestNews: (latestNews as any)?.items?.length || 0,
+      featuredVideos: (featuredVideos as any)?.items?.length || 0,
+      featuredBlogs: (featuredBlogs as any)?.items?.length || 0,
+      errors: {
+        featuredError: featuredError?.message,
+        trendingError: trendingError?.message,
+        newsError: newsError?.message,
+        videosError: videosError?.message,
+        blogsError: blogsError?.message,
+      }
+    });
+  }, [featuredTools, trendingTools, latestNews, featuredVideos, featuredBlogs, featuredError, trendingError, newsError, videosError, blogsError]);
 
   useEffect(() => {
     trackEvent('page_view', 'home');
@@ -151,11 +172,15 @@ export default function Home() {
                 <div key={i} className="h-64 bg-muted rounded-lg shimmer"></div>
               ))}
             </div>
-          ) : (
+          ) : (featuredTools as any)?.items?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredTools?.items?.map((tool: any) => (
+              {(featuredTools as any).items.map((tool: any) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {featuredError ? `Error loading tools: ${featuredError.message}` : 'No featured tools available'}
             </div>
           )}
         </div>
@@ -179,11 +204,15 @@ export default function Home() {
                 <div key={i} className="h-48 bg-background rounded-lg shimmer"></div>
               ))}
             </div>
-          ) : (
+          ) : (trendingTools as any)?.items?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {trendingTools?.items?.map((tool: any) => (
+              {(trendingTools as any).items.map((tool: any) => (
                 <ToolCard key={tool.id} tool={tool} showDescription={false} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {trendingError ? `Error loading tools: ${trendingError.message}` : 'No trending tools available'}
             </div>
           )}
         </div>
@@ -207,11 +236,15 @@ export default function Home() {
                 <div key={i} className="h-40 bg-muted rounded-lg shimmer"></div>
               ))}
             </div>
-          ) : (
+          ) : (latestNews as any)?.items?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {latestNews?.items?.map((article: any) => (
+              {(latestNews as any).items.map((article: any) => (
                 <NewsCard key={article.id} article={article} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {newsError ? `Error loading news: ${newsError.message}` : 'No news available'}
             </div>
           )}
         </div>
@@ -235,11 +268,15 @@ export default function Home() {
                 <div key={i} className="h-64 bg-background rounded-lg shimmer"></div>
               ))}
             </div>
-          ) : (
+          ) : (featuredVideos as any)?.items?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredVideos?.items?.map((video: any) => (
+              {(featuredVideos as any).items.map((video: any) => (
                 <VideoCard key={video.id} video={video} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {videosError ? `Error loading videos: ${videosError.message}` : 'No videos available'}
             </div>
           )}
         </div>
@@ -263,11 +300,15 @@ export default function Home() {
                 <div key={i} className="h-80 bg-muted rounded-lg shimmer"></div>
               ))}
             </div>
-          ) : (
+          ) : (featuredBlogs as any)?.items?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredBlogs?.items?.map((blog: any) => (
+              {(featuredBlogs as any).items.map((blog: any) => (
                 <BlogCard key={blog.id} blog={blog} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {blogsError ? `Error loading blogs: ${blogsError.message}` : 'No blogs available'}
             </div>
           )}
         </div>

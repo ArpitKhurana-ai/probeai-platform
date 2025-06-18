@@ -47,7 +47,6 @@ import {
   boolean,
   decimal
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 var sessions, users, tools, userLikes, news, blogs, videos, categories, subscriptions, payments, blogComments, usersRelations, toolsRelations, userLikesRelations, paymentsRelations, insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertPaymentSchema, insertUserLikeSchema, insertCategorySchema;
 var init_schema = __esm({
@@ -872,6 +871,39 @@ var init_initialize_algolia = __esm({
   }
 });
 
+// vite.config.js
+var vite_config_exports = {};
+__export(vite_config_exports, {
+  default: () => vite_config_default
+});
+var vite_config_default;
+var init_vite_config = __esm({
+  "vite.config.js"() {
+    "use strict";
+    vite_config_default = {
+      plugins: [],
+      resolve: {
+        alias: {
+          "@": "/client/src",
+          "@shared": "/shared",
+          "@assets": "/attached_assets"
+        }
+      },
+      server: {
+        port: 5173,
+        host: "0.0.0.0"
+      },
+      build: {
+        outDir: "../dist/public",
+        emptyOutDir: true
+      },
+      define: {
+        global: "globalThis"
+      }
+    };
+  }
+});
+
 // vite.ts
 var vite_exports = {};
 __export(vite_exports, {
@@ -883,72 +915,62 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 function log(message, source = "express") {
-  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
+  const isDev = process.env.NODE_ENV !== "production";
+  if (isDev) {
+    const timestamp2 = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    console.log(`${timestamp2} [${source}] ${message}`);
+  }
 }
 async function setupVite(app2, server) {
-  if (process.env.NODE_ENV !== "development") {
-    return;
-  }
-  const vite = await Promise.resolve().then(() => (init_vite(), vite_exports));
-  const { nanoid } = await import("nanoid");
-  const viteLogger = vite.createLogger();
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true
-  };
-  const viteServer = await vite.createServer({
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      }
-    },
-    server: serverOptions,
-    appType: "custom"
-  });
-  app2.use(viteServer.middlewares);
-  app2.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app2);
+  } else {
     try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html"
-      );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
-      const page = await viteServer.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      viteServer.ssrFixStacktrace(e);
-      next(e);
+      const vite = await Promise.resolve().then(() => (init_vite(), vite_exports));
+      const viteConfigModule = await Promise.resolve().then(() => (init_vite_config(), vite_config_exports));
+      const viteServer = await vite.createServer({
+        ...viteConfigModule.default,
+        server: { middlewareMode: true },
+        appType: "custom",
+        customLogger: vite.createLogger()
+      });
+      app2.use(viteServer.ssrFixStacktrace);
+      app2.use(viteServer.middlewares);
+      log("Vite development server configured");
+    } catch (error) {
+      log("Vite not available, using static serving");
+      serveStatic(app2);
     }
-  });
+  }
 }
 function serveStatic(app2) {
-  const distPath = path.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+  try {
+    const distPath = path.resolve(process.cwd(), "dist/public");
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(distPath)) {
+      app2.use(express.static(distPath, { index: false }));
+      app2.get("*", (req, res, next) => {
+        if (req.path.startsWith("/api/")) {
+          return next();
+        }
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(404).send("Application not built");
+        }
+      });
+      log("Static files served from dist/public");
+    } else {
+      log("Static build directory not found");
+    }
+  } catch (error) {
+    log("Error setting up static file serving");
   }
-  app2.use(express.static(distPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
 }
 var init_vite = __esm({
   "vite.ts"() {
@@ -1895,8 +1917,50 @@ process.on("unhandledRejection", (reason, promise) => {
       console.log("\u{1F527} Development mode: Setting up Vite");
       await setupVite(app, server);
     } else {
-      console.log("\u{1F4E6} Production mode: Serving static files");
-      serveStatic(app);
+      console.log("\u{1F4E6} Production mode: Setting up static file serving");
+      try {
+        serveStatic(app);
+        console.log("\u2705 Static files configured successfully");
+      } catch (error) {
+        console.warn("\u26A0\uFE0F  Static file serving failed, running as backend-only:", error.message);
+        console.log("\u{1F4C4} Frontend should be deployed separately (e.g., on Vercel)");
+        app.get("/", (_req, res) => {
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>ProbeAI Backend API</title>
+                <meta charset="utf-8">
+                <style>
+                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+                </style>
+              </head>
+              <body>
+                <h1>ProbeAI Backend API Server</h1>
+                <p>\u2705 Backend API is running successfully!</p>
+                <p>\u{1F310} Frontend is deployed separately on Vercel.</p>
+                <h3>Available API Endpoints:</h3>
+                <ul>
+                  <li><code>GET /api/tools</code> - AI tools directory</li>
+                  <li><code>GET /api/news</code> - Latest AI news</li>
+                  <li><code>GET /api/blogs</code> - Blog articles</li>
+                  <li><code>GET /api/videos</code> - Video content</li>
+                  <li><code>GET /api/auth/user</code> - User authentication</li>
+                </ul>
+              </body>
+            </html>
+          `);
+        });
+        app.get("*", (req, res) => {
+          if (!req.path.startsWith("/api")) {
+            res.status(404).json({
+              error: "Frontend not found",
+              message: "Frontend is deployed on Vercel. This is the backend API server."
+            });
+          }
+        });
+      }
     }
     console.log(`\u{1F680} Starting server on 0.0.0.0:${port}...`);
     server.listen({

@@ -212,59 +212,89 @@ export type User = typeof users.$inferSelect;
 
 export type Tool = typeof tools.$inferSelect;
 export type InsertTool = typeof tools.$inferInsert;
-export const insertToolSchema = createInsertSchema(tools).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertToolSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  url: z.string().url(),
+  imageUrl: z.string().url().optional(),
+  category: z.string().min(1),
+  pricing: z.string().min(1),
+  features: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  submittedBy: z.string().optional(),
+  approved: z.boolean().default(false),
+  featured: z.boolean().default(false),
+  hot: z.boolean().default(false),
 });
 
 export type News = typeof news.$inferSelect;
 export type InsertNews = typeof news.$inferInsert;
-export const insertNewsSchema = createInsertSchema(news).omit({
-  id: true,
-  createdAt: true,
+export const insertNewsSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  url: z.string().url(),
+  imageUrl: z.string().url().optional(),
+  source: z.string().min(1),
+  submittedBy: z.string().optional(),
+  approved: z.boolean().default(false),
 });
 
 export type Blog = typeof blogs.$inferSelect;
 export type InsertBlog = typeof blogs.$inferInsert;
-export const insertBlogSchema = createInsertSchema(blogs).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertBlogSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  slug: z.string().min(1),
+  excerpt: z.string().optional(),
+  imageUrl: z.string().url().optional(),
+  tags: z.array(z.string()).default([]),
+  author: z.string().min(1),
+  submittedBy: z.string().optional(),
+  approved: z.boolean().default(false),
 });
 
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = typeof videos.$inferInsert;
-export const insertVideoSchema = createInsertSchema(videos).omit({
-  id: true,
-  createdAt: true,
+export const insertVideoSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  url: z.string().url(),
+  thumbnailUrl: z.string().url().optional(),
+  duration: z.string().optional(),
+  submittedBy: z.string().optional(),
+  approved: z.boolean().default(false),
 });
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
-export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
-  id: true,
-  createdAt: true,
+export const insertSubscriptionSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
 });
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
+export const insertPaymentSchema = z.object({
+  orderId: z.string().min(1),
+  paymentId: z.string().optional(),
+  amount: z.string().min(1),
+  currency: z.string().min(1),
+  status: z.string().min(1),
+  userId: z.string().min(1),
 });
 
 export type UserLike = typeof userLikes.$inferSelect;
 export type InsertUserLike = typeof userLikes.$inferInsert;
-export const insertUserLikeSchema = createInsertSchema(userLikes).omit({
-  id: true,
-  createdAt: true,
+export const insertUserLikeSchema = z.object({
+  userId: z.string().min(1),
+  toolId: z.number().int().positive(),
 });
 
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = typeof categories.$inferInsert;
-export const insertCategorySchema = createInsertSchema(categories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertCategorySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  slug: z.string().min(1),
+  color: z.string().optional(),
 });

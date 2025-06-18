@@ -8,8 +8,10 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+// Handle missing REPLIT_DOMAINS gracefully for non-Replit deployments
+const REPLIT_DOMAINS = process.env.REPLIT_DOMAINS;
+if (!REPLIT_DOMAINS) {
+  console.warn("REPLIT_DOMAINS not found - Replit Auth will be disabled for external deployments");
 }
 
 const getOidcConfig = memoize(
@@ -71,6 +73,12 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Skip Replit Auth setup if REPLIT_DOMAINS not available (e.g., Railway deployment)
+  if (!REPLIT_DOMAINS) {
+    console.warn("Skipping Replit Auth setup - REPLIT_DOMAINS not configured");
+    return;
+  }
 
   const config = await getOidcConfig();
 

@@ -971,8 +971,9 @@ import passport from "passport";
 import session from "express-session";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+var REPLIT_DOMAINS = process.env.REPLIT_DOMAINS;
+if (!REPLIT_DOMAINS) {
+  console.warn("REPLIT_DOMAINS not found - Replit Auth will be disabled for external deployments");
 }
 var getOidcConfig = memoize(
   async () => {
@@ -1024,6 +1025,10 @@ async function setupAuth(app2) {
   app2.use(getSession());
   app2.use(passport.initialize());
   app2.use(passport.session());
+  if (!REPLIT_DOMAINS) {
+    console.warn("Skipping Replit Auth setup - REPLIT_DOMAINS not configured");
+    return;
+  }
   const config = await getOidcConfig();
   const verify = async (tokens, verified) => {
     const user = {};

@@ -47,6 +47,7 @@ import {
   boolean,
   decimal
 } from "drizzle-orm/pg-core";
+import { z } from "zod";
 import { relations } from "drizzle-orm";
 var sessions, users, tools, userLikes, news, blogs, videos, categories, subscriptions, payments, blogComments, usersRelations, toolsRelations, userLikesRelations, paymentsRelations, insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertPaymentSchema, insertUserLikeSchema, insertCategorySchema;
 var init_schema = __esm({
@@ -229,40 +230,70 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    insertToolSchema = createInsertSchema(tools).omit({
-      id: true,
-      createdAt: true,
-      updatedAt: true
+    insertToolSchema = z.object({
+      name: z.string().min(1),
+      description: z.string().min(1),
+      url: z.string().url(),
+      imageUrl: z.string().url().optional(),
+      category: z.string().min(1),
+      pricing: z.string().min(1),
+      features: z.array(z.string()).default([]),
+      tags: z.array(z.string()).default([]),
+      submittedBy: z.string().optional(),
+      approved: z.boolean().default(false),
+      featured: z.boolean().default(false),
+      hot: z.boolean().default(false)
     });
-    insertNewsSchema = createInsertSchema(news).omit({
-      id: true,
-      createdAt: true
+    insertNewsSchema = z.object({
+      title: z.string().min(1),
+      content: z.string().min(1),
+      url: z.string().url(),
+      imageUrl: z.string().url().optional(),
+      source: z.string().min(1),
+      submittedBy: z.string().optional(),
+      approved: z.boolean().default(false)
     });
-    insertBlogSchema = createInsertSchema(blogs).omit({
-      id: true,
-      createdAt: true,
-      updatedAt: true
+    insertBlogSchema = z.object({
+      title: z.string().min(1),
+      content: z.string().min(1),
+      slug: z.string().min(1),
+      excerpt: z.string().optional(),
+      imageUrl: z.string().url().optional(),
+      tags: z.array(z.string()).default([]),
+      author: z.string().min(1),
+      submittedBy: z.string().optional(),
+      approved: z.boolean().default(false)
     });
-    insertVideoSchema = createInsertSchema(videos).omit({
-      id: true,
-      createdAt: true
+    insertVideoSchema = z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      url: z.string().url(),
+      thumbnailUrl: z.string().url().optional(),
+      duration: z.string().optional(),
+      submittedBy: z.string().optional(),
+      approved: z.boolean().default(false)
     });
-    insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
-      id: true,
-      createdAt: true
+    insertSubscriptionSchema = z.object({
+      email: z.string().email(),
+      name: z.string().optional()
     });
-    insertPaymentSchema = createInsertSchema(payments).omit({
-      id: true,
-      createdAt: true
+    insertPaymentSchema = z.object({
+      orderId: z.string().min(1),
+      paymentId: z.string().optional(),
+      amount: z.string().min(1),
+      currency: z.string().min(1),
+      status: z.string().min(1),
+      userId: z.string().min(1)
     });
-    insertUserLikeSchema = createInsertSchema(userLikes).omit({
-      id: true,
-      createdAt: true
+    insertUserLikeSchema = z.object({
+      userId: z.string().min(1),
+      toolId: z.number().int().positive()
     });
-    insertCategorySchema = createInsertSchema(categories).omit({
-      id: true,
-      createdAt: true,
-      updatedAt: true
+    insertCategorySchema = z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      slug: z.string().min(1),
+      color: z.string().optional()
     });
   }
 });

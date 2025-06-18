@@ -27,7 +27,7 @@ import {
   categories,
   type Category,
   type InsertCategory,
-} from "@shared/schema";
+} from "./shared/schema.js";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, count } from "drizzle-orm";
 

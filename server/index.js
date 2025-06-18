@@ -8,15 +8,275 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// shared/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  blogComments: () => blogComments,
+  blogs: () => blogs,
+  categories: () => categories,
+  insertBlogSchema: () => insertBlogSchema,
+  insertCategorySchema: () => insertCategorySchema,
+  insertNewsSchema: () => insertNewsSchema,
+  insertPaymentSchema: () => insertPaymentSchema,
+  insertSubscriptionSchema: () => insertSubscriptionSchema,
+  insertToolSchema: () => insertToolSchema,
+  insertUserLikeSchema: () => insertUserLikeSchema,
+  insertVideoSchema: () => insertVideoSchema,
+  news: () => news,
+  payments: () => payments,
+  paymentsRelations: () => paymentsRelations,
+  sessions: () => sessions,
+  subscriptions: () => subscriptions,
+  tools: () => tools,
+  toolsRelations: () => toolsRelations,
+  userLikes: () => userLikes,
+  userLikesRelations: () => userLikesRelations,
+  users: () => users,
+  usersRelations: () => usersRelations,
+  videos: () => videos
+});
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  integer,
+  boolean,
+  decimal
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
+var sessions, users, tools, userLikes, news, blogs, videos, categories, subscriptions, payments, blogComments, usersRelations, toolsRelations, userLikesRelations, paymentsRelations, insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertPaymentSchema, insertUserLikeSchema, insertCategorySchema;
+var init_schema = __esm({
+  "shared/schema.ts"() {
+    "use strict";
+    sessions = pgTable(
+      "sessions",
+      {
+        sid: varchar("sid").primaryKey(),
+        sess: jsonb("sess").notNull(),
+        expire: timestamp("expire").notNull()
+      },
+      (table) => [index("IDX_session_expire").on(table.expire)]
+    );
+    users = pgTable("users", {
+      id: varchar("id").primaryKey().notNull(),
+      email: varchar("email").unique(),
+      firstName: varchar("first_name"),
+      lastName: varchar("last_name"),
+      profileImageUrl: varchar("profile_image_url"),
+      isAdmin: boolean("is_admin").default(false),
+      createdAt: timestamp("created_at").defaultNow(),
+      updatedAt: timestamp("updated_at").defaultNow()
+    });
+    tools = pgTable("tools", {
+      id: serial("id").primaryKey(),
+      name: varchar("name", { length: 255 }).notNull(),
+      description: text("description").notNull(),
+      shortDescription: varchar("short_description", { length: 500 }),
+      website: varchar("website", { length: 500 }),
+      logoUrl: varchar("logo_url", { length: 500 }),
+      category: varchar("category", { length: 100 }).notNull(),
+      tags: text("tags").array(),
+      keyFeatures: text("key_features").array(),
+      useCases: text("use_cases").array(),
+      faqs: jsonb("faqs"),
+      // Array of {question, answer}
+      pricingType: varchar("pricing_type", { length: 50 }),
+      // Free, Freemium, Paid, Open Source
+      accessType: varchar("access_type", { length: 50 }),
+      // Web App, API, Chrome Extension, etc.
+      aiTech: varchar("ai_tech", { length: 50 }),
+      // GPT-4, SDXL, etc.
+      audience: varchar("audience", { length: 50 }),
+      // Developers, Marketers, etc.
+      isFeatured: boolean("is_featured").default(false),
+      isHot: boolean("is_hot").default(false),
+      featuredUntil: timestamp("featured_until"),
+      likes: integer("likes").default(0),
+      submittedBy: varchar("submitted_by"),
+      isApproved: boolean("is_approved").default(false),
+      createdAt: timestamp("created_at").defaultNow(),
+      updatedAt: timestamp("updated_at").defaultNow()
+    });
+    userLikes = pgTable("user_likes", {
+      id: serial("id").primaryKey(),
+      userId: varchar("user_id").notNull(),
+      toolId: integer("tool_id").notNull(),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    news = pgTable("news", {
+      id: serial("id").primaryKey(),
+      title: varchar("title", { length: 500 }).notNull(),
+      excerpt: text("excerpt"),
+      source: varchar("source", { length: 100 }).notNull(),
+      sourceUrl: varchar("source_url", { length: 500 }).notNull(),
+      publishDate: timestamp("publish_date").notNull(),
+      category: varchar("category", { length: 100 }),
+      submittedBy: varchar("submitted_by"),
+      isApproved: boolean("is_approved").default(false),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    blogs = pgTable("blogs", {
+      id: serial("id").primaryKey(),
+      title: varchar("title", { length: 500 }).notNull(),
+      slug: varchar("slug", { length: 500 }).notNull().unique(),
+      content: text("content").notNull(),
+      excerpt: text("excerpt"),
+      imageUrl: varchar("image_url", { length: 500 }),
+      author: varchar("author", { length: 100 }).notNull(),
+      tags: text("tags").array(),
+      metaTitle: varchar("meta_title", { length: 500 }),
+      metaDescription: varchar("meta_description", { length: 500 }),
+      ogTitle: varchar("og_title", { length: 500 }),
+      ogDescription: varchar("og_description", { length: 500 }),
+      readTime: integer("read_time"),
+      // in minutes
+      isPublished: boolean("is_published").default(false),
+      publishDate: timestamp("publish_date"),
+      submittedBy: varchar("submitted_by"),
+      isApproved: boolean("is_approved").default(false),
+      createdAt: timestamp("created_at").defaultNow(),
+      updatedAt: timestamp("updated_at").defaultNow()
+    });
+    videos = pgTable("videos", {
+      id: serial("id").primaryKey(),
+      title: varchar("title", { length: 500 }).notNull(),
+      description: text("description"),
+      videoUrl: varchar("video_url", { length: 500 }).notNull(),
+      // YouTube/Vimeo URL
+      thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+      channel: varchar("channel", { length: 100 }),
+      duration: varchar("duration", { length: 20 }),
+      // e.g., "15:42"
+      views: varchar("views", { length: 20 }),
+      // e.g., "45K views"
+      category: varchar("category", { length: 100 }),
+      tags: text("tags").array(),
+      submittedBy: varchar("submitted_by"),
+      isApproved: boolean("is_approved").default(false),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    categories = pgTable("categories", {
+      id: serial("id").primaryKey(),
+      name: varchar("name", { length: 100 }).notNull().unique(),
+      slug: varchar("slug", { length: 100 }).notNull().unique(),
+      description: text("description"),
+      createdAt: timestamp("created_at").defaultNow(),
+      updatedAt: timestamp("updated_at").defaultNow()
+    });
+    subscriptions = pgTable("subscriptions", {
+      id: serial("id").primaryKey(),
+      email: varchar("email", { length: 255 }).notNull().unique(),
+      name: varchar("name", { length: 255 }),
+      isActive: boolean("is_active").default(true),
+      source: varchar("source", { length: 100 }),
+      // e.g., "homepage", "blog"
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    payments = pgTable("payments", {
+      id: serial("id").primaryKey(),
+      toolId: integer("tool_id").notNull(),
+      userId: varchar("user_id").notNull(),
+      amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+      currency: varchar("currency", { length: 3 }).default("INR"),
+      razorpayPaymentId: varchar("razorpay_payment_id", { length: 100 }),
+      razorpayOrderId: varchar("razorpay_order_id", { length: 100 }),
+      status: varchar("status", { length: 50 }).default("pending"),
+      // pending, completed, failed
+      featuredDays: integer("featured_days").default(30),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    blogComments = pgTable("blog_comments", {
+      id: serial("id").primaryKey(),
+      blogId: integer("blog_id").notNull(),
+      userId: varchar("user_id").notNull(),
+      content: text("content").notNull(),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    usersRelations = relations(users, ({ many }) => ({
+      likes: many(userLikes),
+      submittedTools: many(tools),
+      payments: many(payments)
+    }));
+    toolsRelations = relations(tools, ({ many, one }) => ({
+      likes: many(userLikes),
+      submitter: one(users, {
+        fields: [tools.submittedBy],
+        references: [users.id]
+      }),
+      payments: many(payments)
+    }));
+    userLikesRelations = relations(userLikes, ({ one }) => ({
+      user: one(users, {
+        fields: [userLikes.userId],
+        references: [users.id]
+      }),
+      tool: one(tools, {
+        fields: [userLikes.toolId],
+        references: [tools.id]
+      })
+    }));
+    paymentsRelations = relations(payments, ({ one }) => ({
+      tool: one(tools, {
+        fields: [payments.toolId],
+        references: [tools.id]
+      }),
+      user: one(users, {
+        fields: [payments.userId],
+        references: [users.id]
+      })
+    }));
+    insertToolSchema = createInsertSchema(tools).omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true
+    });
+    insertNewsSchema = createInsertSchema(news).omit({
+      id: true,
+      createdAt: true
+    });
+    insertBlogSchema = createInsertSchema(blogs).omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true
+    });
+    insertVideoSchema = createInsertSchema(videos).omit({
+      id: true,
+      createdAt: true
+    });
+    insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+      id: true,
+      createdAt: true
+    });
+    insertPaymentSchema = createInsertSchema(payments).omit({
+      id: true,
+      createdAt: true
+    });
+    insertUserLikeSchema = createInsertSchema(userLikes).omit({
+      id: true,
+      createdAt: true
+    });
+    insertCategorySchema = createInsertSchema(categories).omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true
+    });
+  }
+});
+
 // db.ts
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
-import * as schema from "@shared/schema";
 var pool, db;
 var init_db = __esm({
   "db.ts"() {
     "use strict";
+    init_schema();
     neonConfig.webSocketConstructor = ws;
     if (!process.env.DATABASE_URL) {
       throw new Error(
@@ -24,7 +284,7 @@ var init_db = __esm({
       );
     }
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool, schema });
+    db = drizzle({ client: pool, schema: schema_exports });
   }
 });
 
@@ -34,23 +294,12 @@ __export(storage_exports, {
   DatabaseStorage: () => DatabaseStorage,
   storage: () => storage
 });
-import {
-  users,
-  tools,
-  news,
-  blogs,
-  videos,
-  subscriptions,
-  payments,
-  userLikes,
-  blogComments,
-  categories
-} from "@shared/schema";
 import { eq, desc, asc, and, or, sql, count } from "drizzle-orm";
 var DatabaseStorage, storage;
 var init_storage = __esm({
   "storage.ts"() {
     "use strict";
+    init_schema();
     init_db();
     DatabaseStorage = class {
       // User operations (mandatory for Replit Auth)
@@ -985,7 +1234,7 @@ async function sendWelcomeEmail(email, name) {
 }
 
 // routes.ts
-import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertCategorySchema } from "@shared/schema";
+init_schema();
 async function registerRoutes(app2) {
   await setupAuth(app2);
   app2.get("/api/auth/user", isAuthenticated, async (req, res) => {

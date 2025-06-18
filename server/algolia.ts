@@ -1,5 +1,5 @@
 import * as algoliasearch from 'algoliasearch';
-import type { Tool } from '@shared/schema';
+import type { Tool } from './shared/schema.js';
 
 if (!process.env.ALGOLIA_APP_ID || !process.env.ALGOLIA_API_KEY) {
   throw new Error('Algolia credentials not found. Please set ALGOLIA_APP_ID and ALGOLIA_API_KEY');

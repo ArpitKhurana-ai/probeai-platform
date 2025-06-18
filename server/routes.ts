@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { subscribeToNewsletter, sendWelcomeEmail } from "./brevo";
 import { z } from "zod";
-import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertCategorySchema } from "@shared/schema";
+import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertCategorySchema } from "./shared/schema.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware

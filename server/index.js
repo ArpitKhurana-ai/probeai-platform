@@ -272,19 +272,21 @@ var init_schema = __esm({
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
-var pool, db;
+var DATABASE_URL, pool, db;
 var init_db = __esm({
   "db.ts"() {
     "use strict";
     init_schema();
     neonConfig.webSocketConstructor = ws;
-    if (!process.env.DATABASE_URL) {
-      throw new Error(
-        "DATABASE_URL must be set. Did you forget to provision a database?"
+    DATABASE_URL = process.env.DATABASE_URL;
+    if (!DATABASE_URL) {
+      console.warn(
+        "DATABASE_URL not found. Please set DATABASE_URL environment variable in Railway deployment."
       );
+      console.warn("Database operations will be disabled until DATABASE_URL is configured.");
     }
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool, schema: schema_exports });
+    pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null;
+    db = DATABASE_URL ? drizzle({ client: pool, schema: schema_exports }) : null;
   }
 });
 

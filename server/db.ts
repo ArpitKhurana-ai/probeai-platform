@@ -5,14 +5,14 @@ import * as schema from "./shared/schema.js";
 
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.DATABASE_URL) {
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
   console.warn(
-    "DATABASE_URL not found. Please set DATABASE_URL environment variable in Railway deployment.",
+    "DATABASE_URL not found. Please set DATABASE_URL environment variable in Railway deployment."
   );
-  // Export null db for graceful degradation
-  export const pool = null;
-  export const db = null;
-} else {
-  export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  export const db = drizzle({ client: pool, schema });
+  console.warn("Database operations will be disabled until DATABASE_URL is configured.");
 }
+
+export const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null;
+export const db = DATABASE_URL ? drizzle({ client: pool!, schema }) : null;

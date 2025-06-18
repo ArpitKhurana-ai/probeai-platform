@@ -1,0 +1,1609 @@
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// db.ts
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
+import * as schema from "@shared/schema";
+var pool, db;
+var init_db = __esm({
+  "db.ts"() {
+    "use strict";
+    neonConfig.webSocketConstructor = ws;
+    if (!process.env.DATABASE_URL) {
+      throw new Error(
+        "DATABASE_URL must be set. Did you forget to provision a database?"
+      );
+    }
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    db = drizzle({ client: pool, schema });
+  }
+});
+
+// storage.ts
+var storage_exports = {};
+__export(storage_exports, {
+  DatabaseStorage: () => DatabaseStorage,
+  storage: () => storage
+});
+import {
+  users,
+  tools,
+  news,
+  blogs,
+  videos,
+  subscriptions,
+  payments,
+  userLikes,
+  blogComments,
+  categories
+} from "@shared/schema";
+import { eq, desc, asc, and, or, sql, count } from "drizzle-orm";
+var DatabaseStorage, storage;
+var init_storage = __esm({
+  "storage.ts"() {
+    "use strict";
+    init_db();
+    DatabaseStorage = class {
+      // User operations (mandatory for Replit Auth)
+      async getUser(id) {
+        const [user] = await db.select().from(users).where(eq(users.id, id));
+        return user;
+      }
+      async upsertUser(userData) {
+        const [user] = await db.insert(users).values(userData).onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: /* @__PURE__ */ new Date()
+          }
+        }).returning();
+        return user;
+      }
+      // Tool operations
+      async getTools(options) {
+        const conditions = [eq(tools.isApproved, true)];
+        if (options.category) {
+          conditions.push(eq(tools.category, options.category));
+        }
+        if (options.featured) {
+          conditions.push(eq(tools.isFeatured, true));
+        }
+        if (options.hot) {
+          conditions.push(eq(tools.isHot, true));
+        }
+        let orderBy;
+        switch (options.sort) {
+          case "popular":
+            orderBy = desc(tools.likes);
+            break;
+          case "name":
+            orderBy = asc(tools.name);
+            break;
+          case "likes":
+            orderBy = desc(tools.likes);
+            break;
+          default:
+            orderBy = desc(tools.createdAt);
+        }
+        const [items, totalResult] = await Promise.all([
+          db.select().from(tools).where(and(...conditions)).orderBy(orderBy).limit(options.limit).offset(options.offset),
+          db.select({ count: count() }).from(tools).where(and(...conditions))
+        ]);
+        return {
+          items,
+          total: totalResult[0]?.count || 0
+        };
+      }
+      async getToolById(id) {
+        const [tool] = await db.select().from(tools).where(and(eq(tools.id, id), eq(tools.isApproved, true)));
+        return tool;
+      }
+      async getToolBySlug(slug) {
+        const allTools = await db.select().from(tools).where(eq(tools.isApproved, true));
+        const tool = allTools.find((tool2) => {
+          const toolSlug = tool2.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+          return toolSlug === slug;
+        });
+        return tool;
+      }
+      async searchTools(options) {
+        const searchQuery = options.query.toLowerCase();
+        const allTools = await db.select().from(tools).where(eq(tools.isApproved, true));
+        const matchingTools = allTools.filter((tool) => {
+          const searchableContent = [
+            tool.name,
+            tool.category,
+            tool.shortDescription,
+            tool.description,
+            ...tool.keyFeatures || [],
+            ...tool.useCases || [],
+            ...tool.tags || [],
+            tool.aiTech,
+            tool.audience,
+            tool.accessType,
+            tool.pricingType
+          ].filter(Boolean).join(" ").toLowerCase();
+          let faqContent = "";
+          if (tool.faqs && Array.isArray(tool.faqs)) {
+            faqContent = tool.faqs.map((faq) => `${faq.question} ${faq.answer}`).join(" ").toLowerCase();
+          }
+          const queryWords = searchQuery.split(" ").filter((word) => word.length > 0);
+          return queryWords.some(
+            (word) => searchableContent.includes(word) || faqContent.includes(word)
+          );
+        });
+        const sortedTools = matchingTools.sort((a, b) => {
+          const aNameMatch = a.name.toLowerCase().includes(searchQuery);
+          const bNameMatch = b.name.toLowerCase().includes(searchQuery);
+          if (aNameMatch && !bNameMatch) return -1;
+          if (!aNameMatch && bNameMatch) return 1;
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return 0;
+        });
+        const total = sortedTools.length;
+        const items = sortedTools.slice(options.offset, options.offset + options.limit);
+        return { items, total };
+      }
+      async createTool(tool) {
+        const [created] = await db.insert(tools).values(tool).returning();
+        return created;
+      }
+      async updateTool(id, tool) {
+        const [updated] = await db.update(tools).set({ ...tool, updatedAt: /* @__PURE__ */ new Date() }).where(eq(tools.id, id)).returning();
+        return updated;
+      }
+      async getSimilarTools(toolId) {
+        const tool = await this.getToolById(toolId);
+        if (!tool) return [];
+        const similarTools = await db.select().from(tools).where(
+          and(
+            eq(tools.isApproved, true),
+            or(
+              tool.category ? eq(tools.category, tool.category) : sql`1=0`,
+              tool.pricingType ? eq(tools.pricingType, tool.pricingType) : sql`1=0`,
+              tool.aiTech ? eq(tools.aiTech, tool.aiTech) : sql`1=0`
+            )
+          )
+        ).limit(6);
+        return similarTools.filter((t) => t.id !== toolId);
+      }
+      async setToolFeatured(toolId, featured, days = 30) {
+        const featuredUntil = featured ? new Date(Date.now() + days * 24 * 60 * 60 * 1e3) : null;
+        await db.update(tools).set({
+          isFeatured: featured,
+          featuredUntil,
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(tools.id, toolId));
+      }
+      async setToolHot(toolId, hot) {
+        await db.update(tools).set({
+          isHot: hot,
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(tools.id, toolId));
+      }
+      // User likes
+      async toggleToolLike(userId, toolId) {
+        const existingLike = await db.select().from(userLikes).where(and(eq(userLikes.userId, userId), eq(userLikes.toolId, toolId))).limit(1);
+        if (existingLike.length > 0) {
+          await db.delete(userLikes).where(and(eq(userLikes.userId, userId), eq(userLikes.toolId, toolId)));
+          await db.update(tools).set({ likes: sql`${tools.likes} - 1` }).where(eq(tools.id, toolId));
+        } else {
+          await db.insert(userLikes).values({ userId, toolId });
+          await db.update(tools).set({ likes: sql`${tools.likes} + 1` }).where(eq(tools.id, toolId));
+        }
+      }
+      async getUserLikedTools(userId) {
+        const likedTools = await db.select({
+          id: tools.id,
+          name: tools.name,
+          description: tools.description,
+          shortDescription: tools.shortDescription,
+          website: tools.website,
+          logoUrl: tools.logoUrl,
+          category: tools.category,
+          tags: tools.tags,
+          keyFeatures: tools.keyFeatures,
+          faqs: tools.faqs,
+          pricingType: tools.pricingType,
+          accessType: tools.accessType,
+          aiTech: tools.aiTech,
+          audience: tools.audience,
+          isFeatured: tools.isFeatured,
+          isHot: tools.isHot,
+          featuredUntil: tools.featuredUntil,
+          likes: tools.likes,
+          submittedBy: tools.submittedBy,
+          isApproved: tools.isApproved,
+          createdAt: tools.createdAt,
+          updatedAt: tools.updatedAt
+        }).from(userLikes).innerJoin(tools, eq(userLikes.toolId, tools.id)).where(eq(userLikes.userId, userId));
+        return likedTools;
+      }
+      async getUserSubmissions(userId) {
+        const [userTools, userNews, userBlogs, userVideos] = await Promise.all([
+          db.select().from(tools).where(eq(tools.submittedBy, userId)),
+          db.select().from(news).where(eq(news.submittedBy, userId)),
+          db.select().from(blogs).where(eq(blogs.submittedBy, userId)),
+          db.select().from(videos).where(eq(videos.submittedBy, userId))
+        ]);
+        return {
+          tools: userTools,
+          news: userNews,
+          blogs: userBlogs,
+          videos: userVideos
+        };
+      }
+      // News operations
+      async getNews(options) {
+        const [items, totalResult] = await Promise.all([
+          db.select().from(news).where(eq(news.isApproved, true)).orderBy(desc(news.publishDate)).limit(options.limit).offset(options.offset),
+          db.select({ count: count() }).from(news).where(eq(news.isApproved, true))
+        ]);
+        return {
+          items,
+          total: totalResult[0]?.count || 0
+        };
+      }
+      async createNews(newsItem) {
+        const [created] = await db.insert(news).values(newsItem).returning();
+        return created;
+      }
+      // Blog operations
+      async getBlogs(options) {
+        const [items, totalResult] = await Promise.all([
+          db.select().from(blogs).where(and(eq(blogs.isApproved, true), eq(blogs.isPublished, true))).orderBy(desc(blogs.publishDate)).limit(options.limit).offset(options.offset),
+          db.select({ count: count() }).from(blogs).where(and(eq(blogs.isApproved, true), eq(blogs.isPublished, true)))
+        ]);
+        return {
+          items,
+          total: totalResult[0]?.count || 0
+        };
+      }
+      async getBlogBySlug(slug) {
+        const [blog] = await db.select().from(blogs).where(
+          and(
+            eq(blogs.slug, slug),
+            eq(blogs.isApproved, true),
+            eq(blogs.isPublished, true)
+          )
+        );
+        return blog;
+      }
+      async createBlog(blog) {
+        const [created] = await db.insert(blogs).values(blog).returning();
+        return created;
+      }
+      // Video operations
+      async getVideos(options) {
+        const [items, totalResult] = await Promise.all([
+          db.select().from(videos).where(eq(videos.isApproved, true)).orderBy(desc(videos.createdAt)).limit(options.limit).offset(options.offset),
+          db.select({ count: count() }).from(videos).where(eq(videos.isApproved, true))
+        ]);
+        return {
+          items,
+          total: totalResult[0]?.count || 0
+        };
+      }
+      async createVideo(video) {
+        const [created] = await db.insert(videos).values(video).returning();
+        return created;
+      }
+      // Newsletter operations
+      async createSubscription(subscription) {
+        const [created] = await db.insert(subscriptions).values(subscription).returning();
+        return created;
+      }
+      // Category operations
+      async getCategories() {
+        const categories2 = await db.select({
+          name: tools.category,
+          count: count()
+        }).from(tools).where(eq(tools.isApproved, true)).groupBy(tools.category).orderBy(desc(count()));
+        return categories2.map((cat) => ({ name: cat.name, count: cat.count }));
+      }
+      // Admin operations
+      async getPendingSubmissions() {
+        const [pendingTools, pendingNews, pendingBlogs, pendingVideos] = await Promise.all([
+          db.select().from(tools).where(eq(tools.isApproved, false)),
+          db.select().from(news).where(eq(news.isApproved, false)),
+          db.select().from(blogs).where(eq(blogs.isApproved, false)),
+          db.select().from(videos).where(eq(videos.isApproved, false))
+        ]);
+        return {
+          tools: pendingTools,
+          news: pendingNews,
+          blogs: pendingBlogs,
+          videos: pendingVideos
+        };
+      }
+      async approveSubmission(type, id, approved) {
+        switch (type) {
+          case "tools":
+            await db.update(tools).set({ isApproved: approved, updatedAt: /* @__PURE__ */ new Date() }).where(eq(tools.id, id));
+            break;
+          case "news":
+            await db.update(news).set({ isApproved: approved }).where(eq(news.id, id));
+            break;
+          case "blogs":
+            await db.update(blogs).set({ isApproved: approved, updatedAt: /* @__PURE__ */ new Date() }).where(eq(blogs.id, id));
+            break;
+          case "videos":
+            await db.update(videos).set({ isApproved: approved }).where(eq(videos.id, id));
+            break;
+        }
+      }
+      // Payment operations
+      async createPayment(payment) {
+        const [created] = await db.insert(payments).values(payment).returning();
+        return created;
+      }
+      async completePayment(orderId, paymentId) {
+        const paymentRecord = await db.select().from(payments).where(eq(payments.razorpayOrderId, orderId)).limit(1);
+        if (paymentRecord.length > 0) {
+          const payment = paymentRecord[0];
+          await db.update(payments).set({
+            status: "completed",
+            razorpayPaymentId: paymentId
+          }).where(eq(payments.id, payment.id));
+          await this.setToolFeatured(payment.toolId, true, payment.featuredDays ?? 30);
+        }
+      }
+      // Category operations
+      async getAllCategories() {
+        return await db.select().from(categories).orderBy(asc(categories.name));
+      }
+      async getCategoryById(id) {
+        const [category] = await db.select().from(categories).where(eq(categories.id, id));
+        return category;
+      }
+      async createCategory(category) {
+        const [newCategory] = await db.insert(categories).values(category).returning();
+        return newCategory;
+      }
+      async updateCategory(id, category) {
+        const [updatedCategory] = await db.update(categories).set({ ...category, updatedAt: /* @__PURE__ */ new Date() }).where(eq(categories.id, id)).returning();
+        return updatedCategory;
+      }
+      async deleteCategory(id) {
+        await db.delete(categories).where(eq(categories.id, id));
+      }
+      // Admin delete operations
+      async deleteTool(id) {
+        await db.delete(userLikes).where(eq(userLikes.toolId, id));
+        await db.delete(tools).where(eq(tools.id, id));
+      }
+      async deleteNews(id) {
+        await db.delete(news).where(eq(news.id, id));
+      }
+      async deleteBlog(id) {
+        await db.delete(blogs).where(eq(blogs.id, id));
+      }
+      async deleteVideo(id) {
+        await db.delete(videos).where(eq(videos.id, id));
+      }
+      async getAllUsers() {
+        return await db.select().from(users).orderBy(desc(users.createdAt));
+      }
+      async toggleUserAdmin(userId) {
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+        if (user) {
+          await db.update(users).set({ isAdmin: !user.isAdmin, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, userId));
+        }
+      }
+      async getBlogComments(blogId) {
+        const commentsResult = await db.select({
+          id: blogComments.id,
+          content: blogComments.content,
+          createdAt: blogComments.createdAt,
+          user: {
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            profileImageUrl: users.profileImageUrl
+          }
+        }).from(blogComments).leftJoin(users, eq(blogComments.userId, users.id)).where(eq(blogComments.blogId, blogId)).orderBy(desc(blogComments.createdAt));
+        return commentsResult;
+      }
+      async createBlogComment(comment) {
+        const [newComment] = await db.insert(blogComments).values(comment).returning();
+        return newComment;
+      }
+    };
+    storage = new DatabaseStorage();
+  }
+});
+
+// initialize-algolia.ts
+var initialize_algolia_exports = {};
+__export(initialize_algolia_exports, {
+  getQuerySuggestions: () => getQuerySuggestions,
+  initializeAlgolia: () => initializeAlgolia,
+  searchTools: () => searchTools
+});
+async function initializeAlgolia() {
+  if (!process.env.ALGOLIA_APP_ID || !process.env.ALGOLIA_API_KEY) {
+    console.log("Using database search - Algolia credentials not configured");
+    return true;
+  }
+  try {
+    const settingsResponse = await fetch(
+      `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/settings`,
+      {
+        method: "PUT",
+        headers: {
+          "X-Algolia-API-Key": process.env.ALGOLIA_API_KEY,
+          "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          searchableAttributes: ["name", "description", "shortDescription", "category", "tags"],
+          attributesForFaceting: ["category"],
+          customRanking: ["desc(featured)", "desc(hot)"],
+          // Enable query suggestions
+          attributesToSnippet: ["description:20"],
+          attributesToHighlight: ["name", "category"],
+          typoTolerance: true,
+          minWordSizefor1Typo: 4,
+          minWordSizefor2Typos: 8
+        })
+      }
+    );
+    if (!settingsResponse.ok) {
+      throw new Error(`Settings API failed: ${settingsResponse.statusText}`);
+    }
+    const allTools = await storage.getTools({ limit: 1e3, offset: 0 });
+    if (allTools.items.length > 0) {
+      const algoliaObjects = allTools.items.map((tool) => ({
+        objectID: tool.id.toString(),
+        name: tool.name,
+        description: tool.description,
+        shortDescription: tool.shortDescription,
+        category: tool.category,
+        tags: tool.tags || [],
+        website: tool.website,
+        logoUrl: tool.logoUrl,
+        featured: tool.isFeatured || false,
+        hot: tool.isHot || false
+      }));
+      const indexResponse = await fetch(
+        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/batch`,
+        {
+          method: "POST",
+          headers: {
+            "X-Algolia-API-Key": process.env.ALGOLIA_API_KEY,
+            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            requests: algoliaObjects.map((obj) => ({
+              action: "addObject",
+              body: obj
+            }))
+          })
+        }
+      );
+      if (!indexResponse.ok) {
+        throw new Error(`Index API failed: ${indexResponse.statusText}`);
+      }
+      console.log(`Algolia search initialized successfully. Indexed ${allTools.items.length} tools.`);
+      useAlgolia = true;
+    }
+    return true;
+  } catch (error) {
+    console.error("Algolia initialization failed:", error);
+    console.log("Falling back to database search");
+    return false;
+  }
+}
+async function searchTools(query, options = {}) {
+  const { page = 0, hitsPerPage = 20 } = options;
+  if (useAlgolia && process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_SEARCH_KEY) {
+    try {
+      const searchResponse = await fetch(
+        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/query`,
+        {
+          method: "POST",
+          headers: {
+            "X-Algolia-API-Key": process.env.ALGOLIA_SEARCH_KEY,
+            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            query: query.trim(),
+            page,
+            hitsPerPage,
+            filters: options.filters,
+            facetFilters: options.facetFilters
+          })
+        }
+      );
+      if (searchResponse.ok) {
+        const searchResults = await searchResponse.json();
+        return {
+          items: searchResults.hits.map((hit) => ({
+            id: parseInt(hit.objectID),
+            name: hit.name,
+            description: hit.description,
+            shortDescription: hit.shortDescription,
+            category: hit.category,
+            tags: hit.tags,
+            website: hit.website,
+            logoUrl: hit.logoUrl,
+            isFeatured: hit.featured,
+            isHot: hit.hot
+          })),
+          total: searchResults.nbHits,
+          totalPages: searchResults.nbPages,
+          currentPage: page,
+          query: query.trim()
+        };
+      }
+    } catch (error) {
+      console.error("Algolia search error, falling back to database:", error);
+    }
+  }
+  const offset = page * hitsPerPage;
+  const result = await storage.searchTools({
+    query: query.trim(),
+    limit: hitsPerPage,
+    offset
+  });
+  return {
+    items: result.items,
+    total: result.total,
+    totalPages: Math.ceil(result.total / hitsPerPage),
+    currentPage: page,
+    query: query.trim()
+  };
+}
+async function getQuerySuggestions(query, limit = 5) {
+  if (!query.trim() || query.length < 2) {
+    return [];
+  }
+  if (useAlgolia && process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_SEARCH_KEY) {
+    try {
+      const searchResponse = await fetch(
+        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/query`,
+        {
+          method: "POST",
+          headers: {
+            "X-Algolia-API-Key": process.env.ALGOLIA_SEARCH_KEY,
+            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            query: query.trim(),
+            hitsPerPage: limit,
+            attributesToRetrieve: ["name", "category"],
+            attributesToHighlight: ["name"]
+          })
+        }
+      );
+      if (searchResponse.ok) {
+        const searchResults = await searchResponse.json();
+        return searchResults.hits.map((hit) => ({
+          query: hit.name,
+          category: hit.category,
+          highlighted: hit._highlightResult?.name?.value || hit.name
+        }));
+      }
+    } catch (error) {
+      console.error("Algolia suggestions error:", error);
+    }
+  }
+  const result = await storage.searchTools({
+    query: query.trim(),
+    limit,
+    offset: 0
+  });
+  return result.items.map((tool) => ({
+    query: tool.name,
+    category: tool.category,
+    highlighted: tool.name
+  }));
+}
+var useAlgolia;
+var init_initialize_algolia = __esm({
+  "initialize-algolia.ts"() {
+    "use strict";
+    init_storage();
+    useAlgolia = false;
+  }
+});
+
+// vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log,
+  serveStatic: () => serveStatic,
+  setupVite: () => setupVite
+});
+import express from "express";
+import fs from "fs";
+import path from "path";
+function log(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  if (process.env.NODE_ENV !== "development") {
+    return;
+  }
+  const vite = await Promise.resolve().then(() => (init_vite(), vite_exports));
+  const { nanoid } = await import("nanoid");
+  const viteLogger = vite.createLogger();
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const viteServer = await vite.createServer({
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(viteServer.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await viteServer.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      viteServer.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path.resolve(import.meta.dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+}
+var init_vite = __esm({
+  "vite.ts"() {
+    "use strict";
+  }
+});
+
+// index.ts
+import express2 from "express";
+
+// routes.ts
+init_storage();
+import { createServer } from "http";
+
+// replitAuth.ts
+init_storage();
+import * as client from "openid-client";
+import { Strategy } from "openid-client/passport";
+import passport from "passport";
+import session from "express-session";
+import memoize from "memoizee";
+import connectPg from "connect-pg-simple";
+if (!process.env.REPLIT_DOMAINS) {
+  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+}
+var getOidcConfig = memoize(
+  async () => {
+    return await client.discovery(
+      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      process.env.REPL_ID
+    );
+  },
+  { maxAge: 3600 * 1e3 }
+);
+function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1e3;
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions"
+  });
+  return session({
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: true,
+      maxAge: sessionTtl
+    }
+  });
+}
+function updateUserSession(user, tokens) {
+  user.claims = tokens.claims();
+  user.access_token = tokens.access_token;
+  user.refresh_token = tokens.refresh_token;
+  user.expires_at = user.claims?.exp;
+}
+async function upsertUser(claims) {
+  await storage.upsertUser({
+    id: claims["sub"],
+    email: claims["email"],
+    firstName: claims["first_name"],
+    lastName: claims["last_name"],
+    profileImageUrl: claims["profile_image_url"]
+  });
+}
+async function setupAuth(app2) {
+  app2.set("trust proxy", 1);
+  app2.use(getSession());
+  app2.use(passport.initialize());
+  app2.use(passport.session());
+  const config = await getOidcConfig();
+  const verify = async (tokens, verified) => {
+    const user = {};
+    updateUserSession(user, tokens);
+    await upsertUser(tokens.claims());
+    verified(null, user);
+  };
+  for (const domain of process.env.REPLIT_DOMAINS.split(",")) {
+    const strategy = new Strategy(
+      {
+        name: `replitauth:${domain}`,
+        config,
+        scope: "openid email profile offline_access",
+        callbackURL: `https://${domain}/api/callback`
+      },
+      verify
+    );
+    passport.use(strategy);
+  }
+  passport.serializeUser((user, cb) => cb(null, user));
+  passport.deserializeUser((user, cb) => cb(null, user));
+  app2.get("/api/login", (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      prompt: "login consent",
+      scope: ["openid", "email", "profile", "offline_access"]
+    })(req, res, next);
+  });
+  app2.get("/api/callback", (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      successReturnToOrRedirect: "/",
+      failureRedirect: "/api/login"
+    })(req, res, next);
+  });
+  app2.get("/api/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect(
+        client.buildEndSessionUrl(config, {
+          client_id: process.env.REPL_ID,
+          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`
+        }).href
+      );
+    });
+  });
+}
+var isAuthenticated = async (req, res, next) => {
+  const user = req.user;
+  if (!req.isAuthenticated() || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const now = Math.floor(Date.now() / 1e3);
+  if (now <= user.expires_at) {
+    return next();
+  }
+  const refreshToken = user.refresh_token;
+  if (!refreshToken) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  try {
+    const config = await getOidcConfig();
+    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    updateUserSession(user, tokenResponse);
+    return next();
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+};
+var isAdmin = async (req, res, next) => {
+  const user = req.user;
+  if (!req.isAuthenticated() || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const now = Math.floor(Date.now() / 1e3);
+  if (now > user.expires_at) {
+    const refreshToken = user.refresh_token;
+    if (!refreshToken) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+    try {
+      const config = await getOidcConfig();
+      const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+      updateUserSession(user, tokenResponse);
+    } catch (error) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+  }
+  try {
+    const { storage: storage2 } = await Promise.resolve().then(() => (init_storage(), storage_exports));
+    const userId = user.claims.sub;
+    const dbUser = await storage2.getUser(userId);
+    if (!dbUser || !dbUser.isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    return next();
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    res.status(500).json({ message: "Internal server error" });
+    return;
+  }
+};
+
+// brevo.ts
+function initializeBrevo() {
+  if (!process.env.BREVO_API_KEY) {
+    console.warn("BREVO_API_KEY not found. Newsletter functionality will be disabled.");
+    return;
+  }
+  console.log("Brevo API key configured");
+}
+async function subscribeToNewsletter(email, name) {
+  if (!process.env.BREVO_API_KEY) {
+    throw new Error("Brevo API not configured. Please check BREVO_API_KEY.");
+  }
+  try {
+    const contactData = {
+      email,
+      attributes: name ? { FIRSTNAME: name } : {},
+      ...process.env.BREVO_LIST_ID && { listIds: [parseInt(process.env.BREVO_LIST_ID)] }
+    };
+    const response = await fetch("https://api.brevo.com/v3/contacts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY
+      },
+      body: JSON.stringify(contactData)
+    });
+    if (response.status === 400) {
+      const updateResponse = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": process.env.BREVO_API_KEY
+        },
+        body: JSON.stringify({
+          attributes: name ? { FIRSTNAME: name } : {},
+          ...process.env.BREVO_LIST_ID && { listIds: [parseInt(process.env.BREVO_LIST_ID)] }
+        })
+      });
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to update contact: ${updateResponse.statusText}`);
+      }
+      console.log("Existing contact updated successfully");
+      return { updated: true };
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to create contact: ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log("Contact created successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Error with newsletter subscription:", error);
+    throw error;
+  }
+}
+async function sendWelcomeEmail(email, name) {
+  if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
+    console.warn("Brevo not configured for sending emails");
+    return;
+  }
+  try {
+    const emailData = {
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: process.env.BREVO_SENDER_NAME || "Probe AI"
+      },
+      to: [{ email, name: name || email }],
+      subject: "Welcome to Probe AI Newsletter!",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Welcome to Probe AI!</h2>
+          <p>Hi ${name || "there"},</p>
+          <p>Thank you for subscribing to our newsletter! You'll now receive:</p>
+          <ul>
+            <li>Latest AI tool discoveries</li>
+            <li>Exclusive industry insights</li>
+            <li>Expert reviews and comparisons</li>
+            <li>Early access to new features</li>
+          </ul>
+          <p>Stay tuned for amazing AI content!</p>
+          <p>Best regards,<br>The Probe AI Team</p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #666;">
+            You received this email because you subscribed to our newsletter at Probe AI.
+          </p>
+        </div>
+      `
+    };
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY
+      },
+      body: JSON.stringify(emailData)
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to send email: ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log("Welcome email sent:", result);
+    return result;
+  } catch (error) {
+    console.error("Error sending welcome email:", error);
+  }
+}
+
+// routes.ts
+import { insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertCategorySchema } from "@shared/schema";
+async function registerRoutes(app2) {
+  await setupAuth(app2);
+  app2.get("/api/auth/user", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  app2.get("/api/tools", async (req, res) => {
+    try {
+      const { category, featured, hot, limit = 20, offset = 0 } = req.query;
+      const tools2 = await storage.getTools({
+        category,
+        featured: featured === "true",
+        hot: hot === "true",
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      res.json(tools2);
+    } catch (error) {
+      console.error("Error fetching tools:", error);
+      res.status(500).json({ message: "Failed to fetch tools" });
+    }
+  });
+  app2.get("/api/search", async (req, res) => {
+    const query = req.query.q;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const category = req.query.category;
+    const pricingType = req.query.pricingType;
+    if (!query || query.trim().length === 0) {
+      return res.json({ items: [], total: 0, query: "" });
+    }
+    try {
+      const { searchTools: searchTools2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
+      const offset = (page - 1) * limit;
+      const results = await searchTools2(query, {
+        page: page - 1,
+        // Algolia uses 0-based pages
+        hitsPerPage: limit,
+        filters: category ? `category:"${category}"` : void 0
+      });
+      res.json(results);
+    } catch (error) {
+      console.error("Search failed:", error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+  app2.get("/api/search/suggestions", async (req, res) => {
+    try {
+      const query = req.query.q;
+      const limit = parseInt(req.query.limit) || 5;
+      if (!query || query.trim().length < 2) {
+        return res.json([]);
+      }
+      const { getQuerySuggestions: getQuerySuggestions2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
+      const suggestions = await getQuerySuggestions2(query, limit);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Suggestions error:", error);
+      res.status(500).json({ message: "Suggestions failed" });
+    }
+  });
+  app2.get("/api/tools/:id", async (req, res) => {
+    try {
+      const param = req.params.id;
+      let tool;
+      if (/^\d+$/.test(param)) {
+        const toolId = parseInt(param);
+        tool = await storage.getToolById(toolId);
+      } else {
+        tool = await storage.getToolBySlug(param);
+      }
+      if (!tool) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error fetching tool:", error);
+      res.status(500).json({ message: "Failed to fetch tool" });
+    }
+  });
+  app2.post("/api/tools", isAuthenticated, async (req, res) => {
+    try {
+      const toolData = insertToolSchema.parse({
+        ...req.body,
+        submittedBy: req.user.claims.sub,
+        isApproved: false
+      });
+      const tool = await storage.createTool(toolData);
+      res.json(tool);
+    } catch (error) {
+      console.error("Error creating tool:", error);
+      res.status(500).json({ message: "Failed to create tool" });
+    }
+  });
+  app2.get("/api/tools/:id/similar", async (req, res) => {
+    try {
+      const param = req.params.id;
+      let tool;
+      if (/^\d+$/.test(param)) {
+        const toolId = parseInt(param);
+        tool = await storage.getToolById(toolId);
+      } else {
+        tool = await storage.getToolBySlug(param);
+      }
+      if (!tool) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      const similarTools = await storage.getSimilarTools(tool.id);
+      res.json(similarTools);
+    } catch (error) {
+      console.error("Error fetching similar tools:", error);
+      res.status(500).json({ message: "Failed to fetch similar tools" });
+    }
+  });
+  app2.post("/api/tools/:id/like", isAuthenticated, async (req, res) => {
+    try {
+      const param = req.params.id;
+      let tool;
+      if (/^\d+$/.test(param)) {
+        const toolId = parseInt(param);
+        tool = await storage.getToolById(toolId);
+      } else {
+        tool = await storage.getToolBySlug(param);
+      }
+      if (!tool) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      const userId = req.user.claims.sub;
+      await storage.toggleToolLike(userId, tool.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      res.status(500).json({ message: "Failed to toggle like" });
+    }
+  });
+  app2.get("/api/user/likes", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const likedTools = await storage.getUserLikedTools(userId);
+      res.json(likedTools);
+    } catch (error) {
+      console.error("Error fetching liked tools:", error);
+      res.status(500).json({ message: "Failed to fetch liked tools" });
+    }
+  });
+  app2.get("/api/user/submissions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const submissions = await storage.getUserSubmissions(userId);
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching user submissions:", error);
+      res.status(500).json({ message: "Failed to fetch user submissions" });
+    }
+  });
+  app2.get("/api/news", async (req, res) => {
+    try {
+      const { limit = 20, offset = 0 } = req.query;
+      const news2 = await storage.getNews({
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      res.json(news2);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      res.status(500).json({ message: "Failed to fetch news" });
+    }
+  });
+  app2.post("/api/news", isAuthenticated, async (req, res) => {
+    try {
+      const newsData = insertNewsSchema.parse({
+        ...req.body,
+        submittedBy: req.user.claims.sub,
+        isApproved: false
+      });
+      const newsItem = await storage.createNews(newsData);
+      res.json(newsItem);
+    } catch (error) {
+      console.error("Error creating news:", error);
+      res.status(500).json({ message: "Failed to create news" });
+    }
+  });
+  app2.get("/api/blogs", async (req, res) => {
+    try {
+      const { limit = 20, offset = 0 } = req.query;
+      const blogs2 = await storage.getBlogs({
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      res.json(blogs2);
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+      res.status(500).json({ message: "Failed to fetch blogs" });
+    }
+  });
+  app2.get("/api/blogs/:slug", async (req, res) => {
+    try {
+      const blog = await storage.getBlogBySlug(req.params.slug);
+      if (!blog) {
+        return res.status(404).json({ message: "Blog not found" });
+      }
+      res.json(blog);
+    } catch (error) {
+      console.error("Error fetching blog:", error);
+      res.status(500).json({ message: "Failed to fetch blog" });
+    }
+  });
+  app2.post("/api/blogs", isAuthenticated, async (req, res) => {
+    try {
+      const blogData = insertBlogSchema.parse({
+        ...req.body,
+        submittedBy: req.user.claims.sub,
+        isApproved: false
+      });
+      const blog = await storage.createBlog(blogData);
+      res.json(blog);
+    } catch (error) {
+      console.error("Error creating blog:", error);
+      res.status(500).json({ message: "Failed to create blog" });
+    }
+  });
+  app2.get("/api/videos", async (req, res) => {
+    try {
+      const { limit = 20, offset = 0 } = req.query;
+      const videos2 = await storage.getVideos({
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      res.json(videos2);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      res.status(500).json({ message: "Failed to fetch videos" });
+    }
+  });
+  app2.post("/api/videos", isAuthenticated, async (req, res) => {
+    try {
+      const videoData = insertVideoSchema.parse({
+        ...req.body,
+        submittedBy: req.user.claims.sub,
+        isApproved: false
+      });
+      const video = await storage.createVideo(videoData);
+      res.json(video);
+    } catch (error) {
+      console.error("Error creating video:", error);
+      res.status(500).json({ message: "Failed to create video" });
+    }
+  });
+  app2.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      console.log("Newsletter subscription request body:", req.body);
+      const subscriptionData = insertSubscriptionSchema.parse(req.body);
+      console.log("Parsed subscription data:", subscriptionData);
+      const dbResult = await storage.createSubscription(subscriptionData);
+      console.log("Database subscription created:", dbResult);
+      if (process.env.BREVO_API_KEY) {
+        console.log("Adding to Brevo with email:", subscriptionData.email, "name:", subscriptionData.name);
+        try {
+          const brevoResult = await subscribeToNewsletter(subscriptionData.email, subscriptionData.name);
+          console.log("Brevo subscription result:", brevoResult);
+          if (process.env.BREVO_SENDER_EMAIL) {
+            console.log("Sending welcome email to:", subscriptionData.email);
+            const emailResult = await sendWelcomeEmail(subscriptionData.email, subscriptionData.name);
+            console.log("Welcome email result:", emailResult);
+          }
+        } catch (brevoError) {
+          console.error("Brevo integration error:", brevoError);
+        }
+      } else {
+        console.log("BREVO_API_KEY not configured, skipping Brevo integration");
+      }
+      res.json({ success: true, message: "Successfully subscribed to newsletter" });
+    } catch (error) {
+      console.error("Error subscribing to newsletter:", error);
+      res.status(500).json({ message: "Failed to subscribe to newsletter" });
+    }
+  });
+  app2.get("/api/categories", async (req, res) => {
+    try {
+      const categories2 = await storage.getCategories();
+      res.json(categories2);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+  app2.get("/api/admin/pending", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const pendingSubmissions = await storage.getPendingSubmissions();
+      res.json(pendingSubmissions);
+    } catch (error) {
+      console.error("Error fetching pending submissions:", error);
+      res.status(500).json({ message: "Failed to fetch pending submissions" });
+    }
+  });
+  app2.post("/api/admin/approve/:type/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { type, id } = req.params;
+      const { approved } = req.body;
+      await storage.approveSubmission(type, parseInt(id), approved);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error approving submission:", error);
+      res.status(500).json({ message: "Failed to approve submission" });
+    }
+  });
+  app2.post("/api/admin/tools/:id/featured", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const toolId = parseInt(req.params.id);
+      const { featured, days = 30 } = req.body;
+      await storage.setToolFeatured(toolId, featured, days);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting tool featured status:", error);
+      res.status(500).json({ message: "Failed to set tool featured status" });
+    }
+  });
+  app2.post("/api/admin/tools/:id/hot", isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const toolId = parseInt(req.params.id);
+      const { hot } = req.body;
+      await storage.setToolHot(toolId, hot);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting tool hot status:", error);
+      res.status(500).json({ message: "Failed to set tool hot status" });
+    }
+  });
+  app2.post("/api/payments/create-order", isAuthenticated, async (req, res) => {
+    try {
+      const { toolId, amount = 1e4 } = req.body;
+      const userId = req.user.claims.sub;
+      const payment = await storage.createPayment({
+        toolId,
+        userId,
+        amount: (amount / 100).toString(),
+        // Convert paise to rupees
+        status: "pending"
+      });
+      res.json({
+        orderId: `order_${payment.id}`,
+        // This would be the actual Razorpay order ID
+        amount,
+        currency: "INR"
+      });
+    } catch (error) {
+      console.error("Error creating payment order:", error);
+      res.status(500).json({ message: "Failed to create payment order" });
+    }
+  });
+  app2.post("/api/payments/verify", isAuthenticated, async (req, res) => {
+    try {
+      const { paymentId, orderId, signature } = req.body;
+      await storage.completePayment(orderId, paymentId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+  app2.get("/api/admin/categories", isAdmin, async (req, res) => {
+    try {
+      const categories2 = await storage.getAllCategories();
+      res.json(categories2);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+  app2.post("/api/admin/categories", isAdmin, async (req, res) => {
+    try {
+      const data = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(data);
+      res.json(category);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      if (error.name === "ZodError") {
+        res.status(400).json({ message: "Invalid category data" });
+      } else {
+        res.status(500).json({ message: "Failed to create category" });
+      }
+    }
+  });
+  app2.put("/api/admin/categories/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = insertCategorySchema.partial().parse(req.body);
+      const category = await storage.updateCategory(id, data);
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      if (error.name === "ZodError") {
+        res.status(400).json({ message: "Invalid category data" });
+      } else {
+        res.status(500).json({ message: "Failed to update category" });
+      }
+    }
+  });
+  app2.delete("/api/admin/categories/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCategory(id);
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+  app2.get("/api/admin/tools", isAdmin, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const offset = (page - 1) * limit;
+      const tools2 = await storage.getTools({
+        limit,
+        offset,
+        category: req.query.category,
+        featured: req.query.featured === "true",
+        hot: req.query.hot === "true",
+        sort: req.query.sort
+      });
+      res.json(tools2);
+    } catch (error) {
+      console.error("Error fetching tools:", error);
+      res.status(500).json({ message: "Failed to fetch tools" });
+    }
+  });
+  app2.delete("/api/admin/tools/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTool(id);
+      res.json({ message: "Tool deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting tool:", error);
+      res.status(500).json({ message: "Failed to delete tool" });
+    }
+  });
+  app2.delete("/api/admin/news/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteNews(id);
+      res.json({ message: "News deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting news:", error);
+      res.status(500).json({ message: "Failed to delete news" });
+    }
+  });
+  app2.delete("/api/admin/blogs/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteBlog(id);
+      res.json({ message: "Blog deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting blog:", error);
+      res.status(500).json({ message: "Failed to delete blog" });
+    }
+  });
+  app2.delete("/api/admin/videos/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteVideo(id);
+      res.json({ message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      res.status(500).json({ message: "Failed to delete video" });
+    }
+  });
+  app2.get("/api/admin/users", isAdmin, async (req, res) => {
+    try {
+      const users2 = await storage.getAllUsers();
+      res.json(users2);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  app2.put("/api/admin/users/:id/admin", isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      await storage.toggleUserAdmin(userId);
+      res.json({ message: "User admin status updated" });
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      res.status(500).json({ message: "Failed to update user admin status" });
+    }
+  });
+  app2.get("/api/admin/pending", isAdmin, async (req, res) => {
+    try {
+      const pending = await storage.getPendingSubmissions();
+      res.json(pending);
+    } catch (error) {
+      console.error("Error fetching pending submissions:", error);
+      res.status(500).json({ message: "Failed to fetch pending submissions" });
+    }
+  });
+  app2.put("/api/admin/approve/:type/:id", isAdmin, async (req, res) => {
+    try {
+      const type = req.params.type;
+      const id = parseInt(req.params.id);
+      const { approved } = req.body;
+      await storage.approveSubmission(type, id, approved);
+      res.json({ message: "Submission status updated" });
+    } catch (error) {
+      console.error("Error updating submission status:", error);
+      res.status(500).json({ message: "Failed to update submission status" });
+    }
+  });
+  app2.get("/api/blogs/:id/comments", async (req, res) => {
+    try {
+      const blogId = parseInt(req.params.id);
+      const comments = await storage.getBlogComments(blogId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching blog comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+  app2.post("/api/blogs/:id/comments", isAuthenticated, async (req, res) => {
+    try {
+      const blogId = parseInt(req.params.id);
+      const userId = req.user?.claims?.sub;
+      const { content } = req.body;
+      const comment = await storage.createBlogComment({
+        blogId,
+        userId,
+        content
+      });
+      res.json(comment);
+    } catch (error) {
+      console.error("Error creating blog comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+  const httpServer = createServer(app2);
+  return httpServer;
+}
+
+// index.ts
+init_vite();
+var app = express2();
+app.use(express2.json());
+app.use(express2.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path2 = req.path;
+  let capturedJsonResponse = void 0;
+  const originalResJson = res.json;
+  res.json = function(bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path2.startsWith("/api")) {
+      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "\u2026";
+      }
+      log(logLine);
+    }
+  });
+  next();
+});
+(async () => {
+  const server = await registerRoutes(app);
+  try {
+    const { initializeAlgolia: initializeAlgolia2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
+    await initializeAlgolia2();
+  } catch (error) {
+    console.error("Failed to initialize Algolia:", error);
+  }
+  try {
+    initializeBrevo();
+  } catch (error) {
+    console.error("Failed to initialize Brevo:", error);
+  }
+  app.use((err, _req, res, _next) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    throw err;
+  });
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+  const port = 5e3;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+})();

@@ -124,8 +124,54 @@ process.on('unhandledRejection', (reason, promise) => {
       console.log("🔧 Development mode: Setting up Vite");
       await setupVite(app, server);
     } else {
-      console.log("📦 Production mode: Serving static files");
-      serveStatic(app);
+      console.log("📦 Production mode: Setting up static file serving");
+      try {
+        serveStatic(app);
+        console.log("✅ Static files configured successfully");
+      } catch (error) {
+        console.warn("⚠️  Static file serving failed, running as backend-only:", error.message);
+        console.log("📄 Frontend should be deployed separately (e.g., on Vercel)");
+        
+        // Fallback: serve a basic status page for root route
+        app.get("/", (_req, res) => {
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>ProbeAI Backend API</title>
+                <meta charset="utf-8">
+                <style>
+                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+                </style>
+              </head>
+              <body>
+                <h1>ProbeAI Backend API Server</h1>
+                <p>✅ Backend API is running successfully!</p>
+                <p>🌐 Frontend is deployed separately on Vercel.</p>
+                <h3>Available API Endpoints:</h3>
+                <ul>
+                  <li><code>GET /api/tools</code> - AI tools directory</li>
+                  <li><code>GET /api/news</code> - Latest AI news</li>
+                  <li><code>GET /api/blogs</code> - Blog articles</li>
+                  <li><code>GET /api/videos</code> - Video content</li>
+                  <li><code>GET /api/auth/user</code> - User authentication</li>
+                </ul>
+              </body>
+            </html>
+          `);
+        });
+        
+        // Handle non-API routes
+        app.get("*", (req, res) => {
+          if (!req.path.startsWith("/api")) {
+            res.status(404).json({ 
+              error: "Frontend not found", 
+              message: "Frontend is deployed on Vercel. This is the backend API server."
+            });
+          }
+        });
+      }
     }
 
     console.log(`🚀 Starting server on 0.0.0.0:${port}...`);

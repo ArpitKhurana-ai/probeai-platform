@@ -7,10 +7,10 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4"
+    "@neondatabase/serverless": "^0.10.4",
+    "vite": "^5.4.10"
   },
   "devDependencies": {
-    "vite": "^5.4.10",
     "esbuild": "^0.19.12"
   }
 }

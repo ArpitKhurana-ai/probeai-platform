@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "NODE_ENV=production node index.js",
-    "build": "echo 'Building ProbeAI server...' && echo 'Commit: ${RAILWAY_GIT_COMMIT_SHA:-unknown}' && esbuild index.ts --platform=node --packages=external --bundle --format=esm --outfile=index.js"
+    "build": "echo 'Building ProbeAI server...' && echo 'Commit:' $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && esbuild index.ts --platform=node --packages=external --bundle --format=esm --outfile=index.js"
   },
   "dependencies": {
     "@getbrevo/brevo": "^2.2.0",

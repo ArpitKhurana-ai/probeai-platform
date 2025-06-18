@@ -1803,9 +1803,15 @@ async function registerRoutes(app2) {
 
 // index.ts
 init_vite();
+console.log("\u{1F680} Starting ProbeAI backend server...");
+console.log("Environment:", process.env.NODE_ENV || "development");
+console.log("Platform:", process.platform);
+console.log("Node version:", process.version);
+console.log("\u2705 All imports loaded successfully");
 var app = express2();
 app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
+console.log("\u{1F4E6} Express app configured");
 app.use((req, res, next) => {
   const start = Date.now();
   const path2 = req.path;
@@ -1830,36 +1836,87 @@ app.use((req, res, next) => {
   });
   next();
 });
+process.on("uncaughtException", (error) => {
+  console.error("\u{1F4A5} UNCAUGHT EXCEPTION - Server will exit:");
+  console.error("Error name:", error.name);
+  console.error("Error message:", error.message);
+  console.error("Stack trace:", error.stack);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("\u{1F4A5} UNHANDLED PROMISE REJECTION - Server will exit:");
+  console.error("Promise:", promise);
+  console.error("Reason:", reason);
+  process.exit(1);
+});
 (async () => {
-  const server = await registerRoutes(app);
   try {
-    const { initializeAlgolia: initializeAlgolia2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
-    await initializeAlgolia2();
+    console.log("\u{1F527} Starting server initialization...");
+    console.log("\u{1F50D} Checking environment variables...");
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? "\u2705 Set" : "\u274C Missing",
+      SESSION_SECRET: process.env.SESSION_SECRET ? "\u2705 Set" : "\u274C Missing",
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "\u2705 Set" : "\u26A0\uFE0F  Missing (Optional)",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "\u2705 Set" : "\u26A0\uFE0F  Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "\u2705 Set" : "\u26A0\uFE0F  Missing"
+    };
+    console.table(envVars);
+    console.log("\u{1F517} Registering routes and setting up authentication...");
+    const server = await registerRoutes(app);
+    console.log("\u2705 Routes registered successfully");
+    console.log("\u{1F50D} Initializing Algolia search...");
+    try {
+      const { initializeAlgolia: initializeAlgolia2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
+      await initializeAlgolia2();
+      console.log("\u2705 Algolia initialized successfully");
+    } catch (error) {
+      console.warn("\u26A0\uFE0F  Algolia initialization failed:", error.message);
+    }
+    console.log("\u{1F4E7} Initializing Brevo email service...");
+    try {
+      initializeBrevo();
+      console.log("\u2705 Brevo initialized successfully");
+    } catch (error) {
+      console.warn("\u26A0\uFE0F  Brevo initialization failed:", error.message);
+    }
+    app.use((err, _req, res, _next) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      console.error("\u{1F6A8} Express error handler caught:");
+      console.error("Status:", status);
+      console.error("Message:", message);
+      console.error("Stack:", err.stack);
+      res.status(status).json({ message });
+    });
+    const port = 5e3;
+    console.log(`\u{1F310} Setting up server on port ${port}...`);
+    if (process.env.NODE_ENV === "development") {
+      console.log("\u{1F527} Development mode: Setting up Vite");
+      await setupVite(app, server);
+    } else {
+      console.log("\u{1F4E6} Production mode: Serving static files");
+      serveStatic(app);
+    }
+    console.log(`\u{1F680} Starting server on 0.0.0.0:${port}...`);
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true
+    }, () => {
+      console.log("\u2705 ProbeAI backend server running successfully!");
+      console.log(`\u{1F4CD} Server listening on http://0.0.0.0:${port}`);
+      log(`serving on port ${port}`);
+    });
   } catch (error) {
-    console.error("Failed to initialize Algolia:", error);
+    console.error("\u{1F4A5} CRITICAL ERROR - Failed to start server:");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Stack trace:", error.stack);
+    console.error("Environment debug info:");
+    console.error("- NODE_ENV:", process.env.NODE_ENV);
+    console.error("- Platform:", process.platform);
+    console.error("- Working directory:", process.cwd());
+    process.exit(1);
   }
-  try {
-    initializeBrevo();
-  } catch (error) {
-    console.error("Failed to initialize Brevo:", error);
-  }
-  app.use((err, _req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-  const port = 5e3;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();

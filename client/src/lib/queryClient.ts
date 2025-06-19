@@ -7,10 +7,10 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+const API_BASE_URL = 'https://probeai-platform-production.up.railway.app';
+
 const getApiUrl = (path: string): string => {
-  // Hardcoded Railway API URL for production bug fix
-  const baseUrl = 'https://probeai-platform-production.up.railway.app';
-  const fullUrl = baseUrl + path;
+  const fullUrl = API_BASE_URL + path;
   
   // Enhanced logging for production debugging
   console.log('API Request Details:', {

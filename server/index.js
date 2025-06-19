@@ -939,7 +939,7 @@ import { createServer } from "http";
 // replitAuth.ts
 init_storage();
 import * as client from "openid-client";
-import { Strategy } from "openid-client/passport";
+import { Strategy } from "openid-client";
 import passport from "passport";
 import session from "express-session";
 import memoize from "memoizee";

@@ -14,9 +14,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - handle disabled auth gracefully
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      // Check if authentication is enabled and user has claims
+      if (!req.user || !req.user.claims) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);

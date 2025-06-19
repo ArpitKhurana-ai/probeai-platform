@@ -149,17 +149,23 @@ async function seedData() {
       ('Vector Databases Explained: Choosing the Right Solution', 'Comprehensive comparison of leading vector database solutions including Pinecone, Weaviate, and Chroma, with practical guidance for selecting the optimal solution for your AI applications.', 'https://youtube.com/watch?v=dQw4w9WgXcQ', 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg', 'Database Review Channel', '28:45', '112K views', 'Review', true);
     `);
     
+    // Seed tools data from SQL file
+    const toolsSql = readFileSync(join(__dirname, 'seed_tools.sql'), 'utf8');
+    await client.query(toolsSql);
+    
     console.log('✅ Data seeded successfully');
     
     // Verify counts
     const newsCount = await client.query('SELECT COUNT(*) FROM news');
     const blogsCount = await client.query('SELECT COUNT(*) FROM blogs');
     const videosCount = await client.query('SELECT COUNT(*) FROM videos');
+    const toolsCount = await client.query('SELECT COUNT(*) FROM tools');
     
     console.log(`📊 Provisioned data:`);
     console.log(`   News: ${newsCount.rows[0].count} articles`);
     console.log(`   Blogs: ${blogsCount.rows[0].count} posts`);
     console.log(`   Videos: ${videosCount.rows[0].count} videos`);
+    console.log(`   Tools: ${toolsCount.rows[0].count} tools`);
     
   } finally {
     client.release();

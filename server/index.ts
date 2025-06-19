@@ -28,16 +28,19 @@ import { initializeBrevo } from "./brevo";
 console.log("✅ All imports loaded successfully");
 
 const app = express();
+
+// Enable CORS FIRST - before any other middleware
+app.use(
+  cors({
+    origin: "https://probeai-platform.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Enable CORS with credentials for Vercel frontend
-app.use(cors({
-  origin: "https://probeai-platform.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
 
 console.log("📦 Express app configured with CORS for Vercel");
 

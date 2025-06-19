@@ -30,14 +30,26 @@ console.log("✅ All imports loaded successfully");
 const app = express();
 
 // Enable CORS FIRST - before any other middleware
-app.use(
-  cors({
-    origin: "https://probeai-platform.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const allowedOrigins = [
+  'https://probeai-platform.vercel.app',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow non-browser tools like curl
+    if (
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/probeai-platform-[a-z0-9\-]+\.vercel\.app$/.test(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS: ' + origin));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

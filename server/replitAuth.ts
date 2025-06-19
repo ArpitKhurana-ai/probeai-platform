@@ -1,5 +1,5 @@
 import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client";
+import passport from "passport";
 
 import passport from "passport";
 import session from "express-session";
@@ -82,9 +82,9 @@ export async function setupAuth(app: Express) {
 
   const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
+  const verify = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
+    verified: any
   ) => {
     const user = {};
     updateUserSession(user, tokens);

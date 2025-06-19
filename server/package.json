@@ -25,7 +25,9 @@
     "@types/passport": "^1.0.12",
     "@types/passport-local": "^1.0.35",
     "@types/express-session": "^1.17.7",
-    "@types/memoizee": "^0.4.8"
+    "@types/memoizee": "^0.4.8",
+    "algoliasearch": "^4.20.0",
+    "nanoid": "^5.0.4"
   },
   "devDependencies": {
     "esbuild": "^0.19.12"

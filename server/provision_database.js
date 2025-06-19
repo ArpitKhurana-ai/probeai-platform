@@ -63,6 +63,10 @@ async function checkExistingData() {
 async function createTables() {
   const client = await pool.connect();
   try {
+    console.log('🔧 Dropping existing tables...');
+    await client.query('DROP TABLE IF EXISTS tools, news, blogs, videos CASCADE;');
+    console.log('✅ All tables dropped successfully');
+    
     console.log('🔧 Creating tables...');
     
     // Create tools table first (critical for homepage)

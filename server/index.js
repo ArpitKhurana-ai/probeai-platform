@@ -994,14 +994,14 @@ async function upsertUser(claims) {
   });
 }
 async function setupAuth(app2) {
+  if (!REPLIT_DOMAINS || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
+    console.warn("\u26A0\uFE0F  Replit Auth disabled for external deployment");
+    return;
+  }
   app2.set("trust proxy", 1);
   app2.use(getSession());
   app2.use(passport.initialize());
   app2.use(passport.session());
-  if (!REPLIT_DOMAINS) {
-    console.warn("Skipping Replit Auth setup - REPLIT_DOMAINS not configured");
-    return;
-  }
   const config = await getOidcConfig();
   const verify = async (tokens, verified) => {
     const user = {};
@@ -1074,6 +1074,9 @@ var isAuthenticated = async (req, res, next) => {
   }
 };
 var isAdmin = async (req, res, next) => {
+  if (process.env.NODE_ENV === "development" || !REPLIT_DOMAINS || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
+    return next();
+  }
   const user = req.user;
   if (!req.isAuthenticated() || !user.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });

@@ -68,16 +68,16 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  // Skip Replit Auth setup completely for external deployments
+  if (!REPLIT_DOMAINS || (process.env.NODE_ENV === 'production' && !process.env.REPL_ID)) {
+    console.warn("⚠️  Replit Auth disabled for external deployment");
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
-
-  // Skip Replit Auth setup if REPLIT_DOMAINS not available (e.g., Railway deployment)
-  if (!REPLIT_DOMAINS) {
-    console.warn("Skipping Replit Auth setup - REPLIT_DOMAINS not configured");
-    return;
-  }
 
   const config = await getOidcConfig();
 
@@ -168,6 +168,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 };
 
 export const isAdmin: RequestHandler = async (req, res, next) => {
+  // Allow admin access for development or external deployments
+  if (process.env.NODE_ENV === 'development' || !REPLIT_DOMAINS || (process.env.NODE_ENV === 'production' && !process.env.REPL_ID)) {
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

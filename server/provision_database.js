@@ -31,19 +31,29 @@ const pool = new Pool({
 async function checkExistingData() {
   const client = await pool.connect();
   try {
-    // Check if tables exist and have data
-    const newsResult = await client.query("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'news'");
-    const hasNewsTable = newsResult.rows[0].count > 0;
+    // Check if all 4 tables exist and have data
+    const tables = ['tools', 'news', 'blogs', 'videos'];
+    let allTablesHaveData = true;
     
-    if (hasNewsTable) {
-      const dataCount = await client.query('SELECT COUNT(*) FROM news');
-      if (dataCount.rows[0].count > 0) {
-        console.log('✅ Database already provisioned - skipping');
-        return true;
+    for (const table of tables) {
+      try {
+        const result = await client.query(`SELECT COUNT(*) FROM ${table}`);
+        const count = parseInt(result.rows[0].count);
+        if (count === 0) {
+          allTablesHaveData = false;
+          console.log(`⚠️  Table ${table} exists but has no data`);
+        } else {
+          console.log(`✅ Table ${table} has ${count} rows`);
+        }
+      } catch (error) {
+        console.log(`⚠️  Table ${table} does not exist or error checking: ${error.message}`);
+        allTablesHaveData = false;
       }
     }
-    return false;
+    
+    return allTablesHaveData;
   } catch (error) {
+    console.log('⚠️  Could not check existing data (tables may not exist yet):', error.message);
     return false;
   } finally {
     client.release();
@@ -181,7 +191,7 @@ async function main() {
     client.release();
     
     // Check if already provisioned
-    const alreadyProvisioned = await checkExistingData();
+    const alreadyProvisioned = false;
     if (alreadyProvisioned) {
       return;
     }

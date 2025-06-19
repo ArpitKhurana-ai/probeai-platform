@@ -191,8 +191,9 @@ async function main() {
     client.release();
     
     // Check if already provisioned
-    const alreadyProvisioned = false;
+    const alreadyProvisioned = await checkExistingData();
     if (alreadyProvisioned) {
+      console.log('✅ All tables provisioned with data - skipping');
       return;
     }
     

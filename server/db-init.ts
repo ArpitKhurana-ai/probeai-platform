@@ -17,9 +17,9 @@ export async function initializeDatabase() {
       AND table_name IN ('tools', 'users', 'news', 'blogs', 'videos', 'categories')
     `);
     
-    console.log(`📊 Found ${tableCheck.length} tables in database`);
+    console.log(`📊 Found ${tableCheck.rows.length} tables in database`);
     
-    if (tableCheck.length === 0) {
+    if (tableCheck.rows.length === 0) {
       console.log('⚠️  No tables found - database may need initialization');
       console.log('💡 Run: npm run db:push to create tables');
     } else {

@@ -1,18 +1,12 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "./shared/schema.js";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
-
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.warn(
-    "DATABASE_URL not found. Please set DATABASE_URL environment variable in Railway deployment."
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
   );
-  console.warn("Database operations will be disabled until DATABASE_URL is configured.");
 }
 
-export const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null;
-export const db = DATABASE_URL ? drizzle({ client: pool!, schema }) : null;
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle(pool, { schema });

@@ -4,6 +4,7 @@ console.log("Platform:", process.platform);
 console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 // Production-safe logging and server setup
 const log = (msg: string) => console.log(msg);
@@ -30,7 +31,15 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-console.log("📦 Express app configured");
+// Enable CORS with credentials for Vercel frontend
+app.use(cors({
+  origin: "https://probeai-platform.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+console.log("📦 Express app configured with CORS for Vercel");
 
 app.use((req, res, next) => {
   const start = Date.now();

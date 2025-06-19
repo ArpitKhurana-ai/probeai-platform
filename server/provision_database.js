@@ -63,7 +63,39 @@ async function checkExistingData() {
 async function createTables() {
   const client = await pool.connect();
   try {
-    // Use the existing schema structure from the project
+    console.log('🔧 Creating tables...');
+    
+    // Create tools table first (critical for homepage)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tools (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        short_description VARCHAR(500),
+        website VARCHAR(500),
+        logo_url VARCHAR(500),
+        category VARCHAR(100),
+        tags TEXT[],
+        key_features TEXT[],
+        use_cases TEXT[],
+        faqs JSONB,
+        pricing_type VARCHAR(50),
+        access_type VARCHAR(50),
+        ai_tech VARCHAR(100),
+        audience VARCHAR(100),
+        is_featured BOOLEAN DEFAULT false,
+        is_hot BOOLEAN DEFAULT false,
+        featured_until TIMESTAMP,
+        likes INTEGER DEFAULT 0,
+        submitted_by VARCHAR(255),
+        is_approved BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log('✅ Tools table created');
+    
+    // Create news table
     await client.query(`
       CREATE TABLE IF NOT EXISTS news (
         id SERIAL PRIMARY KEY,
@@ -78,7 +110,9 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    console.log('✅ News table created');
     
+    // Create blogs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS blogs (
         id SERIAL PRIMARY KEY,
@@ -102,7 +136,9 @@ async function createTables() {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    console.log('✅ Blogs table created');
     
+    // Create videos table
     await client.query(`
       CREATE TABLE IF NOT EXISTS videos (
         id SERIAL PRIMARY KEY,
@@ -120,8 +156,9 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    console.log('✅ Videos table created');
     
-    console.log('✅ Tables created successfully');
+    console.log('✅ All tables created successfully');
   } finally {
     client.release();
   }
@@ -159,9 +196,124 @@ async function seedData() {
       ('Vector Databases Explained: Choosing the Right Solution', 'Comprehensive comparison of leading vector database solutions including Pinecone, Weaviate, and Chroma, with practical guidance for selecting the optimal solution for your AI applications.', 'https://youtube.com/watch?v=dQw4w9WgXcQ', 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg', 'Database Review Channel', '28:45', '112K views', 'Review', true);
     `);
     
-    // Seed tools data from SQL file
-    const toolsSql = readFileSync(join(__dirname, 'create_tools_table.sql'), 'utf8');
-    await client.query(toolsSql);
+    // Seed tools data directly
+    await client.query(`
+      INSERT INTO tools (
+        name, description, short_description, website, logo_url, category, tags, 
+        key_features, pricing_type, access_type, ai_tech, audience, 
+        is_featured, is_hot, submitted_by, is_approved
+      ) VALUES
+      (
+        'ChatGPT',
+        'Advanced conversational AI that can assist with writing, coding, analysis, and creative tasks. It understands context and can engage in detailed conversations while helping with various professional and creative tasks.',
+        'Advanced conversational AI for writing, coding, and analysis',
+        'https://chat.openai.com',
+        'https://chat.openai.com/favicon.ico',
+        'Chatbots',
+        ARRAY['conversational AI', 'writing assistant', 'coding help'],
+        ARRAY['Text generation', 'Code completion', 'Analysis', 'Multi-language support'],
+        'Freemium',
+        'Web App',
+        'GPT',
+        'Everyone',
+        true,
+        true,
+        'admin',
+        true
+      ),
+      (
+        'Midjourney',
+        'AI art generator that creates stunning images from text descriptions. Known for its artistic style and high-quality outputs, perfect for creative professionals and artists.',
+        'AI art generator creating stunning images from text',
+        'https://midjourney.com',
+        'https://midjourney.com/favicon.ico',
+        'Image Generation',
+        ARRAY['image generation', 'art creation', 'design'],
+        ARRAY['Text-to-image', 'Style variations', 'High resolution', 'Artistic styles'],
+        'Paid',
+        'Discord Bot',
+        'Diffusion',
+        'Designers',
+        true,
+        true,
+        'admin',
+        true
+      ),
+      (
+        'GitHub Copilot',
+        'AI coding assistant that suggests code and entire functions in real-time. Trained on billions of lines of code to help developers write better code faster.',
+        'AI coding assistant with real-time suggestions',
+        'https://github.com/features/copilot',
+        'https://github.com/favicon.ico',
+        'Developer Tools',
+        ARRAY['code completion', 'programming', 'AI assistant'],
+        ARRAY['Code suggestions', 'Multi-language support', 'Context awareness', 'IDE integration'],
+        'Paid',
+        'IDE Extension',
+        'Codex',
+        'Developers',
+        true,
+        false,
+        'admin',
+        true
+      ),
+      (
+        'Claude',
+        'Anthropic''s helpful, harmless, and honest AI assistant designed for safe and beneficial interactions. Excels at analysis, writing, and complex reasoning tasks.',
+        'Safe and helpful AI assistant for analysis and writing',
+        'https://claude.ai',
+        'https://claude.ai/favicon.ico',
+        'Chatbots',
+        ARRAY['AI assistant', 'analysis', 'writing'],
+        ARRAY['Long conversations', 'Document analysis', 'Safe responses', 'Reasoning'],
+        'Freemium',
+        'Web App',
+        'Constitutional AI',
+        'Everyone',
+        false,
+        true,
+        'admin',
+        true
+      ),
+      (
+        'Loom AI',
+        'AI-powered video messaging with automatic transcription and summaries. Perfect for asynchronous communication and creating engaging video content.',
+        'AI-powered video messaging with transcription',
+        'https://loom.com',
+        'https://loom.com/favicon.ico',
+        'Productivity',
+        ARRAY['video messaging', 'transcription', 'summaries'],
+        ARRAY['Screen recording', 'AI transcription', 'Video editing', 'Team collaboration'],
+        'Freemium',
+        'Web App',
+        'Speech-to-text',
+        'Business',
+        false,
+        true,
+        'admin',
+        true
+      ),
+      (
+        'Notion AI',
+        'AI writing assistant integrated into the popular productivity workspace. Helps with content creation, summarization, and knowledge management.',
+        'AI writing assistant integrated into Notion workspace',
+        'https://notion.so',
+        'https://notion.so/favicon.ico',
+        'Productivity',
+        ARRAY['note-taking', 'writing assistant', 'productivity'],
+        ARRAY['Writing assistance', 'Content generation', 'Summarization', 'Database integration'],
+        'Freemium',
+        'Web App',
+        'GPT',
+        'Everyone',
+        true,
+        false,
+        'admin',
+        true
+      )
+      ON CONFLICT DO NOTHING;
+    `);
+    console.log('✅ Tools data seeded successfully');
     
     console.log('✅ Data seeded successfully');
     
@@ -191,11 +343,13 @@ async function main() {
     client.release();
     
     // Check if already provisioned
-    const alreadyProvisioned = await checkExistingData();
+    const alreadyProvisioned = false; // Force provisioning to fix tools table
     if (alreadyProvisioned) {
       console.log('✅ All tables provisioned with data - skipping');
       return;
     }
+    
+    console.log('🚀 Starting database provisioning...');
     
     // Provision database
     await createTables();

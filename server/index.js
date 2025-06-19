@@ -1009,7 +1009,7 @@ async function setupAuth(app2) {
     verified(null, user);
   };
   for (const domain of REPLIT_DOMAINS.split(",")) {
-    const strategy = new Strategy(
+    const strategy = new client.Strategy(
       {
         name: `replitauth:${domain}`,
         config,

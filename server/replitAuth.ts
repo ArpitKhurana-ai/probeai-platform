@@ -91,7 +91,7 @@ export async function setupAuth(app: Express) {
   };
 
   for (const domain of REPLIT_DOMAINS.split(",")) {
-    const strategy = new Strategy(
+    const strategy = new client.Strategy(
       {
         name: `replitauth:${domain}`,
         config,

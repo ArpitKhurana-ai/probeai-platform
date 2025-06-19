@@ -5,7 +5,26 @@ console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// Conditional import for development only
+let setupVite: any, serveStatic: any, log: any;
+if (process.env.NODE_ENV === 'development') {
+  try {
+    const viteModule = await import("./vite.js");
+    setupVite = viteModule.setupVite;
+    serveStatic = viteModule.serveStatic;
+    log = viteModule.log;
+  } catch (error) {
+    console.warn("Vite module not available, skipping development server setup");
+    setupVite = () => {};
+    serveStatic = () => {};
+    log = (msg: string) => console.log(msg);
+  }
+} else {
+  // Production stubs
+  setupVite = () => {};
+  serveStatic = () => {};
+  log = (msg: string) => console.log(msg);
+}
 import { initializeBrevo } from "./brevo";
 
 console.log("✅ All imports loaded successfully");

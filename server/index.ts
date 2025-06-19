@@ -33,6 +33,9 @@ const app = express();
 const allowedOrigins = [
   'https://probeai-platform.vercel.app',
   'https://9c1e9c9c-d465-4c45-be46-06c0386caa2f-00-1cye8uzrlo9jo.janeway.replit.dev',
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  'http://0.0.0.0:5000',
 ];
 
 app.use(cors({

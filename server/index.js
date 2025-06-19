@@ -8,7 +8,7 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// shared/schema.ts
+// ../shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
   blogComments: () => blogComments,
@@ -51,7 +51,7 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 var sessions, users, tools, userLikes, news, blogs, videos, categories, subscriptions, payments, blogComments, usersRelations, toolsRelations, userLikesRelations, paymentsRelations, insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertPaymentSchema, insertUserLikeSchema, insertCategorySchema;
 var init_schema = __esm({
-  "shared/schema.ts"() {
+  "../shared/schema.ts"() {
     "use strict";
     sessions = pgTable(
       "sessions",
@@ -299,24 +299,20 @@ var init_schema = __esm({
 });
 
 // db.ts
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
-var DATABASE_URL, pool, db;
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+var pool, db;
 var init_db = __esm({
   "db.ts"() {
     "use strict";
     init_schema();
-    neonConfig.webSocketConstructor = ws;
-    DATABASE_URL = process.env.DATABASE_URL;
-    if (!DATABASE_URL) {
-      console.warn(
-        "DATABASE_URL not found. Please set DATABASE_URL environment variable in Railway deployment."
+    if (!process.env.DATABASE_URL) {
+      throw new Error(
+        "DATABASE_URL must be set. Did you forget to provision a database?"
       );
-      console.warn("Database operations will be disabled until DATABASE_URL is configured.");
     }
-    pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null;
-    db = DATABASE_URL ? drizzle({ client: pool, schema: schema_exports }) : null;
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    db = drizzle(pool, { schema: schema_exports });
   }
 });
 
@@ -902,113 +898,6 @@ var init_initialize_algolia = __esm({
   }
 });
 
-// vite.config.js
-var vite_config_exports = {};
-__export(vite_config_exports, {
-  default: () => vite_config_default
-});
-var vite_config_default;
-var init_vite_config = __esm({
-  "vite.config.js"() {
-    "use strict";
-    vite_config_default = {
-      plugins: [],
-      resolve: {
-        alias: {
-          "@": "/client/src",
-          "@shared": "/shared",
-          "@assets": "/attached_assets"
-        }
-      },
-      server: {
-        port: 5173,
-        host: "0.0.0.0"
-      },
-      build: {
-        outDir: "../dist/public",
-        emptyOutDir: true
-      },
-      define: {
-        global: "globalThis"
-      }
-    };
-  }
-});
-
-// vite.ts
-var vite_exports = {};
-__export(vite_exports, {
-  log: () => log,
-  serveStatic: () => serveStatic,
-  setupVite: () => setupVite
-});
-import express from "express";
-import fs from "fs";
-import path from "path";
-function log(message, source = "express") {
-  const isDev = process.env.NODE_ENV !== "production";
-  if (isDev) {
-    const timestamp2 = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    });
-    console.log(`${timestamp2} [${source}] ${message}`);
-  }
-}
-async function setupVite(app2, server) {
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app2);
-  } else {
-    try {
-      const vite = await Promise.resolve().then(() => (init_vite(), vite_exports));
-      const viteConfigModule = await Promise.resolve().then(() => (init_vite_config(), vite_config_exports));
-      const viteServer = await vite.createServer({
-        ...viteConfigModule.default,
-        server: { middlewareMode: true },
-        appType: "custom",
-        customLogger: vite.createLogger()
-      });
-      app2.use(viteServer.ssrFixStacktrace);
-      app2.use(viteServer.middlewares);
-      log("Vite development server configured");
-    } catch (error) {
-      log("Vite not available, using static serving");
-      serveStatic(app2);
-    }
-  }
-}
-function serveStatic(app2) {
-  try {
-    const distPath = path.resolve(process.cwd(), "dist/public");
-    const indexPath = path.join(distPath, "index.html");
-    if (fs.existsSync(distPath)) {
-      app2.use(express.static(distPath, { index: false }));
-      app2.get("*", (req, res, next) => {
-        if (req.path.startsWith("/api/")) {
-          return next();
-        }
-        if (fs.existsSync(indexPath)) {
-          res.sendFile(indexPath);
-        } else {
-          res.status(404).send("Application not built");
-        }
-      });
-      log("Static files served from dist/public");
-    } else {
-      log("Static build directory not found");
-    }
-  } catch (error) {
-    log("Error setting up static file serving");
-  }
-}
-var init_vite = __esm({
-  "vite.ts"() {
-    "use strict";
-  }
-});
-
 // index.ts
 import express2 from "express";
 
@@ -1089,7 +978,7 @@ async function setupAuth(app2) {
     await upsertUser(tokens.claims());
     verified(null, user);
   };
-  for (const domain of process.env.REPLIT_DOMAINS.split(",")) {
+  for (const domain of REPLIT_DOMAINS.split(",")) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -1854,8 +1743,115 @@ async function registerRoutes(app2) {
   return httpServer;
 }
 
+// vite.ts
+import express from "express";
+import fs from "fs";
+import path2 from "path";
+import { createServer as createViteServer, createLogger } from "vite";
+
+// ../vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+var vite_config_default = defineConfig({
+  plugins: [
+    react(),
+    runtimeErrorOverlay(),
+    ...process.env.NODE_ENV !== "production" && process.env.REPL_ID !== void 0 ? [
+      await import("@replit/vite-plugin-cartographer").then(
+        (m) => m.cartographer()
+      )
+    ] : []
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@assets": path.resolve(import.meta.dirname, "attached_assets")
+    }
+  },
+  root: path.resolve(import.meta.dirname, "client"),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true
+  },
+  server: {
+    fs: {
+      strict: true,
+      deny: ["**/.*"]
+    }
+  }
+});
+
+// vite.ts
+import { nanoid } from "nanoid";
+var viteLogger = createLogger();
+function log(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createViteServer({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path2.resolve(import.meta.dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(distPath, "index.html"));
+  });
+}
+
 // index.ts
-init_vite();
 console.log("\u{1F680} Starting ProbeAI backend server...");
 console.log("Environment:", process.env.NODE_ENV || "development");
 console.log("Platform:", process.platform);
@@ -1867,7 +1863,7 @@ app.use(express2.urlencoded({ extended: false }));
 console.log("\u{1F4E6} Express app configured");
 app.use((req, res, next) => {
   const start = Date.now();
-  const path2 = req.path;
+  const path3 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -1876,8 +1872,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path2.startsWith("/api")) {
-      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+    if (path3.startsWith("/api")) {
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }

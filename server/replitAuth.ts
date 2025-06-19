@@ -1,7 +1,5 @@
 import * as client from "openid-client";
 import passport from "passport";
-
-import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";

@@ -8,7 +8,8 @@ async function throwIfResNotOk(res: Response) {
 }
 
 const getApiUrl = (path: string): string => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://probeai-platform-production.up.railway.app';
+  // Hardcoded Railway API URL for production bug fix
+  const baseUrl = 'https://probeai-platform-production.up.railway.app';
   const fullUrl = baseUrl + path;
   
   // Enhanced logging for production debugging

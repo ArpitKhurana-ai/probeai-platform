@@ -134,6 +134,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Skip auth for external deployments
+  if (!REPLIT_DOMAINS || (process.env.NODE_ENV === 'production' && !process.env.REPL_ID)) {
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

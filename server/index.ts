@@ -5,25 +5,22 @@ console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-// Conditional import for development only
-let setupVite: any, serveStatic: any, log: any;
+// Production-safe logging and server setup
+const log = (msg: string) => console.log(msg);
+
+// Development-only imports (excluded from production bundle)
+let setupVite: any = () => {};
+let serveStatic: any = () => {};
+
+// Only import vite.ts in development
 if (process.env.NODE_ENV === 'development') {
   try {
-    const viteModule = await import("./vite.js");
-    setupVite = viteModule.setupVite;
-    serveStatic = viteModule.serveStatic;
-    log = viteModule.log;
+    const { setupVite: devSetupVite, serveStatic: devServeStatic, log: devLog } = await import("./vite.js");
+    setupVite = devSetupVite;
+    serveStatic = devServeStatic;
   } catch (error) {
-    console.warn("Vite module not available, skipping development server setup");
-    setupVite = () => {};
-    serveStatic = () => {};
-    log = (msg: string) => console.log(msg);
+    console.warn("Vite module not available, using fallbacks");
   }
-} else {
-  // Production stubs
-  setupVite = () => {};
-  serveStatic = () => {};
-  log = (msg: string) => console.log(msg);
 }
 import { initializeBrevo } from "./brevo";
 

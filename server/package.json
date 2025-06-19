@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "echo 'Building ProbeAI server...' && echo 'Commit:' $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && esbuild index.ts --platform=node --packages=external --bundle --format=esm --outfile=index.js",
+    "build": "echo 'Building ProbeAI server...' && echo 'Commit:' $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown') && esbuild index.ts --platform=node --packages=external --bundle --format=esm --outfile=index.js --external:./vite.ts --external:../vite.config",
     "start": "node index.js"
   },
   "dependencies": {

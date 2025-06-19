@@ -31,28 +31,28 @@ const app = express();
 
 // Enable CORS FIRST - before any other middleware
 const allowedOrigins = [
-  'https://probeai-platform.vercel.app',
-  'https://9c1e9c9c-d465-4c45-be46-06c0386caa2f-00-1cye8uzrlo9jo.janeway.replit.dev',
-  'http://localhost:5000',
-  'http://127.0.0.1:5000',
-  'http://0.0.0.0:5000',
+  "https://probeai-platform.vercel.app",
+  "https://9c1e9c9c-d465-4c45-be46-06c0386caa2f-00-1cye8uzrlo9jo.janeway.replit.dev",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://0.0.0.0:5173"
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow non-browser tools like curl
+    if (!origin) return callback(null, true);
     if (
       allowedOrigins.includes(origin) ||
       /^https:\/\/probeai-platform-[a-z0-9\-]+\.vercel\.app$/.test(origin)
     ) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS: ' + origin));
+      return callback(null, true);
     }
+    console.warn("❌ Blocked by CORS:", origin);
+    return callback(new Error("Not allowed by CORS"));
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(express.json());

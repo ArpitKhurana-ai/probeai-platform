@@ -32,6 +32,7 @@ const app = express();
 // Enable CORS FIRST - before any other middleware
 const allowedOrigins = [
   'https://probeai-platform.vercel.app',
+  'https://9c1e9c9c-d465-4c45-be46-06c0386caa2f-00-1cye8uzrlo9jo.janeway.replit.dev',
 ];
 
 app.use(cors({

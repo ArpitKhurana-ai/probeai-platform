@@ -700,6 +700,37 @@ var init_storage = __esm({
   }
 });
 
+// health.ts
+var health_exports = {};
+__export(health_exports, {
+  healthCheck: () => healthCheck
+});
+import { sql as sql2 } from "drizzle-orm";
+async function healthCheck(req, res) {
+  try {
+    await db.execute(sql2`SELECT 1`);
+    res.json({
+      status: "healthy",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      database: "connected",
+      environment: process.env.NODE_ENV || "development"
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "unhealthy",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      database: "disconnected",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+}
+var init_health = __esm({
+  "health.ts"() {
+    "use strict";
+    init_db();
+  }
+});
+
 // initialize-algolia.ts
 var initialize_algolia_exports = {};
 __export(initialize_algolia_exports, {
@@ -1185,6 +1216,8 @@ async function sendWelcomeEmail(email, name) {
 // routes.ts
 init_schema();
 async function registerRoutes(app2) {
+  const { healthCheck: healthCheck2 } = await Promise.resolve().then(() => (init_health(), health_exports));
+  app2.get("/health", healthCheck2);
   await setupAuth(app2);
   app2.get("/api/auth/user", isAuthenticated, async (req, res) => {
     try {

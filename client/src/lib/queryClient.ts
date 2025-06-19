@@ -13,13 +13,7 @@ const getApiUrl = (path: string): string => {
   const fullUrl = API_BASE_URL + path;
   
   // Enhanced logging for production debugging
-  console.log('API Request Details:', {
-    path,
-    baseUrl,
-    fullUrl,
-    mode: import.meta.env.MODE,
-    hasBaseUrl: !!import.meta.env.VITE_API_BASE_URL
-  });
+  // Debug logging removed for production builds
   
   return fullUrl;
 };

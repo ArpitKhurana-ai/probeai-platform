@@ -950,10 +950,14 @@ if (!REPLIT_DOMAINS) {
 }
 var getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID
-    );
+    try {
+      const issuerUrl = new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc");
+      const config = await client.discovery(issuerUrl, process.env.REPL_ID);
+      return config;
+    } catch (error) {
+      console.error("OpenID Discovery failed:", error);
+      throw error;
+    }
   },
   { maxAge: 3600 * 1e3 }
 );
@@ -994,8 +998,8 @@ async function upsertUser(claims) {
   });
 }
 async function setupAuth(app2) {
-  if (!REPLIT_DOMAINS || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
-    console.warn("\u26A0\uFE0F  Replit Auth disabled for external deployment");
+  if (!REPLIT_DOMAINS || process.env.NODE_ENV === "development" || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
+    console.warn("\u26A0\uFE0F  Authentication disabled - continuing without auth setup");
     return;
   }
   app2.set("trust proxy", 1);

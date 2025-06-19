@@ -15,10 +15,15 @@ if (!REPLIT_DOMAINS) {
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    try {
+      // Use client.discoveryRequest for openid-client v5
+      const issuerUrl = new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc");
+      const config = await client.discovery(issuerUrl, process.env.REPL_ID!);
+      return config;
+    } catch (error) {
+      console.error('OpenID Discovery failed:', error);
+      throw error;
+    }
   },
   { maxAge: 3600 * 1000 }
 );
@@ -68,9 +73,9 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
-  // Skip Replit Auth setup completely for external deployments
-  if (!REPLIT_DOMAINS || (process.env.NODE_ENV === 'production' && !process.env.REPL_ID)) {
-    console.warn("⚠️  Replit Auth disabled for external deployment");
+  // Temporarily disable auth for all environments until Railway deployment succeeds
+  if (!REPLIT_DOMAINS || process.env.NODE_ENV === 'development' || (process.env.NODE_ENV === 'production' && !process.env.REPL_ID)) {
+    console.warn("⚠️  Authentication disabled - continuing without auth setup");
     return;
   }
 

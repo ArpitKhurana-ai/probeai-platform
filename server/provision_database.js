@@ -150,7 +150,7 @@ async function seedData() {
     `);
     
     // Seed tools data from SQL file
-    const toolsSql = readFileSync(join(__dirname, 'seed_tools.sql'), 'utf8');
+    const toolsSql = readFileSync(join(__dirname, 'create_tools_table.sql'), 'utf8');
     await client.query(toolsSql);
     
     console.log('✅ Data seeded successfully');

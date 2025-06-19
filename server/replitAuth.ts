@@ -1,5 +1,5 @@
 import * as client from "openid-client";
-import { Strategy } from "openid-client";
+import { Strategy as OpenIDStrategy } from "openid-client";
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
@@ -92,7 +92,7 @@ export async function setupAuth(app: Express) {
   };
 
   for (const domain of REPLIT_DOMAINS.split(",")) {
-    const strategy = new Strategy(
+    const strategy = new OpenIDStrategy(
       {
         name: `replitauth:${domain}`,
         config,

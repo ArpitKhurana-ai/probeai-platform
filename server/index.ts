@@ -18,10 +18,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 console.log("📦 Express app configured with CORS and parsers");
 
-app.get("/cors-check", (req, res) => {
+// Simple ping route
+app.get("/cors-check", (_req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
+// ✅ Prevent auth middleware crash
 app.use((req: Request, res: Response, next: NextFunction) => {
   try {
     if ((req as any).user?.claims) {
@@ -35,6 +37,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// ✅ API logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -60,17 +63,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// ✅ Handle fatal crashes
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION");
   console.error(err.stack);
   process.exit(1);
 });
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason, _promise) => {
   console.error("💥 UNHANDLED PROMISE REJECTION");
   console.error("Reason:", reason);
   process.exit(1);
 });
 
+// ✅ Boot sequence
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
@@ -79,9 +84,9 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
     };
     console.table(envVars);
 
@@ -93,16 +98,17 @@ process.on("unhandledRejection", (reason, promise) => {
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️  Algolia init failed:", err.message);
+      console.warn("⚠️ Algolia init failed:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️  Brevo init failed:", err.message);
+      console.warn("⚠️ Brevo init failed:", err.message);
     }
 
+    // ✅ Global error middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || 500;
       const message = err.message || "Internal Server Error";
@@ -114,8 +120,7 @@ process.on("unhandledRejection", (reason, promise) => {
     console.log(`🌐 Starting on port ${port}...`);
 
     if (process.env.NODE_ENV === "development") {
-      let setupVite = () => {};
-      await setupVite(app, server);
+      console.log("⚠️ Vite setup skipped in production");
     } else {
       try {
         const serveStatic = () => {};
@@ -129,7 +134,8 @@ process.on("unhandledRejection", (reason, promise) => {
       }
     }
 
-    server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+    // ✅ IMPORTANT: Listen on 0.0.0.0 for Railway
+    server.listen({ port, host: "0.0.0.0" }, () => {
       console.log(`✅ Server running at http://0.0.0.0:${port}`);
     });
   } catch (err: any) {

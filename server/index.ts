@@ -11,8 +11,8 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ FINAL CORS MIDDLEWARE with Regex for all Vercel preview domains
-const allowedOriginsRegex = /^https:\/\/probeai-platform(-[a-z0-9]+)?-arpits-projects-fff6dea9\.vercel\.app$|^https:\/\/probeai-platform\.vercel\.app$|^http:\/\/localhost:5000$/;
+// ✅ FINAL CORS MIDDLEWARE — uses REGEX to match preview domains
+const allowedOriginsRegex = /^https:\/\/(probeai-platform|probeai-platform-[a-z0-9]+)\.vercel\.app$|^http:\/\/localhost:5000$/;
 
 app.use(
   cors({
@@ -35,17 +35,16 @@ app.use(express.urlencoded({ extended: false }));
 
 console.log("📦 Express app configured with CORS and parsers");
 
-// Development-only imports (excluded from production bundle)
 let setupVite: any = () => {};
 let serveStatic: any = () => {};
 
-// Safe authentication middleware
+// Safe auth middleware
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
       next();
     } else {
-      next(); // Continue without authentication
+      next();
     }
   } catch (err) {
     console.warn("⚠️ Auth middleware bypassed:", err.message);
@@ -82,19 +81,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Uncaught error protection
+// Crash protection
 process.on('uncaughtException', (error) => {
-  console.error('💥 UNCAUGHT EXCEPTION - Server will exit:');
-  console.error('Error name:', error.name);
-  console.error('Error message:', error.message);
-  console.error('Stack trace:', error.stack);
+  console.error('💥 UNCAUGHT EXCEPTION:', error);
   process.exit(1);
 });
-
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 UNHANDLED PROMISE REJECTION - Server will exit:');
-  console.error('Promise:', promise);
-  console.error('Reason:', reason);
+  console.error('💥 UNHANDLED REJECTION:', reason);
   process.exit(1);
 });
 
@@ -105,35 +98,31 @@ process.on('unhandledRejection', (reason, promise) => {
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
-      SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing", 
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
+      SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
     };
-
     console.table(envVars);
 
-    console.log("🔗 Registering routes...");
     const server = await registerRoutes(app);
     console.log("✅ Routes registered");
 
-    // Optional services
     try {
-      const { initializeAlgolia } = await import('./initialize-algolia.js');
+      const { initializeAlgolia } = await import("./initialize-algolia.js");
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (e) {
-      console.warn("⚠️  Algolia error:", e.message);
+      console.warn("⚠️ Algolia init failed:", e.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (e) {
-      console.warn("⚠️  Brevo error:", e.message);
+      console.warn("⚠️ Brevo init failed:", e.message);
     }
 
-    // Global error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || 500;
       const message = err.message || "Internal Server Error";

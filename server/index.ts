@@ -10,7 +10,7 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ MAXIMUM DEBUG CORS MIDDLEWARE – Final Stable Version
+// ✅ EXTENDED DEBUG CORS
 const allowedOrigins = [
   "http://localhost:5000",
   "https://probeai-platform.vercel.app"
@@ -21,15 +21,13 @@ app.use((req, res, next) => {
   const origin = req.headers.origin || "NO_ORIGIN_HEADER";
   const method = req.method;
   const path = req.path;
+
   const isAllowed = allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin);
 
-  console.log("🧪 CORS DEBUG:");
-  console.log("→ Method:", method);
-  console.log("→ Origin:", origin);
-  console.log("→ Path:", path);
-  console.log("→ Matched Allowed:", isAllowed ? "✅ Yes" : "❌ No");
-
   res.setHeader("X-Debug-CORS-Check", "YES");
+  console.log(`🧪 CORS DEBUG → ${method} ${path}`);
+  console.log("   ↪ Origin:", origin);
+  console.log("   ↪ Match Allowed:", isAllowed);
 
   if (isAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -38,7 +36,6 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   } else {
     res.setHeader("Access-Control-Allow-Origin", "BLOCKED");
-    console.warn("❌ BLOCKED CORS for origin:", origin);
   }
 
   if (method === "OPTIONS") {
@@ -57,7 +54,6 @@ app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
-// 🔐 Dummy Auth Middleware (safe fallback)
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
@@ -71,7 +67,6 @@ app.use((req, res, next) => {
   }
 });
 
-// 📝 API Logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -97,7 +92,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// 💥 Global Crash Protection
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION");
   console.error(err.stack);
@@ -109,7 +103,6 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
-// 🛠 Boot
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
@@ -118,9 +111,9 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
     };
     console.table(envVars);
 
@@ -132,17 +125,16 @@ process.on("unhandledRejection", (reason, promise) => {
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️ Algolia init failed:", err.message);
+      console.warn("⚠️  Algolia init failed:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️ Brevo init failed:", err.message);
+      console.warn("⚠️  Brevo init failed:", err.message);
     }
 
-    // Global error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || 500;
       const message = err.message || "Internal Server Error";

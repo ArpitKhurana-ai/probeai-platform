@@ -10,7 +10,7 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ MAXIMUM DEBUG CORS MIDDLEWARE
+// ✅ MAXIMUM DEBUG CORS MIDDLEWARE – Final Stable Version
 const allowedOrigins = [
   "http://localhost:5000",
   "https://probeai-platform.vercel.app"
@@ -20,13 +20,13 @@ const vercelPreviewRegex = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.ap
 app.use((req, res, next) => {
   const origin = req.headers.origin || "NO_ORIGIN_HEADER";
   const method = req.method;
-
+  const path = req.path;
   const isAllowed = allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin);
 
   console.log("🧪 CORS DEBUG:");
   console.log("→ Method:", method);
   console.log("→ Origin:", origin);
-  console.log("→ Path:", req.path);
+  console.log("→ Path:", path);
   console.log("→ Matched Allowed:", isAllowed ? "✅ Yes" : "❌ No");
 
   res.setHeader("X-Debug-CORS-Check", "YES");
@@ -57,7 +57,7 @@ app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
-// ⚠️ Dummy auth protection
+// 🔐 Dummy Auth Middleware (safe fallback)
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
@@ -71,7 +71,7 @@ app.use((req, res, next) => {
   }
 });
 
-// 📝 API Request Logger
+// 📝 API Logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -109,7 +109,7 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
-// 🛠 Boot Logic
+// 🛠 Boot
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
@@ -118,9 +118,9 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing (Optional)",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
     };
     console.table(envVars);
 
@@ -132,14 +132,14 @@ process.on("unhandledRejection", (reason, promise) => {
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️  Algolia init failed:", err.message);
+      console.warn("⚠️ Algolia init failed:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️  Brevo init failed:", err.message);
+      console.warn("⚠️ Brevo init failed:", err.message);
     }
 
     // Global error handler

@@ -6,47 +6,22 @@ console.log("Node version:", process.version);
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
-// Production-safe logging and server setup
-const log = (msg: string) => console.log(msg);
-
-// Development-only imports (excluded from production bundle)
-let setupVite: any = () => {};
-let serveStatic: any = () => {};
-
-// Import fallback frontend
 import { serveFallbackFrontend } from "./fallback-frontend";
 import { initializeBrevo } from "./brevo";
 
-console.log("✅ All imports loaded successfully");
-
 const app = express();
-// CORS fallback headers (applied manually in case cors() fails or gets bypassed)
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  console.log(`🛰️ Request: ${req.method} ${req.path} from ${origin}`);
 
-  if (origin && allowedOriginsRegex.test(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  }
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end(); // Preflight OK
-  }
-
-  next();
-});
-
-
-// Final CORS regex pattern for all deployment environments
-const allowedOriginsRegex = /^(https?:\/\/)?((.*\.vercel\.app)|(.*\.railway\.app)|(.*\.replit\.dev)|(localhost:\d{1,5})|(127\.0\.0\.1:\d{1,5}))/;
+// ✅ FINAL CORS MIDDLEWARE
+const allowedOrigins = [
+  "https://probeai-platform.vercel.app",
+  "https://probeai-platform-26gk234dc-arpits-projects-fff6dea9.vercel.app",
+  "http://localhost:5000",
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOriginsRegex.test(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.error("❌ CORS Error: Origin not allowed ->", origin);
@@ -54,7 +29,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
@@ -62,9 +37,13 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-console.log("📦 Express app configured with final CORS setup");
+console.log("📦 Express app configured with CORS and parsers");
 
-// Safe authentication middleware with fallbacks
+// Development-only imports (excluded from production bundle)
+let setupVite: any = () => {};
+let serveStatic: any = () => {};
+
+// Safe authentication middleware
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
@@ -78,6 +57,7 @@ app.use((req, res, next) => {
   }
 });
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -101,14 +81,14 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
   next();
 });
 
-// Handle uncaught exceptions
+// Uncaught error protection
 process.on('uncaughtException', (error) => {
   console.error('💥 UNCAUGHT EXCEPTION - Server will exit:');
   console.error('Error name:', error.name);
@@ -117,7 +97,6 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 UNHANDLED PROMISE REJECTION - Server will exit:');
   console.error('Promise:', promise);
@@ -128,9 +107,7 @@ process.on('unhandledRejection', (reason, promise) => {
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
-    
-    // Environment variable checks
-    console.log("🔍 Checking environment variables...");
+
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
@@ -139,125 +116,60 @@ process.on('unhandledRejection', (reason, promise) => {
       ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
       BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
     };
-    
+
     console.table(envVars);
 
-    console.log("🔗 Registering routes and setting up authentication...");
+    console.log("🔗 Registering routes...");
     const server = await registerRoutes(app);
-    console.log("✅ Routes registered successfully");
-  
-    // Initialize Algolia search index
-    console.log("🔍 Initializing Algolia search...");
+    console.log("✅ Routes registered");
+
+    // Optional services
     try {
       const { initializeAlgolia } = await import('./initialize-algolia.js');
       await initializeAlgolia();
-      console.log("✅ Algolia initialized successfully");
-    } catch (error) {
-      console.warn("⚠️  Algolia initialization failed:", error.message);
+      console.log("✅ Algolia initialized");
+    } catch (e) {
+      console.warn("⚠️  Algolia error:", e.message);
     }
 
-    // Initialize Brevo email service
-    console.log("📧 Initializing Brevo email service...");
     try {
       initializeBrevo();
-      console.log("✅ Brevo initialized successfully");
-    } catch (error) {
-      console.warn("⚠️  Brevo initialization failed:", error.message);
+      console.log("✅ Brevo initialized");
+    } catch (e) {
+      console.warn("⚠️  Brevo error:", e.message);
     }
 
     // Global error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
+      const status = err.status || 500;
       const message = err.message || "Internal Server Error";
-      
-      console.error("🚨 Express error handler caught:");
-      console.error("Status:", status);
-      console.error("Message:", message);
-      console.error("Stack:", err.stack);
-
+      console.error("🚨 Global error:", status, message);
       res.status(status).json({ message });
     });
 
     const port = 5000;
-    console.log(`🌐 Setting up server on port ${port}...`);
+    console.log(`🌐 Preparing server on port ${port}...`);
 
-    // Setup vite in development, serve static files in production
     if (process.env.NODE_ENV === "development") {
-      console.log("🔧 Development mode: Setting up Vite");
+      console.log("🔧 Dev mode: setting up Vite...");
       await setupVite(app, server);
     } else {
-      console.log("📦 Production mode: Setting up static file serving");
       try {
         serveStatic(app);
-        console.log("✅ Static files configured successfully");
-      } catch (error) {
-        console.warn("⚠️  Static file serving failed, running as backend-only:", error.message);
-        console.log("📄 Frontend should be deployed separately (e.g., on Vercel)");
-        
-        // Fallback: serve a basic status page for root route
+        console.log("✅ Static serving ready");
+      } catch (err) {
+        console.warn("⚠️ No static files, backend-only mode:", err.message);
         app.get("/", (_req, res) => {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>ProbeAI Backend API</title>
-                <meta charset="utf-8">
-                <style>
-                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-                  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
-                </style>
-              </head>
-              <body>
-                <h1>ProbeAI Backend API Server</h1>
-                <p>✅ Backend API is running successfully!</p>
-                <p>🌐 Frontend is deployed separately on Vercel.</p>
-                <h3>Available API Endpoints:</h3>
-                <ul>
-                  <li><code>GET /api/tools</code> - AI tools directory</li>
-                  <li><code>GET /api/news</code> - Latest AI news</li>
-                  <li><code>GET /api/blogs</code> - Blog articles</li>
-                  <li><code>GET /api/videos</code> - Video content</li>
-                  <li><code>GET /api/auth/user</code> - User authentication</li>
-                </ul>
-              </body>
-            </html>
-          `);
-        });
-        
-        // Handle non-API routes
-        app.get("*", (req, res) => {
-          if (!req.path.startsWith("/api")) {
-            res.status(404).json({ 
-              error: "Frontend not found", 
-              message: "Frontend is deployed on Vercel. This is the backend API server."
-            });
-          }
+          res.send(`<h1>🚀 ProbeAI Backend Running</h1><p>API is ready.</p>`);
         });
       }
     }
 
-    console.log(`🚀 Starting server on 0.0.0.0:${port}...`);
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      console.log("✅ ProbeAI backend server running successfully!");
-      console.log(`📍 Server listening on http://0.0.0.0:${port}`);
-      log(`serving on port ${port}`);
+    server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+      console.log(`✅ Server live at http://0.0.0.0:${port}`);
     });
   } catch (error) {
-    console.error("💥 CRITICAL ERROR - Failed to start server:");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Stack trace:", error.stack);
-    
-    // Log environment info for debugging
-    console.error("Environment debug info:");
-    console.error("- NODE_ENV:", process.env.NODE_ENV);
-    console.error("- Platform:", process.platform);
-    console.error("- Working directory:", process.cwd());
-    
+    console.error("💥 Startup failed:", error.message);
     process.exit(1);
   }
 })();

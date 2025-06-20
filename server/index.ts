@@ -11,18 +11,13 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ FINAL CORS MIDDLEWARE
-const allowedOrigins = [
-  "https://probeai-platform.vercel.app",
-  "https://probeai-platform-26gk234dc-arpits-projects-fff6dea9.vercel.app",
-  "https://probeai-platform-fvbzhtej6-arpits-projects-fff6dea9.vercel.app", // ✅ Added preview domain
-  "http://localhost:5000",
-];
+// ✅ FINAL CORS MIDDLEWARE with Regex for all Vercel preview domains
+const allowedOriginsRegex = /^https:\/\/probeai-platform(-[a-z0-9]+)?-arpits-projects-fff6dea9\.vercel\.app$|^https:\/\/probeai-platform\.vercel\.app$|^http:\/\/localhost:5000$/;
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOriginsRegex.test(origin)) {
         callback(null, true);
       } else {
         console.error("❌ CORS Error: Origin not allowed ->", origin);
@@ -77,11 +72,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       console.log(logLine);
     }
   });

@@ -1,36 +1,24 @@
-// server/cors.ts
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from 'express';
 
 export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const origin = req.headers.origin || "NO_ORIGIN_HEADER";
-  const method = req.method;
-  const path = req.path;
+  const origin = req.headers.origin;
 
-  const allowedOrigins = [
-    "http://localhost:5000",
-    "https://probeai-platform.vercel.app"
-  ];
-  const vercelPreviewRegex = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.app$/;
+  const isLocalhost = origin?.includes('localhost');
+  const isVercelPreview = origin?.match(/^https:\/\/probeai-platform(-[\w\d]+)?-arpits-projects-[\w\d]+\.vercel\.app$/);
+  const isProduction = origin === 'https://probeai-platform.vercel.app';
 
-  const isAllowed = allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin);
+  const isAllowed = isLocalhost || isVercelPreview || isProduction;
 
-  res.setHeader("X-Debug-CORS-Check", "YES");
-  console.log(`🧪 CORS DEBUG → ${method} ${path}`);
-  console.log("   ↪ Origin:", origin);
-  console.log("   ↪ Match Allowed:", isAllowed);
-
-  if (isAllowed) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "BLOCKED");
+  if (isAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 
-  if (method === "OPTIONS") {
-    console.log("⚙️ Preflight OPTIONS request handled");
-    return res.status(204).end();
+  // For preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
   }
 
   next();

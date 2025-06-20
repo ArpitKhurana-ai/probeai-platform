@@ -15,7 +15,8 @@ const allowedOrigins = [
   "http://localhost:5000",
   "https://probeai-platform.vercel.app"
 ];
-const vercelPreviewRegex = /^https:\/\/probeai-platform.*\.vercel\.app$/;
+const vercelPreviewRegex = /^https:\/\/probeai-platform(-[\w\d]+)*-arpits-projects-[\w\d]+\.vercel\.app$/;
+
 
 
 app.use((req, res, next) => {

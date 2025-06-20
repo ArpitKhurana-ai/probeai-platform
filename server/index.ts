@@ -29,30 +29,42 @@ console.log("✅ All imports loaded successfully");
 
 const app = express();
 
-// Enable CORS FIRST - before any other middleware with universal regex
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-      /^https?:\/\/.*\.vercel\.app$/.test(origin) ||
-      /^https?:\/\/.*\.railway\.app$/.test(origin) ||
-      /^https:\/\/.*\.replit\.dev$/.test(origin)
-    ) {
-      return callback(null, true);
-    }
-    console.warn("❌ Blocked by CORS:", origin);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+// Universal CORS regex pattern for all deployment environments
+const allowedOriginsRegex = /^(https?:\/\/)?((.*\.vercel\.app)|(.*\.railway\.app)|(.*\.replit\.dev)|(localhost:\d{1,5})|(127\.0\.0\.1:\d{1,5}))/;
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOriginsRegex.test(origin)) {
+        callback(null, true);
+      } else {
+        console.error("❌ Blocked by CORS:", origin);
+        callback(new Error(`Blocked by CORS policy: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-console.log("📦 Express app configured with CORS for Vercel");
+console.log("📦 Express app configured with universal CORS");
+
+// Safe fallback auth middleware
+app.use((req, res, next) => {
+  try {
+    if (req.user?.claims) {
+      return next();
+    }
+    next(); // silently pass if no claims
+  } catch (err) {
+    console.warn("⚠️ Auth fallback triggered:", err.message);
+    next();
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

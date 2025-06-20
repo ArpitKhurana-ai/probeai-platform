@@ -11,171 +11,140 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ Regex-based CORS whitelist
-const allowedOriginsRegex = /^https:\/\/probeai-platform(-[\w\d]+)?\.vercel\.app$|^http:\/\/localhost:5000$/;
+// ✅ FIXED: Robust CORS config
+const allowedOrigins = [
+  "https://probeai-platform.vercel.app",
+  "http://localhost:5000",
+];
 
-// ✅ Manual preflight handler to prevent CORS errors
-app.use((req, res, next) => {
-  const origin = req.headers.origin || "";
-  if (allowedOriginsRegex.test(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+const dynamicOrigin = (origin: string | undefined, callback: Function) => {
+  if (!origin || allowedOrigins.includes(origin) || /^https:\/\/probeai-platform-[a-z0-9]+-arpits-projects-fff6dea9\.vercel\.app$/.test(origin)) {
+    callback(null, true);
+  } else {
+    console.error("❌ CORS Rejected:", origin);
+    callback(new Error("Not allowed by CORS"));
   }
+};
 
-  if (req.method === "OPTIONS") {
-    res.status(200).end(); // Preflight success
-    return;
-  }
-
-  next();
-});
-
-// ✅ Also apply CORS middleware as fallback
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOriginsRegex.test(origin)) {
-      callback(null, true);
-    } else {
-      console.error("❌ CORS Error: Origin not allowed ->", origin);
-      callback(new Error(`CORS Error: Origin ${origin} not allowed`));
-    }
-  },
+  origin: dynamicOrigin,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+app.get("/cors-check", (req, res) => {
+  res.set("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.json({ message: "CORS check passed", origin: req.headers.origin });
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-console.log("📦 Express app configured with CORS and parsers");
+console.log("📦 Middleware initialized");
 
-// Dev-only stubs
-let setupVite: any = () => {};
-let serveStatic: any = () => {};
-
-// Safe auth middleware
-app.use((req, res, next) => {
+// Safe middleware
+app.use((req, _res, next) => {
   try {
-    if (req.user?.claims) next();
-    else next();
+    if (req.user?.claims) {
+      next();
+    } else {
+      next();
+    }
   } catch (err) {
     console.warn("⚠️ Auth middleware bypassed:", err.message);
     next();
   }
 });
 
-// Logging
+// Request logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJson: any;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  const originalJson = res.json;
+  res.json = function (body, ...args) {
+    capturedJson = body;
+    return originalJson.apply(res, [body, ...args]);
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-      console.log(logLine);
+      let log = `${req.method} ${path} ${res.statusCode} in ${Date.now() - start}ms`;
+      if (capturedJson) log += ` :: ${JSON.stringify(capturedJson)}`;
+      console.log(log.slice(0, 300));
     }
   });
 
   next();
 });
 
-// Uncaught error protection
+// Error safety
 process.on('uncaughtException', (error) => {
-  console.error('💥 UNCAUGHT EXCEPTION - Server will exit:');
-  console.error('Error name:', error.name);
-  console.error('Error message:', error.message);
-  console.error('Stack trace:', error.stack);
+  console.error("💥 UNCAUGHT EXCEPTION:", error);
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 UNHANDLED PROMISE REJECTION - Server will exit:');
-  console.error('Promise:', promise);
-  console.error('Reason:', reason);
+process.on('unhandledRejection', (reason, _promise) => {
+  console.error("💥 UNHANDLED PROMISE:", reason);
   process.exit(1);
 });
 
 (async () => {
   try {
-    console.log("🔧 Starting server initialization...");
+    console.log("🔧 Initializing server...");
 
-    const envVars = {
+    console.table({
       NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
-      SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing", 
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
-    };
+      DATABASE_URL: !!process.env.DATABASE_URL,
+      SESSION_SECRET: !!process.env.SESSION_SECRET,
+      ALGOLIA_API_KEY: !!process.env.ALGOLIA_API_KEY,
+      BREVO_API_KEY: !!process.env.BREVO_API_KEY
+    });
 
-    console.table(envVars);
-
-    console.log("🔗 Registering routes...");
     const server = await registerRoutes(app);
-    console.log("✅ Routes registered");
+    console.log("✅ Routes loaded");
 
     try {
       const { initializeAlgolia } = await import('./initialize-algolia.js');
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
-    } catch (e) {
-      console.warn("⚠️  Algolia error:", e.message);
+    } catch (err) {
+      console.warn("⚠️ Algolia error:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
-    } catch (e) {
-      console.warn("⚠️  Brevo error:", e.message);
+    } catch (err) {
+      console.warn("⚠️ Brevo error:", err.message);
     }
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || 500;
-      const message = err.message || "Internal Server Error";
-      console.error("🚨 Global error:", status, message);
-      res.status(status).json({ message });
+      console.error("🚨 Global error:", err.message);
+      res.status(err.status || 500).json({ message: err.message });
     });
 
     const port = 5000;
-    console.log(`🌐 Preparing server on port ${port}...`);
-
     if (process.env.NODE_ENV === "development") {
-      console.log("🔧 Dev mode: setting up Vite...");
       await setupVite(app, server);
     } else {
       try {
         serveStatic(app);
-        console.log("✅ Static serving ready");
-      } catch (err) {
-        console.warn("⚠️ No static files, backend-only mode:", err.message);
+      } catch {
         app.get("/", (_req, res) => {
-          res.send(`<h1>🚀 ProbeAI Backend Running</h1><p>API is ready.</p>`);
+          res.send("<h1>🚀 ProbeAI API Ready</h1>");
         });
       }
     }
 
-    server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
-      console.log(`✅ Server live at http://0.0.0.0:${port}`);
+    server.listen({ port, host: "0.0.0.0" }, () => {
+      console.log(`✅ Server ready: http://0.0.0.0:${port}`);
     });
-  } catch (error) {
-    console.error("💥 Startup failed:", error.message);
+
+  } catch (err) {
+    console.error("💥 Startup error:", err.message);
     process.exit(1);
   }
 })();

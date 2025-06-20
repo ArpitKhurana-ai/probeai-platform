@@ -22,13 +22,12 @@ app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
-// ✅ Updated auth check to avoid crashing
 app.use((req: Request, res: Response, next: NextFunction) => {
   try {
     if ((req as any).user?.claims) {
       next();
     } else {
-      next(); // safe fallback
+      next();
     }
   } catch (err) {
     console.warn("⚠️ Auth middleware bypassed:", (err as any)?.message);

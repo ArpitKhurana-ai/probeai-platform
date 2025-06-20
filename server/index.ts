@@ -4,39 +4,13 @@ console.log("Platform:", process.platform);
 console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
+import { corsMiddleware } from "./cors"; // ✅ import
 import { serveFallbackFrontend } from "./fallback-frontend";
 import { registerRoutes } from "./routes";
 import { initializeBrevo } from "./brevo";
 
 const app = express();
-
-// ✅ FINAL CORS MIDDLEWARE (runs FIRST)
-app.use((req, res, next) => {
-  const origin = req.headers.origin || "NO_ORIGIN";
-  const isAllowed =
-    /^https:\/\/probeai-platform.*\.vercel\.app$/.test(origin) ||
-    origin === "https://probeai-platform.vercel.app" ||
-    origin === "http://localhost:5000";
-
-  console.log("🧪 CORS DEBUG →", req.method, req.path);
-  console.log("   ↪ Origin:", origin);
-  console.log("   ↪ Matched Allowed:", isAllowed);
-  res.setHeader("X-Debug-CORS", "Injected");
-
-  if (isAllowed) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  }
-
-  if (req.method === "OPTIONS") {
-    console.log("⚙️ Preflight OPTIONS request handled");
-    return res.status(204).end();
-  }
-
-  next();
-});
+app.use(corsMiddleware); // ✅ apply first
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -103,7 +77,7 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing",
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
       ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
       BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
     };

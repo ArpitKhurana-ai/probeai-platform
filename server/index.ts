@@ -1,74 +1,93 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
+import { serveFallbackFrontend } from "./fallback-frontend";
 import { initializeBrevo } from "./brevo";
+
+console.log("🚀 Starting ProbeAI backend server...");
+console.log("Environment:", process.env.NODE_ENV || "development");
+console.log("Platform:", process.platform);
+console.log("Node version:", process.version);
 
 const app = express();
 
-// ✅ Allow Vercel previews using regex
-const allowedOrigins = [
-  "https://probeai-platform.vercel.app",
-  "http://localhost:5000",
-];
+// ✅ Apply CORS at top level — allow all *.vercel.app and localhost
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isVercelPreview = /^https:\/\/probeai-platform-[a-z0-9]+\.vercel\.app$/.test(origin);
+    const isProd = origin === "https://probeai-platform.vercel.app";
+    const isLocal = origin.startsWith("http://localhost");
+    if (isVercelPreview || isProd || isLocal) {
+      return callback(null, true);
+    }
+    console.warn("❌ CORS blocked:", origin);
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
 
-const dynamicOrigin = (origin: string | undefined, callback: Function) => {
-  const vercelPreview = /^https:\/\/probeai-platform-[\w-]+\.vercel\.app$/;
-  if (!origin || allowedOrigins.includes(origin) || vercelPreview.test(origin)) {
-    callback(null, true);
-  } else {
-    console.error("❌ CORS Rejected:", origin);
-    callback(new Error("CORS blocked: Origin not allowed"));
-  }
-};
-
-app.use(
-  cors({
-    origin: dynamicOrigin,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// ✅ Basic setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// ✅ Health check route
-app.get("/cors-check", (req: Request, res: Response) => {
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.status(200).json({ message: "✅ CORS OK", origin: req.headers.origin });
+// Health route to test CORS
+app.get("/cors-check", (_req, res) => {
+  res.json({ message: "CORS working ✅" });
 });
 
-// ✅ Error logging
-process.on("unhandledRejection", (reason) => {
-  console.error("💥 Unhandled Rejection:", reason);
-});
-process.on("uncaughtException", (err) => {
-  console.error("💥 Uncaught Exception:", err);
-  process.exit(1);
+// Dummy safe auth middleware
+app.use((_req, _res, next) => next());
+
+// Logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  const originalJson = res.json;
+  res.json = function (body, ...args) {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+    return originalJson.apply(res, [body, ...args]);
+  };
+  next();
 });
 
-// ✅ Main async block
+// Register routes
 (async () => {
   try {
-    console.log("🔧 Starting backend...");
+    console.table({
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? "✅" : "❌",
+      SESSION_SECRET: process.env.SESSION_SECRET ? "✅" : "❌",
+    });
 
-    await registerRoutes(app);
-    initializeBrevo();
+    const server = await registerRoutes(app);
 
-    // ✅ Global error handler
+    try {
+      const { initializeAlgolia } = await import("./initialize-algolia.js");
+      await initializeAlgolia();
+      console.log("✅ Algolia initialized");
+    } catch (err) {
+      console.warn("⚠️ Algolia skipped:", err.message);
+    }
+
+    try {
+      initializeBrevo();
+      console.log("✅ Brevo initialized");
+    } catch (err) {
+      console.warn("⚠️ Brevo skipped:", err.message);
+    }
+
+    // Global error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      console.error("Global Error:", err.message);
+      console.error("🚨 Global error:", err.message);
       res.status(err.status || 500).json({ message: err.message || "Server error" });
     });
 
     const port = 5000;
-    app.listen(port, () => {
-      console.log(`✅ Server listening on http://0.0.0.0:${port}`);
-    });
+    app.listen({ port, host: "0.0.0.0" }, () =>
+      console.log(`✅ Backend live at http://0.0.0.0:${port}`)
+    );
   } catch (err) {
-    console.error("💥 Startup Error:", err.message);
+    console.error("💥 Startup failed:", err.message);
     process.exit(1);
   }
 })();

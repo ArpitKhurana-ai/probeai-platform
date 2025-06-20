@@ -13,16 +13,8 @@ const log = (msg: string) => console.log(msg);
 let setupVite: any = () => {};
 let serveStatic: any = () => {};
 
-// Load Vite modules synchronously for development
-if (process.env.NODE_ENV === 'development') {
-  try {
-    const viteModule = require("./vite.js");
-    setupVite = viteModule.setupVite;
-    serveStatic = viteModule.serveStatic;
-  } catch (error) {
-    console.warn("Vite module not available, using fallbacks");
-  }
-}
+// Import fallback frontend
+import { serveFallbackFrontend } from "./fallback-frontend";
 import { initializeBrevo } from "./brevo";
 
 console.log("✅ All imports loaded successfully");

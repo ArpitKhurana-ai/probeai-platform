@@ -11,7 +11,7 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ Improved CORS Middleware
+// ✅ CORS Middleware with Debug
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
@@ -22,12 +22,18 @@ const corsOptions: cors.CorsOptions = {
       "https://probeai-platform.vercel.app"
     ];
 
-    if (vercelPreview.test(origin) || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error("❌ CORS Rejected:", origin);
-      callback(new Error(`CORS blocked for origin: ${origin}`));
+    if (vercelPreview.test(origin)) {
+      console.log(`✅ Vercel preview matched: ${origin}`);
+      return callback(null, true);
     }
+
+    if (allowed.includes(origin)) {
+      console.log(`✅ Explicitly allowed origin: ${origin}`);
+      return callback(null, true);
+    }
+
+    console.error(`❌ CORS Rejected: ${origin}`);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -35,23 +41,23 @@ const corsOptions: cors.CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-// ✅ Diagnostic Middleware
+// ✅ Extra Diagnostic Middleware
 app.use((req, res, next) => {
   res.setHeader("X-Debug-CORS-Check", "YES");
-  console.log(`🧪 DEBUG CORS MIDDLEWARE: ${req.method} ${req.path} :: Origin = ${req.headers.origin}`);
+  console.log(`🧪 CORS DEBUG: ${req.method} ${req.path} from origin ${req.headers.origin}`);
   next();
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
 console.log("📦 Express app configured with CORS and parsers");
 
-app.get("/cors-check", (req, res) => {
+// Test Route
+app.get("/cors-check", (_req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
-// Optional user claims middleware
+// Optional auth bypass middleware
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
@@ -65,7 +71,7 @@ app.use((req, res, next) => {
   }
 });
 
-// Logging
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -97,12 +103,13 @@ process.on("uncaughtException", (err) => {
   console.error(err.stack);
   process.exit(1);
 });
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason, _promise) => {
   console.error("💥 UNHANDLED PROMISE REJECTION");
   console.error("Reason:", reason);
   process.exit(1);
 });
 
+// Async boot
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
@@ -111,9 +118,9 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing (Optional)",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
     };
     console.table(envVars);
 
@@ -121,18 +128,18 @@ process.on("unhandledRejection", (reason, promise) => {
     console.log("✅ Routes registered");
 
     try {
-      const { initializeAlgolia } = await import('./initialize-algolia.js');
+      const { initializeAlgolia } = await import("./initialize-algolia.js");
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️  Algolia init failed:", err.message);
+      console.warn("⚠️ Algolia init failed:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️  Brevo init failed:", err.message);
+      console.warn("⚠️ Brevo init failed:", err.message);
     }
 
     // Global error handler
@@ -146,21 +153,9 @@ process.on("unhandledRejection", (reason, promise) => {
     const port = 5000;
     console.log(`🌐 Starting on port ${port}...`);
 
-    if (process.env.NODE_ENV === "development") {
-      let setupVite = () => {};
-      await setupVite(app, server);
-    } else {
-      try {
-        const serveStatic = () => {};
-        serveStatic(app);
-        console.log("✅ Static file serving configured");
-      } catch (err: any) {
-        console.warn("⚠️ No static files found:", err.message);
-        app.get("/", (_req, res) => {
-          res.send(`<h1>🚀 ProbeAI Backend</h1><p>API is live.</p>`);
-        });
-      }
-    }
+    app.get("/", (_req, res) => {
+      res.send(`<h1>🚀 ProbeAI Backend</h1><p>API is live.</p>`);
+    });
 
     server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
       console.log(`✅ Server running at http://0.0.0.0:${port}`);

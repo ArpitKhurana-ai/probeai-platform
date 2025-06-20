@@ -15,6 +15,7 @@ const app = express();
 const allowedOrigins = [
   "https://probeai-platform.vercel.app",
   "https://probeai-platform-26gk234dc-arpits-projects-fff6dea9.vercel.app",
+  "https://probeai-platform-fvbzhtej6-arpits-projects-fff6dea9.vercel.app", // ✅ Added preview domain
   "http://localhost:5000",
 ];
 

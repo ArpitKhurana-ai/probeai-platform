@@ -4,47 +4,47 @@ console.log("Platform:", process.platform);
 console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
-import { registerRoutes } from "./routes";
 import { serveFallbackFrontend } from "./fallback-frontend";
+import { registerRoutes } from "./routes";
 import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ CORS Middleware with Debug
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+// ✅ MAXIMUM DEBUG CORS MIDDLEWARE
+const allowedOrigins = [
+  "http://localhost:5000",
+  "https://probeai-platform.vercel.app"
+];
+const vercelPreviewRegex = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.app$/;
 
-    const vercelPreview = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.app$/;
-    const allowed = [
-      "http://localhost:5000",
-      "https://probeai-platform.vercel.app"
-    ];
-
-    if (vercelPreview.test(origin)) {
-      console.log(`✅ Vercel preview matched: ${origin}`);
-      return callback(null, true);
-    }
-
-    if (allowed.includes(origin)) {
-      console.log(`✅ Explicitly allowed origin: ${origin}`);
-      return callback(null, true);
-    }
-
-    console.error(`❌ CORS Rejected: ${origin}`);
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
-app.use(cors(corsOptions));
-
-// ✅ Extra Diagnostic Middleware
 app.use((req, res, next) => {
+  const origin = req.headers.origin || "NO_ORIGIN_HEADER";
+  const method = req.method;
+
+  const isAllowed = allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin);
+
+  console.log("🧪 CORS DEBUG:");
+  console.log("→ Method:", method);
+  console.log("→ Origin:", origin);
+  console.log("→ Path:", req.path);
+  console.log("→ Matched Allowed:", isAllowed ? "✅ Yes" : "❌ No");
+
   res.setHeader("X-Debug-CORS-Check", "YES");
-  console.log(`🧪 CORS DEBUG: ${req.method} ${req.path} from origin ${req.headers.origin}`);
+
+  if (isAllowed) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "BLOCKED");
+  }
+
+  if (method === "OPTIONS") {
+    console.log("⚙️ Preflight OPTIONS request handled");
+    return res.status(204).end();
+  }
+
   next();
 });
 
@@ -52,12 +52,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 console.log("📦 Express app configured with CORS and parsers");
 
-// Test Route
-app.get("/cors-check", (_req, res) => {
+app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
-// Optional auth bypass middleware
+// ⚠️ Dummy auth protection (safe fallback)
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
@@ -71,7 +70,7 @@ app.use((req, res, next) => {
   }
 });
 
-// Logging middleware
+// 📝 API Request Logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -97,19 +96,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Crash protection
+// 💥 Global Crash Protection
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION");
   console.error(err.stack);
   process.exit(1);
 });
-process.on("unhandledRejection", (reason, _promise) => {
+process.on("unhandledRejection", (reason, promise) => {
   console.error("💥 UNHANDLED PROMISE REJECTION");
   console.error("Reason:", reason);
   process.exit(1);
 });
 
-// Async boot
+// 🛠 Boot Logic
 (async () => {
   try {
     console.log("🔧 Starting server initialization...");
@@ -118,9 +117,9 @@ process.on("unhandledRejection", (reason, _promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
     };
     console.table(envVars);
 
@@ -128,18 +127,18 @@ process.on("unhandledRejection", (reason, _promise) => {
     console.log("✅ Routes registered");
 
     try {
-      const { initializeAlgolia } = await import("./initialize-algolia.js");
+      const { initializeAlgolia } = await import('./initialize-algolia.js');
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️ Algolia init failed:", err.message);
+      console.warn("⚠️  Algolia init failed:", err.message);
     }
 
     try {
       initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️ Brevo init failed:", err.message);
+      console.warn("⚠️  Brevo init failed:", err.message);
     }
 
     // Global error handler
@@ -153,9 +152,21 @@ process.on("unhandledRejection", (reason, _promise) => {
     const port = 5000;
     console.log(`🌐 Starting on port ${port}...`);
 
-    app.get("/", (_req, res) => {
-      res.send(`<h1>🚀 ProbeAI Backend</h1><p>API is live.</p>`);
-    });
+    if (process.env.NODE_ENV === "development") {
+      let setupVite = () => {};
+      await setupVite(app, server);
+    } else {
+      try {
+        const serveStatic = () => {};
+        serveStatic(app);
+        console.log("✅ Static file serving configured");
+      } catch (err: any) {
+        console.warn("⚠️ No static files found:", err.message);
+        app.get("/", (_req, res) => {
+          res.send(`<h1>🚀 ProbeAI Backend</h1><p>API is live.</p>`);
+        });
+      }
+    }
 
     server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
       console.log(`✅ Server running at http://0.0.0.0:${port}`);

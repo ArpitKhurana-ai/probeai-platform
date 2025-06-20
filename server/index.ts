@@ -11,38 +11,43 @@ import { initializeBrevo } from "./brevo";
 
 const app = express();
 
-// ✅ CORS — Always allow known Vercel + localhost origins
-const allowedOrigins = [
-  "https://probeai-platform.vercel.app",
-  "http://localhost:5000",
-];
+// ✅ CORS Middleware
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin) ||
-      /^https:\/\/probeai-platform.*\.vercel\.app$/.test(origin)
-    ) {
-      return callback(null, true);
+
+    const vercelPreview = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.app$/;
+    const allowed = [
+      "http://localhost:5000",
+      "https://probeai-platform.vercel.app"
+    ];
+
+    if (vercelPreview.test(origin) || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error("❌ CORS Rejected:", origin);
+      callback(new Error(`CORS blocked for origin: ${origin}`));
     }
-    console.warn("❌ CORS rejected:", origin);
-    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
 app.use(cors(corsOptions));
 
-// Handle OPTIONS (preflight) requests explicitly
-app.options("*", cors(corsOptions));
+// ✅ Diagnostic Middleware
+app.use((req, res, next) => {
+  res.setHeader("X-Debug-CORS-Check", "YES");
+  console.log(`🧪 DEBUG CORS MIDDLEWARE: ${req.method} ${req.path} :: Origin = ${req.headers.origin}`);
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 console.log("📦 Express app configured with CORS and parsers");
 
-app.get("/cors-check", (_req, res) => {
+app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS test route working!" });
 });
 
@@ -59,6 +64,7 @@ app.use((req, res, next) => {
   }
 });
 
+// Logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -74,7 +80,9 @@ app.use((req, res, next) => {
     const ms = Date.now() - start;
     if (path.startsWith("/api")) {
       let log = `${req.method} ${path} ${res.statusCode} in ${ms}ms`;
-      if (captured) log += ` :: ${JSON.stringify(captured).slice(0, 250)}`;
+      if (captured) {
+        log += ` :: ${JSON.stringify(captured)}`.slice(0, 250);
+      }
       console.log(log);
     }
   });
@@ -82,6 +90,7 @@ app.use((req, res, next) => {
   next();
 });
 
+// Crash protection
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION");
   console.error(err.stack);
@@ -101,9 +110,9 @@ process.on("unhandledRejection", (reason, promise) => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Optional",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Optional",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Optional"
+      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️  Missing (Optional)",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️  Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️  Missing"
     };
     console.table(envVars);
 
@@ -125,6 +134,7 @@ process.on("unhandledRejection", (reason, promise) => {
       console.warn("⚠️  Brevo init failed:", err.message);
     }
 
+    // Global error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || 500;
       const message = err.message || "Internal Server Error";

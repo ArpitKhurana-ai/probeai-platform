@@ -15,7 +15,8 @@ const allowedOrigins = [
   "http://localhost:5000",
   "https://probeai-platform.vercel.app"
 ];
-const vercelPreviewRegex = /^https:\/\/probeai-platform(?:-[\w\d]+)?\.vercel\.app$/;
+const vercelPreviewRegex = /^https:\/\/probeai-platform.*\.vercel\.app$/;
+
 
 app.use((req, res, next) => {
   const origin = req.headers.origin || "NO_ORIGIN_HEADER";

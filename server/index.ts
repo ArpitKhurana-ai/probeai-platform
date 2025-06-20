@@ -29,7 +29,7 @@ console.log("✅ All imports loaded successfully");
 
 const app = express();
 
-// Universal CORS regex pattern for all deployment environments
+// Final CORS regex pattern for all deployment environments
 const allowedOriginsRegex = /^(https?:\/\/)?((.*\.vercel\.app)|(.*\.railway\.app)|(.*\.replit\.dev)|(localhost:\d{1,5})|(127\.0\.0\.1:\d{1,5}))/;
 
 app.use(
@@ -38,8 +38,8 @@ app.use(
       if (!origin || allowedOriginsRegex.test(origin)) {
         callback(null, true);
       } else {
-        console.error("❌ Blocked by CORS:", origin);
-        callback(new Error(`Blocked by CORS policy: ${origin}`));
+        console.error("❌ CORS Error: Origin not allowed ->", origin);
+        callback(new Error(`CORS Error: Origin ${origin} not allowed`));
       }
     },
     credentials: true,
@@ -51,17 +51,18 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-console.log("📦 Express app configured with universal CORS");
+console.log("📦 Express app configured with final CORS setup");
 
-// Safe fallback auth middleware
+// Safe authentication middleware with fallbacks
 app.use((req, res, next) => {
   try {
     if (req.user?.claims) {
-      return next();
+      next();
+    } else {
+      next(); // Continue without authentication
     }
-    next(); // silently pass if no claims
   } catch (err) {
-    console.warn("⚠️ Auth fallback triggered:", err.message);
+    console.warn("⚠️ Auth middleware bypassed:", err.message);
     next();
   }
 });

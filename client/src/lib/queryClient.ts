@@ -7,7 +7,9 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-const API_BASE_URL = 'https://probeai-platform-production.up.railway.app';
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? '' // Use relative URLs in development (Vite proxy will handle routing)
+  : 'https://probeai-platform-production.up.railway.app';
 
 const getApiUrl = (path: string): string => {
   const fullUrl = API_BASE_URL + path;

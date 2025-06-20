@@ -13,17 +13,15 @@ const log = (msg: string) => console.log(msg);
 let setupVite: any = () => {};
 let serveStatic: any = () => {};
 
-// Only import vite.ts in development
+// Load Vite modules synchronously for development
 if (process.env.NODE_ENV === 'development') {
-  (async () => {
-    try {
-      const { setupVite: devSetupVite, serveStatic: devServeStatic } = await import("./vite.js");
-      setupVite = devSetupVite;
-      serveStatic = devServeStatic;
-    } catch (error) {
-      console.warn("Vite module not available, using fallbacks");
-    }
-  })();
+  try {
+    const viteModule = require("./vite.js");
+    setupVite = viteModule.setupVite;
+    serveStatic = viteModule.serveStatic;
+  } catch (error) {
+    console.warn("Vite module not available, using fallbacks");
+  }
 }
 import { initializeBrevo } from "./brevo";
 

@@ -1,74 +1,143 @@
-import express, { type Request, type Response, type NextFunction } from "express";
+import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { initializeBrevo } from "./brevo";
 
+console.log("🚀 Starting ProbeAI backend server...");
+console.log("Environment:", process.env.NODE_ENV || "development");
+console.log("Platform:", process.platform);
+console.log("Node version:", process.version);
+
 const app = express();
 
-// ✅ CORS middleware
+// 🔥 SIMPLE UNIVERSAL CORS MIDDLEWARE
 app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
-  console.log(`🔗 CORS - ${req.method} ${req.url} - Origin: ${origin}`);
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
   next();
 });
 
-// ✅ JSON parser
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+// 🔥 ERROR HANDLER — ENSURE CORS ON ERRORS
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error("🚨 ERROR HANDLER:", {
+    method: req.method,
+    url: req.url,
+    error: err.message,
+    origin: req.headers.origin
+  });
 
-// ✅ CORS check route — must come before dynamic route registration
-app.get("/cors-check", (req: Request, res: Response) => {
+  if (!res.headersSent) {
+    const origin = req.headers.origin;
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    res.status(err.status || 500).json({
+      error: err.message || "Internal Server Error",
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+console.log("📦 Express configured");
+
+// ✅ MOVE THESE BEFORE registerRoutes
+app.get("/cors-check", (req, res) => {
+  console.log("📍 /cors-check called");
   res.json({
-    status: "ok",
-    message: "CORS headers applied ✅",
+    message: "✅ CORS test route works",
     origin: req.headers.origin,
     headers: req.headers,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   });
 });
 
-// ✅ Health route
-app.get("/health", (req: Request, res: Response) => {
+app.get("/health", (req, res) => {
+  console.log("📍 /health check called");
   res.json({
     status: "healthy",
-    time: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   });
 });
 
-// ✅ Route logging
+// Logging
 app.use((req, res, next) => {
-  console.log(`➡️ ${req.method} ${req.url}`);
+  const start = Date.now();
+  console.log(`➡️ ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    console.log(`⬅️ ${req.method} ${req.url} ${res.statusCode} in ${ms}ms`);
+  });
+
   next();
 });
 
-// 🔧 Init everything
+// Boot
 (async () => {
   try {
-    console.log("🔧 Registering routes...");
+    console.log("🔧 Starting initialization...");
+
+    const envCheck = {
+      NODE_ENV: process.env.NODE_ENV || "development",
+      DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
+      SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
+      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
+    };
+    console.table(envCheck);
+
+    // Routes
     await registerRoutes(app);
-    await initializeBrevo();
+    console.log("✅ Routes registered");
 
-    app.all("*", (req, res) => {
-      res.status(404).json({
-        error: "Route not found",
-        method: req.method,
-        path: req.url,
-        timestamp: new Date().toISOString(),
+    // Algolia
+    try {
+      console.log("🔍 Initializing Algolia...");
+      const { initializeAlgolia } = await import("./initialize-algolia.js");
+      await initializeAlgolia();
+      console.log("✅ Algolia initialized");
+    } catch (err: any) {
+      console.warn("⚠️ Algolia init failed:", err.message);
+    }
+
+    // Brevo
+    try {
+      console.log("📧 Initializing Brevo...");
+      await initializeBrevo();
+      console.log("✅ Brevo initialized");
+    } catch (err: any) {
+      console.warn("⚠️ Brevo init failed:", err.message);
+    }
+
+    // Start server
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log(`✅ Server running on http://0.0.0.0:${port}`);
+      console.log(`🌐 Deployed at: https://probeai-platform-production.up.railway.app`);
+    });
+
+    // Shutdown
+    const shutdown = () => {
+      console.log("🛑 Shutting down...");
+      server.close(() => {
+        console.log("✅ Server closed");
+        process.exit(0);
       });
-    });
+    };
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
 
-    const port = process.env.PORT || 5000;
-    app.listen(port, () => {
-      console.log(`✅ Server running at http://localhost:${port}`);
-    });
-  } catch (err) {
-    console.error("❌ Startup error:", err);
+  } catch (err: any) {
+    console.error("💥 Startup failed:", err.message);
+    console.error("Stack:", err.stack);
     process.exit(1);
   }
 })();

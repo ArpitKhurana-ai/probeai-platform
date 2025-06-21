@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import cors from "cors";
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __esm = (fn, res) => function __init() {
@@ -1809,6 +1810,24 @@ if (process.env.NODE_ENV === "development") {
 }
 console.log("\u2705 All imports loaded successfully");
 var app = express();
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://probeai.vercel.app",
+  /\.vercel\.app$/, // Allow all Vercel Preview URLs
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // Allow curl or server-to-server
+      if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 console.log("\u{1F4E6} Express app configured");

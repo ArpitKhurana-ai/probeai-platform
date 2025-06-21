@@ -28,7 +28,8 @@
     "@types/express-session": "^1.17.7",
     "@types/memoizee": "^0.4.8",
     "algoliasearch": "^4.20.0",
-    "nanoid": "^5.0.4"
+    "nanoid": "^5.0.4",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "esbuild": "^0.19.12"

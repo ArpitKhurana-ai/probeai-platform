@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 import { connectToDatabase } from "./db";
 import { registerRoutes } from "./routes";
-import { seedDatabase } from "./seed";
+import { seedDatabase } from "./seed.ts"; // ✅ FIXED extension
 
 dotenv.config();
 
@@ -42,16 +42,10 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// ----------------------
-// CORS Test Route
-// ----------------------
 app.get("/cors-check", (req, res) => {
   res.json({ message: "CORS is working!" });
 });
 
-// ----------------------
-// Static File Serving
-// ----------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicPath = path.join(__dirname, "../client/dist");
@@ -64,9 +58,6 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// ----------------------
-// Route Debug Logger
-// ----------------------
 function printRegisteredRoutes(app: express.Application) {
   console.log("🛣️ Registered Routes:");
   const routes: { method: string; path: string }[] = [];
@@ -95,9 +86,6 @@ function printRegisteredRoutes(app: express.Application) {
   });
 }
 
-// ----------------------
-// Init Server
-// ----------------------
 (async () => {
   try {
     await connectToDatabase();

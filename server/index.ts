@@ -1,8 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
-import { connectToDatabase } from "./db";
+import { db } from "./db";
 import { registerRoutes } from "./routes";
-// ❌ Removed: import { seedDatabase } from "./seed";
 
 dotenv.config();
 
@@ -19,8 +18,7 @@ app.get("/cors-check", (req, res) => {
 // ✅ Register all API routes
 async function startServer() {
   try {
-    const db = connectToDatabase(); // ✅ No await needed
-    // ❌ Removed await seedDatabase(db);
+    // ✅ No connectToDatabase — db is already imported
     registerRoutes(app);
 
     app.listen(PORT, () => {

@@ -4,45 +4,52 @@ console.log("Platform:", process.platform);
 console.log("Node version:", process.version);
 
 import express, { type Request, Response, NextFunction } from "express";
-import { serveFallbackFrontend } from "./fallback-frontend";
 import { registerRoutes } from "./routes";
 import { initializeBrevo } from "./brevo";
-import { corsMiddleware, ensureCorsHeaders } from "./cors";
 
 const app = express();
 
-// 🔥 CRITICAL: CORS middleware MUST be first
-app.use(corsMiddleware);
-app.use(ensureCorsHeaders);
+// 🔥 SUPER SIMPLE CORS - FIRST THING
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  console.log(`🔗 CORS MIDDLEWARE - ${req.method} ${req.url} - Origin: ${origin}`);
 
-// 🔥 CRITICAL: Global error handler IMMEDIATELY after CORS
+  // Always set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  console.log(`✅ CORS headers set for: ${origin}`);
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    console.log(`🎯 OPTIONS preflight handled`);
+    return res.status(204).end();
+  }
+
+  next();
+});
+
+// 🔥 ERROR HANDLER - IMMEDIATELY AFTER CORS
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-
-  console.error("🚨 Global error handler:", {
+  console.error("🚨 ERROR HANDLER:", {
     method: req.method,
     url: req.url,
-    status,
-    message,
-    origin: req.headers.origin,
-    stack: err.stack?.split('\n').slice(0, 3).join('\n') // Truncated stack
+    error: err.message,
+    origin: req.headers.origin
   });
 
-  // Ensure CORS headers are present (backup safety)
+  // Ensure CORS headers on errors
   if (!res.headersSent) {
     const origin = req.headers.origin;
-    if (!res.getHeader('Access-Control-Allow-Origin')) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      console.log("🔧 Added CORS headers to error response");
-    }
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-    res.status(status).json({ 
-      error: message,
-      status,
+    res.status(err.status || 500).json({ 
+      error: err.message || "Internal Server Error",
       timestamp: new Date().toISOString()
     });
   }
@@ -50,163 +57,122 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
-console.log("📦 Express app configured with CORS and parsers");
+console.log("📦 Express configured");
 
-// Simple CORS test route
-app.get("/cors-check", (_req, res) => {
-  res.json({ message: "✅ CORS test route working!", timestamp: new Date().toISOString() });
-});
-
-// Health check route
-app.get("/health", (_req, res) => {
+// 🔥 TEST ROUTES - ADD BEFORE ROUTE REGISTRATION
+app.get("/cors-check", (req, res) => {
+  console.log('📍 CORS check route executed');
   res.json({ 
-    status: "healthy", 
+    message: '✅ CORS working!', 
+    origin: req.headers.origin,
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || "unknown"
+    headers: req.headers
   });
 });
 
-// ✅ Safer auth middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Your auth logic here - currently just passing through
-    next();
-  } catch (err: any) {
-    console.warn("⚠️ Auth middleware error:", err.message);
-    // Don't throw, just continue
-    next();
-  }
+app.get("/health", (req, res) => {
+  console.log('📍 Health check executed');
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin
+  });
 });
 
-// ✅ API request/response logging
+// Request logging
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let captured: any;
-
-  const originalJson = res.json;
-  res.json = function (body, ...args) {
-    captured = body;
-    return originalJson.apply(res, [body, ...args]);
-  };
+  console.log(`➡️ ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
 
   res.on("finish", () => {
     const ms = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let log = `${req.method} ${path} ${res.statusCode} in ${ms}ms`;
-      if (captured && res.statusCode >= 400) {
-        // Only log response body for errors to avoid spam
-        log += ` :: ${JSON.stringify(captured)}`.slice(0, 200);
-      }
-      console.log(log);
-    }
+    console.log(`⬅️ ${req.method} ${req.url} ${res.statusCode} in ${ms}ms`);
   });
 
   next();
 });
 
-// ✅ Handle fatal crashes
+// Handle crashes
 process.on("uncaughtException", (err) => {
-  console.error("💥 UNCAUGHT EXCEPTION");
-  console.error(err.stack);
+  console.error("💥 UNCAUGHT EXCEPTION:", err);
   process.exit(1);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("💥 UNHANDLED PROMISE REJECTION at:", promise);
-  console.error("Reason:", reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("💥 UNHANDLED REJECTION:", reason);
   process.exit(1);
 });
 
-// ✅ Boot sequence with better error handling
+// Boot sequence
 (async () => {
   try {
-    console.log("🔧 Starting server initialization...");
+    console.log("🔧 Starting initialization...");
 
-    const envVars = {
-      NODE_ENV: process.env.NODE_ENV,
+    // Environment check
+    const envCheck = {
+      NODE_ENV: process.env.NODE_ENV || 'development',
       DATABASE_URL: process.env.DATABASE_URL ? "✅ Set" : "❌ Missing",
       SESSION_SECRET: process.env.SESSION_SECRET ? "✅ Set" : "❌ Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "✅ Set" : "⚠️ Missing",
       ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "✅ Set" : "⚠️ Missing",
       BREVO_API_KEY: process.env.BREVO_API_KEY ? "✅ Set" : "⚠️ Missing"
     };
-    console.table(envVars);
+    console.table(envCheck);
 
-    // ✅ Register routes with error handling
+    // Register routes
     try {
-      const server = await registerRoutes(app);
+      console.log("🔗 Registering routes...");
+      await registerRoutes(app);
       console.log("✅ Routes registered successfully");
     } catch (err: any) {
       console.error("❌ Route registration failed:", err.message);
-      throw err;
+      console.error("Stack:", err.stack);
+      // Continue anyway for debugging
     }
 
-    // ✅ Initialize services with better error handling
+    // Initialize services
     try {
+      console.log("🔍 Initializing Algolia...");
       const { initializeAlgolia } = await import('./initialize-algolia.js');
       await initializeAlgolia();
       console.log("✅ Algolia initialized");
     } catch (err: any) {
-      console.warn("⚠️ Algolia init failed (non-critical):", err.message);
+      console.warn("⚠️ Algolia init failed:", err.message);
     }
 
     try {
+      console.log("📧 Initializing Brevo...");
       await initializeBrevo();
       console.log("✅ Brevo initialized");
     } catch (err: any) {
-      console.warn("⚠️ Brevo init failed (non-critical):", err.message);
+      console.warn("⚠️ Brevo init failed:", err.message);
     }
 
-    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
-    console.log(`🌐 Starting server on port ${port}...`);
-
-    // ✅ Static file handling
-    if (process.env.NODE_ENV !== "development") {
-      try {
-        // Your static file serving logic here
-        console.log("✅ Static file serving configured");
-      } catch (err: any) {
-        console.warn("⚠️ Static file setup failed:", err.message);
-        app.get("/", (_req, res) => {
-          res.send(`
-            <h1>🚀 ProbeAI Backend</h1>
-            <p>API is live and running!</p>
-            <p>Time: ${new Date().toISOString()}</p>
-            <p>Environment: ${process.env.NODE_ENV}</p>
-            <a href="/cors-check">Test CORS</a> | 
-            <a href="/health">Health Check</a>
-          `);
-        });
-      }
-    }
-
-    // ✅ Catch-all route for unhandled requests
+    // Catch-all for debugging
     app.all("*", (req, res) => {
       console.log(`🔍 Unhandled route: ${req.method} ${req.url}`);
       res.status(404).json({ 
         error: "Route not found", 
         method: req.method, 
         path: req.url,
+        availableRoutes: ['/cors-check', '/health', '/api/*'],
         timestamp: new Date().toISOString()
       });
     });
 
-    // ✅ IMPORTANT: Listen on 0.0.0.0 for Railway
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+    console.log(`🌐 Starting server on port ${port}...`);
+
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`✅ Server running at http://0.0.0.0:${port}`);
       console.log(`🌍 Railway URL: https://probeai-platform-production.up.railway.app`);
+      console.log(`🧪 Test CORS: curl -H "Origin: https://test.com" https://probeai-platform-production.up.railway.app/cors-check`);
     });
 
     // Graceful shutdown
     const shutdown = () => {
-      console.log('🛑 Received shutdown signal');
-      server.close((err) => {
-        if (err) {
-          console.error('❌ Error during server shutdown:', err);
-          process.exit(1);
-        }
-        console.log('✅ Server closed successfully');
+      console.log('🛑 Shutting down...');
+      server.close(() => {
+        console.log('✅ Server closed');
         process.exit(0);
       });
     };

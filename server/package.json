@@ -29,7 +29,8 @@
     "@types/memoizee": "^0.4.8",
     "algoliasearch": "^4.20.0",
     "nanoid": "^5.0.4",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
   },
   "devDependencies": {
     "esbuild": "^0.19.12"

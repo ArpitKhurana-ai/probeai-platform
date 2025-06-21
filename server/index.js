@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __esm = (fn, res) => function __init() {

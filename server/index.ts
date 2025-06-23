@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { db } from "./db";
 import { registerRoutes } from "./routes";
-import { initializeAlgolia } from "./algoliaSync"; // ✅ ADD THIS
+import { initializeAlgolia } from "./algoliaSync";
+import { createServer } from "http"; // ✅ ADD THIS
 
 dotenv.config();
 
@@ -37,12 +38,14 @@ app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS check passed" });
 });
 
-// ✅ Register routes + sync Algolia
+// ✅ Register routes + start HTTP server
 async function startServer() {
   try {
-    await initializeAlgolia(); // ✅ SYNC ALGOLIA ON STARTUP
+    await initializeAlgolia();
     await registerRoutes(app);
-    app.listen(PORT, () => {
+
+    const httpServer = createServer(app); // ✅ CREATE HTTP SERVER
+    httpServer.listen(PORT, () => {
       console.log("✅ ProbeAI backend server running successfully!");
       console.log(`🚀 Listening on http://0.0.0.0:${PORT}`);
     });

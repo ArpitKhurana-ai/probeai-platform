@@ -3,11 +3,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { db } from "./db";
 import { registerRoutes } from "./routes";
+import { initializeAlgolia } from "./algoliaSync"; // ✅ ADD THIS
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8787;
 
 // ✅ Add CORS middleware
 const allowedOrigins = [
@@ -19,7 +20,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Allow curl or server-to-server
+      if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
         return callback(null, true);
       }
@@ -36,10 +37,11 @@ app.get("/cors-check", (req, res) => {
   res.json({ message: "✅ CORS check passed" });
 });
 
-// ✅ Register routes
+// ✅ Register routes + sync Algolia
 async function startServer() {
   try {
-    registerRoutes(app);
+    await initializeAlgolia(); // ✅ SYNC ALGOLIA ON STARTUP
+    await registerRoutes(app);
     app.listen(PORT, () => {
       console.log("✅ ProbeAI backend server running successfully!");
       console.log(`🚀 Listening on http://0.0.0.0:${PORT}`);

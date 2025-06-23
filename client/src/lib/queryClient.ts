@@ -8,15 +8,11 @@ async function throwIfResNotOk(res: Response) {
 }
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
-  ? '' // Use relative URLs in development (Vite proxy will handle routing)
+  ? 'http://localhost:8787' // ✅ Fixed: correctly targets backend in dev
   : 'https://probeai-platform-production.up.railway.app';
 
 const getApiUrl = (path: string): string => {
   const fullUrl = API_BASE_URL + path;
-  
-  // Enhanced logging for production debugging
-  // Debug logging removed for production builds
-  
   return fullUrl;
 };
 
@@ -50,6 +46,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -77,7 +74,6 @@ export const getQueryFn: <T>(options: {
         timestamp: new Date().toISOString()
       });
       
-      // Return empty structure to prevent UI breaks
       if (fullUrl.includes('/api/tools')) {
         console.warn('Returning empty tools array due to API failure');
         return { items: [], total: 0 };

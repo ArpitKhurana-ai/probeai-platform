@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SearchBarProps {
@@ -13,6 +13,8 @@ interface SearchBarProps {
 }
 
 interface Suggestion {
+  objectID: string;
+  name: string;
   query: string;
   category: string;
   highlighted: string;
@@ -27,30 +29,28 @@ export function SearchBar({
   const [query, setQuery] = useState(initialValue);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [, setLocation] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Update query when initialValue changes
   useEffect(() => {
     setQuery(initialValue);
   }, [initialValue]);
 
-  // Fetch suggestions when user types
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (query.trim().length >= 2) {
+      if (query.trim().length >= 2 && isFocused) {
         fetchSuggestions(query.trim());
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
       }
     }, 300);
-
     return () => clearTimeout(timeoutId);
-  }, [query]);
+  }, [query, isFocused]);
 
   const fetchSuggestions = async (searchQuery: string) => {
     setIsLoadingSuggestions(true);
@@ -63,7 +63,7 @@ export function SearchBar({
         setSelectedSuggestionIndex(-1);
       }
     } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
+      console.error("Failed to fetch suggestions:", error);
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -71,31 +71,24 @@ export function SearchBar({
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
     const searchQuery = query.trim();
     if (!searchQuery) return;
-    
     setShowSuggestions(false);
-    
     if (onSearch) {
       onSearch(searchQuery);
     } else {
-      // Force page navigation using window.location to ensure proper routing
-      const searchUrl = `/search?q=${encodeURIComponent(searchQuery)}`;
-      window.location.href = searchUrl;
+      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
     }
   };
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
-    setQuery(suggestion.query);
+    const searchTerm = suggestion.query || suggestion.name;
+    setQuery(searchTerm);
     setShowSuggestions(false);
-    
     if (onSearch) {
-      onSearch(suggestion.query);
+      onSearch(searchTerm);
     } else {
-      // Force page navigation using window.location to ensure proper routing
-      const searchUrl = `/search?q=${encodeURIComponent(suggestion.query)}`;
-      window.location.href = searchUrl;
+      window.location.href = `/search?q=${encodeURIComponent(searchTerm)}`;
     }
   };
 
@@ -103,23 +96,23 @@ export function SearchBar({
     if (!showSuggestions || suggestions.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex((prev) =>
           prev < suggestions.length - 1 ? prev + 1 : prev
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
-      case 'Enter':
+      case "Enter":
         if (selectedSuggestionIndex >= 0) {
           e.preventDefault();
           handleSuggestionClick(suggestions[selectedSuggestionIndex]);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setShowSuggestions(false);
         setSelectedSuggestionIndex(-1);
         break;
@@ -127,7 +120,6 @@ export function SearchBar({
   };
 
   const handleInputBlur = () => {
-    // Delay hiding suggestions to allow clicks
     setTimeout(() => {
       if (!suggestionsRef.current?.contains(document.activeElement)) {
         setShowSuggestions(false);
@@ -137,9 +129,17 @@ export function SearchBar({
   };
 
   const handleInputFocus = () => {
+    setIsFocused(true);
     if (suggestions.length > 0 && query.trim().length >= 2) {
       setShowSuggestions(true);
     }
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
   };
 
   return (
@@ -153,11 +153,20 @@ export function SearchBar({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={handleInputBlur}
+          onBlur={() => {
+            setIsFocused(false);
+            handleInputBlur();
+          }}
           onFocus={handleInputFocus}
           className="pl-12 pr-24 py-6 text-lg rounded-xl border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
           autoComplete="off"
         />
+        {query.length > 0 && (
+          <X
+            className="absolute right-20 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground cursor-pointer"
+            onClick={handleClear}
+          />
+        )}
         <Button
           type="submit"
           className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6"
@@ -170,15 +179,14 @@ export function SearchBar({
         </Button>
       </form>
 
-      {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div 
+        <div
           ref={suggestionsRef}
           className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto"
         >
           {suggestions.map((suggestion, index) => (
             <div
-              key={index}
+              key={suggestion.objectID || index}
               className={cn(
                 "px-4 py-3 cursor-pointer border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors",
                 selectedSuggestionIndex === index && "bg-muted"
@@ -189,9 +197,11 @@ export function SearchBar({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Search className="h-4 w-4 text-muted-foreground" />
-                  <span 
+                  <span
                     className="text-foreground font-medium"
-                    dangerouslySetInnerHTML={{ __html: suggestion.highlighted }}
+                    dangerouslySetInnerHTML={{
+                      __html: suggestion.highlighted || suggestion.name
+                    }}
                   />
                 </div>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">

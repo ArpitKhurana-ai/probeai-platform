@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SearchBar } from "@/components/SearchBar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -14,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Moon, Sun, Heart, Plus, LogOut, User, Menu, X, Twitter, Github, Linkedin, Youtube } from "lucide-react";
 import { useState } from "react";
+import { signInWithGoogle } from "@/lib/firebaseAuth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <header className="relative bg-background border-b border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -46,16 +46,8 @@ export function Layout({ children }: LayoutProps) {
               <span className="text-xl font-bold text-foreground">Probe AI</span>
             </Link>
 
-            {/* Center: Search Bar and Navigation */}
-            <div className="hidden md:flex items-center space-x-8 flex-1 max-w-lg mx-8">
-              <SearchBar 
-                placeholder="Search AI tools..."
-                className="flex-1"
-              />
-            </div>
-
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-8">
+            <nav className="hidden md:flex space-x-8 ml-12">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -147,7 +139,7 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={() => window.location.href = "/api/login"}>
+                <Button onClick={signInWithGoogle}>
                   Sign In
                 </Button>
               )}
@@ -173,10 +165,6 @@ export function Layout({ children }: LayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border">
             <div className="px-4 pt-4 pb-3">
-              <SearchBar 
-                placeholder="Search AI tools..."
-                className="mb-4"
-              />
               <div className="space-y-1">
                 {navigation.map((item) => (
                   <Link
@@ -219,32 +207,16 @@ export function Layout({ children }: LayoutProps) {
                 Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
               </p>
               <div className="flex space-x-4">
-                <a 
-                  href="https://twitter.com/probeai" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Follow us on Twitter"
-                >
+                <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on Twitter">
                   <Twitter className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://github.com/probeai" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Follow us on GitHub"
-                >
+                <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on GitHub">
                   <Github className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://linkedin.com/company/probeai" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Follow us on LinkedIn"
-                >
+                <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on LinkedIn">
                   <Linkedin className="h-5 w-5" />
                 </a>
-                <a 
-                  href="https://youtube.com/@probeai" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Subscribe to our YouTube channel"
-                >
+                <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Subscribe to our YouTube channel">
                   <Youtube className="h-5 w-5" />
                 </a>
               </div>

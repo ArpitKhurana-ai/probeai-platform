@@ -5,6 +5,9 @@
  * Automatically provisions tables and seeds data during deployment
  */
 
+import dotenv from "dotenv";
+dotenv.config();
+
 import { Pool } from 'pg';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';

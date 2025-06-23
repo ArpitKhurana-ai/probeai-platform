@@ -1,6 +1,3 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import cors from "cors";
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __esm = (fn, res) => function __init() {
@@ -11,7 +8,7 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// ../shared/schema.ts
+// shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
   blogComments: () => blogComments,
@@ -54,7 +51,7 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 var sessions, users, tools, userLikes, news, blogs, videos, categories, subscriptions, payments, blogComments, usersRelations, toolsRelations, userLikesRelations, paymentsRelations, insertToolSchema, insertNewsSchema, insertBlogSchema, insertVideoSchema, insertSubscriptionSchema, insertPaymentSchema, insertUserLikeSchema, insertCategorySchema;
 var init_schema = __esm({
-  "../shared/schema.ts"() {
+  "shared/schema.ts"() {
     "use strict";
     sessions = pgTable(
       "sessions",
@@ -302,6 +299,7 @@ var init_schema = __esm({
 });
 
 // db.ts
+import dotenv from "dotenv";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 var pool, db;
@@ -309,22 +307,15 @@ var init_db = __esm({
   "db.ts"() {
     "use strict";
     init_schema();
-    if (!process.env.DATABASE_URL) {
-      throw new Error(
-        "DATABASE_URL must be set. Did you forget to provision a database?"
-      );
-    }
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    dotenv.config();
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL
+    });
     db = drizzle(pool, { schema: schema_exports });
   }
 });
 
 // storage.ts
-var storage_exports = {};
-__export(storage_exports, {
-  DatabaseStorage: () => DatabaseStorage,
-  storage: () => storage
-});
 import { eq, desc, asc, and, or, sql, count } from "drizzle-orm";
 var DatabaseStorage, storage;
 var init_storage = __esm({
@@ -424,10 +415,14 @@ var init_storage = __esm({
         const sortedTools = matchingTools.sort((a, b) => {
           const aNameMatch = a.name.toLowerCase().includes(searchQuery);
           const bNameMatch = b.name.toLowerCase().includes(searchQuery);
-          if (aNameMatch && !bNameMatch) return -1;
-          if (!aNameMatch && bNameMatch) return 1;
-          if (a.isFeatured && !b.isFeatured) return -1;
-          if (!a.isFeatured && b.isFeatured) return 1;
+          if (aNameMatch && !bNameMatch)
+            return -1;
+          if (!aNameMatch && bNameMatch)
+            return 1;
+          if (a.isFeatured && !b.isFeatured)
+            return -1;
+          if (!a.isFeatured && b.isFeatured)
+            return 1;
           return 0;
         });
         const total = sortedTools.length;
@@ -444,7 +439,8 @@ var init_storage = __esm({
       }
       async getSimilarTools(toolId) {
         const tool = await this.getToolById(toolId);
-        if (!tool) return [];
+        if (!tool)
+          return [];
         const similarTools = await db.select().from(tools).where(
           and(
             eq(tools.isApproved, true),
@@ -734,206 +730,10 @@ var init_health = __esm({
   }
 });
 
-// initialize-algolia.ts
-var initialize_algolia_exports = {};
-__export(initialize_algolia_exports, {
-  getQuerySuggestions: () => getQuerySuggestions,
-  initializeAlgolia: () => initializeAlgolia,
-  searchTools: () => searchTools
-});
-async function initializeAlgolia() {
-  if (!process.env.ALGOLIA_APP_ID || !process.env.ALGOLIA_API_KEY) {
-    console.log("Using database search - Algolia credentials not configured");
-    return true;
-  }
-  try {
-    const settingsResponse = await fetch(
-      `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/settings`,
-      {
-        method: "PUT",
-        headers: {
-          "X-Algolia-API-Key": process.env.ALGOLIA_API_KEY,
-          "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          searchableAttributes: ["name", "description", "shortDescription", "category", "tags"],
-          attributesForFaceting: ["category"],
-          customRanking: ["desc(featured)", "desc(hot)"],
-          // Enable query suggestions
-          attributesToSnippet: ["description:20"],
-          attributesToHighlight: ["name", "category"],
-          typoTolerance: true,
-          minWordSizefor1Typo: 4,
-          minWordSizefor2Typos: 8
-        })
-      }
-    );
-    if (!settingsResponse.ok) {
-      throw new Error(`Settings API failed: ${settingsResponse.statusText}`);
-    }
-    const allTools = await storage.getTools({ limit: 1e3, offset: 0 });
-    if (allTools.items.length > 0) {
-      const algoliaObjects = allTools.items.map((tool) => ({
-        objectID: tool.id.toString(),
-        name: tool.name,
-        description: tool.description,
-        shortDescription: tool.shortDescription,
-        category: tool.category,
-        tags: tool.tags || [],
-        website: tool.website,
-        logoUrl: tool.logoUrl,
-        featured: tool.isFeatured || false,
-        hot: tool.isHot || false
-      }));
-      const indexResponse = await fetch(
-        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/batch`,
-        {
-          method: "POST",
-          headers: {
-            "X-Algolia-API-Key": process.env.ALGOLIA_API_KEY,
-            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            requests: algoliaObjects.map((obj) => ({
-              action: "addObject",
-              body: obj
-            }))
-          })
-        }
-      );
-      if (!indexResponse.ok) {
-        throw new Error(`Index API failed: ${indexResponse.statusText}`);
-      }
-      console.log(`Algolia search initialized successfully. Indexed ${allTools.items.length} tools.`);
-      useAlgolia = true;
-    }
-    return true;
-  } catch (error) {
-    console.error("Algolia initialization failed:", error);
-    console.log("Falling back to database search");
-    return false;
-  }
-}
-async function searchTools(query, options = {}) {
-  const { page = 0, hitsPerPage = 20 } = options;
-  if (useAlgolia && process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_SEARCH_KEY) {
-    try {
-      const searchResponse = await fetch(
-        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/query`,
-        {
-          method: "POST",
-          headers: {
-            "X-Algolia-API-Key": process.env.ALGOLIA_SEARCH_KEY,
-            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            query: query.trim(),
-            page,
-            hitsPerPage,
-            filters: options.filters,
-            facetFilters: options.facetFilters
-          })
-        }
-      );
-      if (searchResponse.ok) {
-        const searchResults = await searchResponse.json();
-        return {
-          items: searchResults.hits.map((hit) => ({
-            id: parseInt(hit.objectID),
-            name: hit.name,
-            description: hit.description,
-            shortDescription: hit.shortDescription,
-            category: hit.category,
-            tags: hit.tags,
-            website: hit.website,
-            logoUrl: hit.logoUrl,
-            isFeatured: hit.featured,
-            isHot: hit.hot
-          })),
-          total: searchResults.nbHits,
-          totalPages: searchResults.nbPages,
-          currentPage: page,
-          query: query.trim()
-        };
-      }
-    } catch (error) {
-      console.error("Algolia search error, falling back to database:", error);
-    }
-  }
-  const offset = page * hitsPerPage;
-  const result = await storage.searchTools({
-    query: query.trim(),
-    limit: hitsPerPage,
-    offset
-  });
-  return {
-    items: result.items,
-    total: result.total,
-    totalPages: Math.ceil(result.total / hitsPerPage),
-    currentPage: page,
-    query: query.trim()
-  };
-}
-async function getQuerySuggestions(query, limit = 5) {
-  if (!query.trim() || query.length < 2) {
-    return [];
-  }
-  if (useAlgolia && process.env.ALGOLIA_APP_ID && process.env.ALGOLIA_SEARCH_KEY) {
-    try {
-      const searchResponse = await fetch(
-        `https://${process.env.ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/tools/query`,
-        {
-          method: "POST",
-          headers: {
-            "X-Algolia-API-Key": process.env.ALGOLIA_SEARCH_KEY,
-            "X-Algolia-Application-Id": process.env.ALGOLIA_APP_ID,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            query: query.trim(),
-            hitsPerPage: limit,
-            attributesToRetrieve: ["name", "category"],
-            attributesToHighlight: ["name"]
-          })
-        }
-      );
-      if (searchResponse.ok) {
-        const searchResults = await searchResponse.json();
-        return searchResults.hits.map((hit) => ({
-          query: hit.name,
-          category: hit.category,
-          highlighted: hit._highlightResult?.name?.value || hit.name
-        }));
-      }
-    } catch (error) {
-      console.error("Algolia suggestions error:", error);
-    }
-  }
-  const result = await storage.searchTools({
-    query: query.trim(),
-    limit,
-    offset: 0
-  });
-  return result.items.map((tool) => ({
-    query: tool.name,
-    category: tool.category,
-    highlighted: tool.name
-  }));
-}
-var useAlgolia;
-var init_initialize_algolia = __esm({
-  "initialize-algolia.ts"() {
-    "use strict";
-    init_storage();
-    useAlgolia = false;
-  }
-});
-
 // index.ts
 import express from "express";
+import dotenv3 from "dotenv";
+import cors from "cors";
 
 // routes.ts
 init_storage();
@@ -1053,187 +853,77 @@ async function setupAuth(app2) {
     });
   });
 }
-var isAuthenticated = async (req, res, next) => {
-  if (!REPLIT_DOMAINS || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
-    return next();
-  }
-  const user = req.user;
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const now = Math.floor(Date.now() / 1e3);
-  if (now <= user.expires_at) {
-    return next();
-  }
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-};
-var isAdmin = async (req, res, next) => {
-  if (process.env.NODE_ENV === "development" || !REPLIT_DOMAINS || process.env.NODE_ENV === "production" && !process.env.REPL_ID) {
-    return next();
-  }
-  const user = req.user;
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const now = Math.floor(Date.now() / 1e3);
-  if (now > user.expires_at) {
-    const refreshToken = user.refresh_token;
-    if (!refreshToken) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-    try {
-      const config = await getOidcConfig();
-      const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-      updateUserSession(user, tokenResponse);
-    } catch (error) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-  }
-  try {
-    const { storage: storage2 } = await Promise.resolve().then(() => (init_storage(), storage_exports));
-    const userId = user.claims.sub;
-    const dbUser = await storage2.getUser(userId);
-    if (!dbUser || !dbUser.isAdmin) {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-    return next();
-  } catch (error) {
-    console.error("Error checking admin status:", error);
-    res.status(500).json({ message: "Internal server error" });
-    return;
-  }
-};
 
-// brevo.ts
-function initializeBrevo() {
-  if (!process.env.BREVO_API_KEY) {
-    console.warn("BREVO_API_KEY not found. Newsletter functionality will be disabled.");
-    return;
-  }
-  console.log("Brevo API key configured");
-}
-async function subscribeToNewsletter(email, name) {
-  if (!process.env.BREVO_API_KEY) {
-    throw new Error("Brevo API not configured. Please check BREVO_API_KEY.");
-  }
-  try {
-    const contactData = {
-      email,
-      attributes: name ? { FIRSTNAME: name } : {},
-      ...process.env.BREVO_LIST_ID && { listIds: [parseInt(process.env.BREVO_LIST_ID)] }
-    };
-    const response = await fetch("https://api.brevo.com/v3/contacts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY
-      },
-      body: JSON.stringify(contactData)
-    });
-    if (response.status === 400) {
-      const updateResponse = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": process.env.BREVO_API_KEY
-        },
-        body: JSON.stringify({
-          attributes: name ? { FIRSTNAME: name } : {},
-          ...process.env.BREVO_LIST_ID && { listIds: [parseInt(process.env.BREVO_LIST_ID)] }
-        })
-      });
-      if (!updateResponse.ok) {
-        throw new Error(`Failed to update contact: ${updateResponse.statusText}`);
-      }
-      console.log("Existing contact updated successfully");
-      return { updated: true };
-    }
-    if (!response.ok) {
-      throw new Error(`Failed to create contact: ${response.statusText}`);
-    }
-    const result = await response.json();
-    console.log("Contact created successfully:", result);
-    return result;
-  } catch (error) {
-    console.error("Error with newsletter subscription:", error);
-    throw error;
-  }
-}
-async function sendWelcomeEmail(email, name) {
-  if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
-    console.warn("Brevo not configured for sending emails");
-    return;
+// routes/search.ts
+import { Router } from "express";
+import algoliasearch from "algoliasearch";
+import dotenv2 from "dotenv";
+dotenv2.config();
+var ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
+var ALGOLIA_API_KEY = process.env.ALGOLIA_API_KEY;
+var ALGOLIA_INDEX_NAME = "tools";
+var client2 = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY);
+var index2 = client2.initIndex(ALGOLIA_INDEX_NAME);
+var router = Router();
+router.get("/", async (req, res) => {
+  const query = req.query.q || "";
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  if (!query || query.trim().length === 0) {
+    return res.json({ items: [], total: 0, query: "" });
   }
   try {
-    const emailData = {
-      sender: {
-        email: process.env.BREVO_SENDER_EMAIL,
-        name: process.env.BREVO_SENDER_NAME || "Probe AI"
-      },
-      to: [{ email, name: name || email }],
-      subject: "Welcome to Probe AI Newsletter!",
-      htmlContent: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Welcome to Probe AI!</h2>
-          <p>Hi ${name || "there"},</p>
-          <p>Thank you for subscribing to our newsletter! You'll now receive:</p>
-          <ul>
-            <li>Latest AI tool discoveries</li>
-            <li>Exclusive industry insights</li>
-            <li>Expert reviews and comparisons</li>
-            <li>Early access to new features</li>
-          </ul>
-          <p>Stay tuned for amazing AI content!</p>
-          <p>Best regards,<br>The Probe AI Team</p>
-          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #666;">
-            You received this email because you subscribed to our newsletter at Probe AI.
-          </p>
-        </div>
-      `
-    };
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY
-      },
-      body: JSON.stringify(emailData)
+    const algoliaRes = await index2.search(query, {
+      page: page - 1,
+      hitsPerPage: limit
     });
-    if (!response.ok) {
-      throw new Error(`Failed to send email: ${response.statusText}`);
-    }
-    const result = await response.json();
-    console.log("Welcome email sent:", result);
-    return result;
+    console.log("\u{1F50D} Search Query:", query);
+    console.log("\u{1F9E0} Results:", algoliaRes.hits.map((hit) => hit.name));
+    res.json({
+      items: algoliaRes.hits,
+      total: algoliaRes.nbHits,
+      query
+    });
   } catch (error) {
-    console.error("Error sending welcome email:", error);
+    console.error("Algolia search failed:", error.message);
+    res.status(500).json({ error: "Search failed", details: error.message });
   }
-}
+});
+router.get("/suggestions", async (req, res) => {
+  const query = req.query.q || "";
+  const limit = parseInt(req.query.limit) || 5;
+  if (!query || query.trim().length < 2) {
+    return res.json([]);
+  }
+  try {
+    const algoliaRes = await index2.search(query, {
+      hitsPerPage: limit,
+      attributesToRetrieve: ["name", "category"],
+      attributesToHighlight: ["name"]
+    });
+    const suggestions = algoliaRes.hits.map((hit) => ({
+      name: hit.name,
+      category: hit.category,
+      highlighted: hit._highlightResult?.name?.value || hit.name
+    }));
+    res.json(suggestions);
+  } catch (error) {
+    console.error("Algolia suggestions failed:", error.message);
+    res.status(500).json({ error: "Suggestions failed", details: error.message });
+  }
+});
+var search_default = router;
 
 // routes.ts
-init_schema();
 async function registerRoutes(app2) {
   const { healthCheck: healthCheck2 } = await Promise.resolve().then(() => (init_health(), health_exports));
   app2.get("/health", healthCheck2);
   await setupAuth(app2);
-  app2.get("/api/auth/user", isAuthenticated, async (req, res) => {
+  app2.get("/api/auth/user", async (req, res) => {
     try {
+      if (!req.user || !req.user.claims) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
@@ -1258,142 +948,9 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch tools" });
     }
   });
-  app2.get("/api/search", async (req, res) => {
-    const query = req.query.q;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const category = req.query.category;
-    const pricingType = req.query.pricingType;
-    if (!query || query.trim().length === 0) {
-      return res.json({ items: [], total: 0, query: "" });
-    }
-    try {
-      const { searchTools: searchTools2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
-      const offset = (page - 1) * limit;
-      const results = await searchTools2(query, {
-        page: page - 1,
-        // Algolia uses 0-based pages
-        hitsPerPage: limit,
-        filters: category ? `category:"${category}"` : void 0
-      });
-      res.json(results);
-    } catch (error) {
-      console.error("Search failed:", error);
-      res.status(500).json({ message: "Search failed" });
-    }
-  });
-  app2.get("/api/search/suggestions", async (req, res) => {
-    try {
-      const query = req.query.q;
-      const limit = parseInt(req.query.limit) || 5;
-      if (!query || query.trim().length < 2) {
-        return res.json([]);
-      }
-      const { getQuerySuggestions: getQuerySuggestions2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
-      const suggestions = await getQuerySuggestions2(query, limit);
-      res.json(suggestions);
-    } catch (error) {
-      console.error("Suggestions error:", error);
-      res.status(500).json({ message: "Suggestions failed" });
-    }
-  });
-  app2.get("/api/tools/:id", async (req, res) => {
-    try {
-      const param = req.params.id;
-      let tool;
-      if (/^\d+$/.test(param)) {
-        const toolId = parseInt(param);
-        tool = await storage.getToolById(toolId);
-      } else {
-        tool = await storage.getToolBySlug(param);
-      }
-      if (!tool) {
-        return res.status(404).json({ message: "Tool not found" });
-      }
-      res.json(tool);
-    } catch (error) {
-      console.error("Error fetching tool:", error);
-      res.status(500).json({ message: "Failed to fetch tool" });
-    }
-  });
-  app2.post("/api/tools", isAuthenticated, async (req, res) => {
-    try {
-      const toolData = insertToolSchema.parse({
-        ...req.body,
-        submittedBy: req.user.claims.sub,
-        isApproved: false
-      });
-      const tool = await storage.createTool(toolData);
-      res.json(tool);
-    } catch (error) {
-      console.error("Error creating tool:", error);
-      res.status(500).json({ message: "Failed to create tool" });
-    }
-  });
-  app2.get("/api/tools/:id/similar", async (req, res) => {
-    try {
-      const param = req.params.id;
-      let tool;
-      if (/^\d+$/.test(param)) {
-        const toolId = parseInt(param);
-        tool = await storage.getToolById(toolId);
-      } else {
-        tool = await storage.getToolBySlug(param);
-      }
-      if (!tool) {
-        return res.status(404).json({ message: "Tool not found" });
-      }
-      const similarTools = await storage.getSimilarTools(tool.id);
-      res.json(similarTools);
-    } catch (error) {
-      console.error("Error fetching similar tools:", error);
-      res.status(500).json({ message: "Failed to fetch similar tools" });
-    }
-  });
-  app2.post("/api/tools/:id/like", isAuthenticated, async (req, res) => {
-    try {
-      const param = req.params.id;
-      let tool;
-      if (/^\d+$/.test(param)) {
-        const toolId = parseInt(param);
-        tool = await storage.getToolById(toolId);
-      } else {
-        tool = await storage.getToolBySlug(param);
-      }
-      if (!tool) {
-        return res.status(404).json({ message: "Tool not found" });
-      }
-      const userId = req.user.claims.sub;
-      await storage.toggleToolLike(userId, tool.id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      res.status(500).json({ message: "Failed to toggle like" });
-    }
-  });
-  app2.get("/api/user/likes", isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const likedTools = await storage.getUserLikedTools(userId);
-      res.json(likedTools);
-    } catch (error) {
-      console.error("Error fetching liked tools:", error);
-      res.status(500).json({ message: "Failed to fetch liked tools" });
-    }
-  });
-  app2.get("/api/user/submissions", isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const submissions = await storage.getUserSubmissions(userId);
-      res.json(submissions);
-    } catch (error) {
-      console.error("Error fetching user submissions:", error);
-      res.status(500).json({ message: "Failed to fetch user submissions" });
-    }
-  });
   app2.get("/api/news", async (req, res) => {
     try {
-      const { limit = 20, offset = 0 } = req.query;
+      const { limit = 10, offset = 0 } = req.query;
       const news2 = await storage.getNews({
         limit: parseInt(limit),
         offset: parseInt(offset)
@@ -1404,23 +961,9 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch news" });
     }
   });
-  app2.post("/api/news", isAuthenticated, async (req, res) => {
-    try {
-      const newsData = insertNewsSchema.parse({
-        ...req.body,
-        submittedBy: req.user.claims.sub,
-        isApproved: false
-      });
-      const newsItem = await storage.createNews(newsData);
-      res.json(newsItem);
-    } catch (error) {
-      console.error("Error creating news:", error);
-      res.status(500).json({ message: "Failed to create news" });
-    }
-  });
   app2.get("/api/blogs", async (req, res) => {
     try {
-      const { limit = 20, offset = 0 } = req.query;
+      const { limit = 10, offset = 0 } = req.query;
       const blogs2 = await storage.getBlogs({
         limit: parseInt(limit),
         offset: parseInt(offset)
@@ -1431,35 +974,9 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch blogs" });
     }
   });
-  app2.get("/api/blogs/:slug", async (req, res) => {
-    try {
-      const blog = await storage.getBlogBySlug(req.params.slug);
-      if (!blog) {
-        return res.status(404).json({ message: "Blog not found" });
-      }
-      res.json(blog);
-    } catch (error) {
-      console.error("Error fetching blog:", error);
-      res.status(500).json({ message: "Failed to fetch blog" });
-    }
-  });
-  app2.post("/api/blogs", isAuthenticated, async (req, res) => {
-    try {
-      const blogData = insertBlogSchema.parse({
-        ...req.body,
-        submittedBy: req.user.claims.sub,
-        isApproved: false
-      });
-      const blog = await storage.createBlog(blogData);
-      res.json(blog);
-    } catch (error) {
-      console.error("Error creating blog:", error);
-      res.status(500).json({ message: "Failed to create blog" });
-    }
-  });
   app2.get("/api/videos", async (req, res) => {
     try {
-      const { limit = 20, offset = 0 } = req.query;
+      const { limit = 10, offset = 0 } = req.query;
       const videos2 = await storage.getVideos({
         limit: parseInt(limit),
         offset: parseInt(offset)
@@ -1470,514 +987,101 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch videos" });
     }
   });
-  app2.post("/api/videos", isAuthenticated, async (req, res) => {
-    try {
-      const videoData = insertVideoSchema.parse({
-        ...req.body,
-        submittedBy: req.user.claims.sub,
-        isApproved: false
-      });
-      const video = await storage.createVideo(videoData);
-      res.json(video);
-    } catch (error) {
-      console.error("Error creating video:", error);
-      res.status(500).json({ message: "Failed to create video" });
-    }
-  });
-  app2.post("/api/newsletter/subscribe", async (req, res) => {
-    try {
-      console.log("Newsletter subscription request body:", req.body);
-      const subscriptionData = insertSubscriptionSchema.parse(req.body);
-      console.log("Parsed subscription data:", subscriptionData);
-      const dbResult = await storage.createSubscription(subscriptionData);
-      console.log("Database subscription created:", dbResult);
-      if (process.env.BREVO_API_KEY) {
-        console.log("Adding to Brevo with email:", subscriptionData.email, "name:", subscriptionData.name);
-        try {
-          const brevoResult = await subscribeToNewsletter(subscriptionData.email, subscriptionData.name);
-          console.log("Brevo subscription result:", brevoResult);
-          if (process.env.BREVO_SENDER_EMAIL) {
-            console.log("Sending welcome email to:", subscriptionData.email);
-            const emailResult = await sendWelcomeEmail(subscriptionData.email, subscriptionData.name);
-            console.log("Welcome email result:", emailResult);
-          }
-        } catch (brevoError) {
-          console.error("Brevo integration error:", brevoError);
-        }
-      } else {
-        console.log("BREVO_API_KEY not configured, skipping Brevo integration");
-      }
-      res.json({ success: true, message: "Successfully subscribed to newsletter" });
-    } catch (error) {
-      console.error("Error subscribing to newsletter:", error);
-      res.status(500).json({ message: "Failed to subscribe to newsletter" });
-    }
-  });
-  app2.get("/api/categories", async (req, res) => {
-    try {
-      const categories2 = await storage.getCategories();
-      res.json(categories2);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
-    }
-  });
-  app2.get("/api/admin/pending", isAuthenticated, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      const pendingSubmissions = await storage.getPendingSubmissions();
-      res.json(pendingSubmissions);
-    } catch (error) {
-      console.error("Error fetching pending submissions:", error);
-      res.status(500).json({ message: "Failed to fetch pending submissions" });
-    }
-  });
-  app2.post("/api/admin/approve/:type/:id", isAuthenticated, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      const { type, id } = req.params;
-      const { approved } = req.body;
-      await storage.approveSubmission(type, parseInt(id), approved);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error approving submission:", error);
-      res.status(500).json({ message: "Failed to approve submission" });
-    }
-  });
-  app2.post("/api/admin/tools/:id/featured", isAuthenticated, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      const toolId = parseInt(req.params.id);
-      const { featured, days = 30 } = req.body;
-      await storage.setToolFeatured(toolId, featured, days);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting tool featured status:", error);
-      res.status(500).json({ message: "Failed to set tool featured status" });
-    }
-  });
-  app2.post("/api/admin/tools/:id/hot", isAuthenticated, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      const toolId = parseInt(req.params.id);
-      const { hot } = req.body;
-      await storage.setToolHot(toolId, hot);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting tool hot status:", error);
-      res.status(500).json({ message: "Failed to set tool hot status" });
-    }
-  });
-  app2.post("/api/payments/create-order", isAuthenticated, async (req, res) => {
-    try {
-      const { toolId, amount = 1e4 } = req.body;
-      const userId = req.user.claims.sub;
-      const payment = await storage.createPayment({
-        toolId,
-        userId,
-        amount: (amount / 100).toString(),
-        // Convert paise to rupees
-        status: "pending"
-      });
-      res.json({
-        orderId: `order_${payment.id}`,
-        // This would be the actual Razorpay order ID
-        amount,
-        currency: "INR"
-      });
-    } catch (error) {
-      console.error("Error creating payment order:", error);
-      res.status(500).json({ message: "Failed to create payment order" });
-    }
-  });
-  app2.post("/api/payments/verify", isAuthenticated, async (req, res) => {
-    try {
-      const { paymentId, orderId, signature } = req.body;
-      await storage.completePayment(orderId, paymentId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error verifying payment:", error);
-      res.status(500).json({ message: "Failed to verify payment" });
-    }
-  });
-  app2.get("/api/admin/categories", isAdmin, async (req, res) => {
-    try {
-      const categories2 = await storage.getAllCategories();
-      res.json(categories2);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
-    }
-  });
-  app2.post("/api/admin/categories", isAdmin, async (req, res) => {
-    try {
-      const data = insertCategorySchema.parse(req.body);
-      const category = await storage.createCategory(data);
-      res.json(category);
-    } catch (error) {
-      console.error("Error creating category:", error);
-      if (error.name === "ZodError") {
-        res.status(400).json({ message: "Invalid category data" });
-      } else {
-        res.status(500).json({ message: "Failed to create category" });
-      }
-    }
-  });
-  app2.put("/api/admin/categories/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const data = insertCategorySchema.partial().parse(req.body);
-      const category = await storage.updateCategory(id, data);
-      res.json(category);
-    } catch (error) {
-      console.error("Error updating category:", error);
-      if (error.name === "ZodError") {
-        res.status(400).json({ message: "Invalid category data" });
-      } else {
-        res.status(500).json({ message: "Failed to update category" });
-      }
-    }
-  });
-  app2.delete("/api/admin/categories/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteCategory(id);
-      res.json({ message: "Category deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      res.status(500).json({ message: "Failed to delete category" });
-    }
-  });
-  app2.get("/api/admin/tools", isAdmin, async (req, res) => {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 50;
-      const offset = (page - 1) * limit;
-      const tools2 = await storage.getTools({
-        limit,
-        offset,
-        category: req.query.category,
-        featured: req.query.featured === "true",
-        hot: req.query.hot === "true",
-        sort: req.query.sort
-      });
-      res.json(tools2);
-    } catch (error) {
-      console.error("Error fetching tools:", error);
-      res.status(500).json({ message: "Failed to fetch tools" });
-    }
-  });
-  app2.delete("/api/admin/tools/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteTool(id);
-      res.json({ message: "Tool deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting tool:", error);
-      res.status(500).json({ message: "Failed to delete tool" });
-    }
-  });
-  app2.delete("/api/admin/news/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteNews(id);
-      res.json({ message: "News deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting news:", error);
-      res.status(500).json({ message: "Failed to delete news" });
-    }
-  });
-  app2.delete("/api/admin/blogs/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteBlog(id);
-      res.json({ message: "Blog deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting blog:", error);
-      res.status(500).json({ message: "Failed to delete blog" });
-    }
-  });
-  app2.delete("/api/admin/videos/:id", isAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteVideo(id);
-      res.json({ message: "Video deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting video:", error);
-      res.status(500).json({ message: "Failed to delete video" });
-    }
-  });
-  app2.get("/api/admin/users", isAdmin, async (req, res) => {
-    try {
-      const users2 = await storage.getAllUsers();
-      res.json(users2);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-  app2.put("/api/admin/users/:id/admin", isAdmin, async (req, res) => {
-    try {
-      const userId = req.params.id;
-      await storage.toggleUserAdmin(userId);
-      res.json({ message: "User admin status updated" });
-    } catch (error) {
-      console.error("Error updating user admin status:", error);
-      res.status(500).json({ message: "Failed to update user admin status" });
-    }
-  });
-  app2.get("/api/admin/pending", isAdmin, async (req, res) => {
-    try {
-      const pending = await storage.getPendingSubmissions();
-      res.json(pending);
-    } catch (error) {
-      console.error("Error fetching pending submissions:", error);
-      res.status(500).json({ message: "Failed to fetch pending submissions" });
-    }
-  });
-  app2.put("/api/admin/approve/:type/:id", isAdmin, async (req, res) => {
-    try {
-      const type = req.params.type;
-      const id = parseInt(req.params.id);
-      const { approved } = req.body;
-      await storage.approveSubmission(type, id, approved);
-      res.json({ message: "Submission status updated" });
-    } catch (error) {
-      console.error("Error updating submission status:", error);
-      res.status(500).json({ message: "Failed to update submission status" });
-    }
-  });
-  app2.get("/api/blogs/:id/comments", async (req, res) => {
-    try {
-      const blogId = parseInt(req.params.id);
-      const comments = await storage.getBlogComments(blogId);
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching blog comments:", error);
-      res.status(500).json({ message: "Failed to fetch comments" });
-    }
-  });
-  app2.post("/api/blogs/:id/comments", isAuthenticated, async (req, res) => {
-    try {
-      const blogId = parseInt(req.params.id);
-      const userId = req.user?.claims?.sub;
-      const { content } = req.body;
-      const comment = await storage.createBlogComment({
-        blogId,
-        userId,
-        content
-      });
-      res.json(comment);
-    } catch (error) {
-      console.error("Error creating blog comment:", error);
-      res.status(500).json({ message: "Failed to create comment" });
-    }
-  });
+  app2.use("/api/search", search_default);
   const httpServer = createServer(app2);
   return httpServer;
 }
 
-// index.ts
-console.log("\u{1F680} Starting ProbeAI backend server...");
-console.log("Environment:", process.env.NODE_ENV || "development");
-console.log("Platform:", process.platform);
-console.log("Node version:", process.version);
-var log = (msg) => console.log(msg);
-var setupVite = () => {
-};
-var serveStatic = () => {
-};
-if (process.env.NODE_ENV === "development") {
+// algoliaSync.ts
+init_storage();
+import algoliasearch2 from "algoliasearch";
+var ALGOLIA_APP_ID2 = process.env.ALGOLIA_APP_ID;
+var ALGOLIA_API_KEY2 = process.env.ALGOLIA_API_KEY;
+var ALGOLIA_INDEX_NAME2 = "tools";
+var client3 = algoliasearch2(ALGOLIA_APP_ID2, ALGOLIA_API_KEY2);
+var index3 = client3.initIndex(ALGOLIA_INDEX_NAME2);
+async function initializeAlgolia() {
+  if (!ALGOLIA_APP_ID2 || !ALGOLIA_API_KEY2) {
+    console.log("Algolia credentials not set \u2013 skipping sync.");
+    return;
+  }
   try {
-    const { setupVite: devSetupVite, serveStatic: devServeStatic, log: devLog } = await import("./vite.ts");
-    setupVite = devSetupVite;
-    serveStatic = devServeStatic;
-  } catch (error) {
-    console.warn("Vite module not available, using fallbacks");
+    console.log("\u{1F9F9} Clearing existing Algolia index...");
+    await index3.clearObjects();
+    await index3.setSettings({
+      searchableAttributes: [
+        "name",
+        "description",
+        "shortDescription",
+        "category",
+        "tags"
+      ],
+      attributesForFaceting: ["category"],
+      customRanking: ["desc(featured)", "desc(hot)"],
+      attributesToSnippet: ["description:20"],
+      attributesToHighlight: ["name", "category"],
+      typoTolerance: true,
+      minWordSizefor1Typo: 4,
+      minWordSizefor2Typos: 8
+    });
+    const allTools = await storage.getTools({ limit: 1e3, offset: 0 });
+    const records = allTools.items.map((tool) => ({
+      objectID: tool.name.toLowerCase().replace(/\s+/g, "-"),
+      name: tool.name,
+      description: tool.description,
+      shortDescription: tool.shortDescription,
+      category: tool.category,
+      tags: tool.tags || [],
+      website: tool.website,
+      logoUrl: tool.logoUrl,
+      featured: tool.isFeatured || false,
+      hot: tool.isHot || false
+    }));
+    await index3.saveObjects(records);
+    console.log(`\u2705 Synced ${records.length} tools to Algolia (by name).`);
+  } catch (err) {
+    console.error("Algolia sync failed:", err.message);
   }
 }
-console.log("\u2705 All imports loaded successfully");
+
+// index.ts
+dotenv3.config();
 var app = express();
-const allowedOrigins = [
+var PORT = process.env.PORT || 8787;
+var allowedOrigins = [
   "http://localhost:3000",
   "https://probeai.vercel.app",
-  /\.vercel\.app$/, // Allow all Vercel Preview URLs
+  /\.vercel\.app$/
+  // Allow all Vercel Preview URLs
 ];
-
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Allow curl or server-to-server
+      if (!origin)
+        return callback(null, true);
       if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true,
+    credentials: true
   })
 );
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-console.log("\u{1F4E6} Express app configured");
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse = void 0;
-  const originalResJson = res.json;
-  res.json = function(bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "\u2026";
-      }
-      log(logLine);
-    }
-  });
-  next();
+app.get("/cors-check", (req, res) => {
+  res.json({ message: "\u2705 CORS check passed" });
 });
-process.on("uncaughtException", (error) => {
-  console.error("\u{1F4A5} UNCAUGHT EXCEPTION - Server will exit:");
-  console.error("Error name:", error.name);
-  console.error("Error message:", error.message);
-  console.error("Stack trace:", error.stack);
-  process.exit(1);
-});
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("\u{1F4A5} UNHANDLED PROMISE REJECTION - Server will exit:");
-  console.error("Promise:", promise);
-  console.error("Reason:", reason);
-  process.exit(1);
-});
-(async () => {
+async function startServer() {
   try {
-    console.log("\u{1F527} Starting server initialization...");
-    console.log("\u{1F50D} Checking environment variables...");
-    const envVars = {
-      NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL: process.env.DATABASE_URL ? "\u2705 Set" : "\u274C Missing",
-      SESSION_SECRET: process.env.SESSION_SECRET ? "\u2705 Set" : "\u274C Missing",
-      REPLIT_DOMAINS: process.env.REPLIT_DOMAINS ? "\u2705 Set" : "\u26A0\uFE0F  Missing (Optional)",
-      ALGOLIA_API_KEY: process.env.ALGOLIA_API_KEY ? "\u2705 Set" : "\u26A0\uFE0F  Missing",
-      BREVO_API_KEY: process.env.BREVO_API_KEY ? "\u2705 Set" : "\u26A0\uFE0F  Missing"
-    };
-    console.table(envVars);
-    console.log("\u{1F517} Registering routes and setting up authentication...");
-    const server = await registerRoutes(app);
-    console.log("\u2705 Routes registered successfully");
-    console.log("\u{1F50D} Initializing Algolia search...");
-    try {
-      const { initializeAlgolia: initializeAlgolia2 } = await Promise.resolve().then(() => (init_initialize_algolia(), initialize_algolia_exports));
-      await initializeAlgolia2();
-      console.log("\u2705 Algolia initialized successfully");
-    } catch (error) {
-      console.warn("\u26A0\uFE0F  Algolia initialization failed:", error.message);
-    }
-    console.log("\u{1F4E7} Initializing Brevo email service...");
-    try {
-      initializeBrevo();
-      console.log("\u2705 Brevo initialized successfully");
-    } catch (error) {
-      console.warn("\u26A0\uFE0F  Brevo initialization failed:", error.message);
-    }
-    app.use((err, _req, res, _next) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      console.error("\u{1F6A8} Express error handler caught:");
-      console.error("Status:", status);
-      console.error("Message:", message);
-      console.error("Stack:", err.stack);
-      res.status(status).json({ message });
-    });
-    const port = 5e3;
-    console.log(`\u{1F310} Setting up server on port ${port}...`);
-    if (process.env.NODE_ENV === "development") {
-      console.log("\u{1F527} Development mode: Setting up Vite");
-      await setupVite(app, server);
-    } else {
-      console.log("\u{1F4E6} Production mode: Setting up static file serving");
-      try {
-        serveStatic(app);
-        console.log("\u2705 Static files configured successfully");
-      } catch (error) {
-        console.warn("\u26A0\uFE0F  Static file serving failed, running as backend-only:", error.message);
-        console.log("\u{1F4C4} Frontend should be deployed separately (e.g., on Vercel)");
-        app.get("/", (_req, res) => {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>ProbeAI Backend API</title>
-                <meta charset="utf-8">
-                <style>
-                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-                  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
-                </style>
-              </head>
-              <body>
-                <h1>ProbeAI Backend API Server</h1>
-                <p>\u2705 Backend API is running successfully!</p>
-                <p>\u{1F310} Frontend is deployed separately on Vercel.</p>
-                <h3>Available API Endpoints:</h3>
-                <ul>
-                  <li><code>GET /api/tools</code> - AI tools directory</li>
-                  <li><code>GET /api/news</code> - Latest AI news</li>
-                  <li><code>GET /api/blogs</code> - Blog articles</li>
-                  <li><code>GET /api/videos</code> - Video content</li>
-                  <li><code>GET /api/auth/user</code> - User authentication</li>
-                </ul>
-              </body>
-            </html>
-          `);
-        });
-        app.get("*", (req, res) => {
-          if (!req.path.startsWith("/api")) {
-            res.status(404).json({
-              error: "Frontend not found",
-              message: "Frontend is deployed on Vercel. This is the backend API server."
-            });
-          }
-        });
-      }
-    }
-    console.log(`\u{1F680} Starting server on 0.0.0.0:${port}...`);
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true
-    }, () => {
+    await initializeAlgolia();
+    await registerRoutes(app);
+    app.listen(PORT, () => {
       console.log("\u2705 ProbeAI backend server running successfully!");
-      console.log(`\u{1F4CD} Server listening on http://0.0.0.0:${port}`);
-      log(`serving on port ${port}`);
+      console.log(`\u{1F680} Listening on http://0.0.0.0:${PORT}`);
     });
-  } catch (error) {
-    console.error("\u{1F4A5} CRITICAL ERROR - Failed to start server:");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Stack trace:", error.stack);
-    console.error("Environment debug info:");
-    console.error("- NODE_ENV:", process.env.NODE_ENV);
-    console.error("- Platform:", process.platform);
-    console.error("- Working directory:", process.cwd());
+  } catch (err) {
+    console.error("\u274C Failed to start server:", err);
     process.exit(1);
   }
-})();
+}
+startServer();

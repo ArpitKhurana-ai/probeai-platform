@@ -1045,6 +1045,7 @@ async function initializeAlgolia() {
 }
 
 // index.ts
+import { createServer as createServer2 } from "http";
 dotenv3.config();
 var app = express();
 var PORT = process.env.PORT || 8787;
@@ -1075,7 +1076,8 @@ async function startServer() {
   try {
     await initializeAlgolia();
     await registerRoutes(app);
-    app.listen(PORT, () => {
+    const httpServer = createServer2(app);
+    httpServer.listen(PORT, () => {
       console.log("\u2705 ProbeAI backend server running successfully!");
       console.log(`\u{1F680} Listening on http://0.0.0.0:${PORT}`);
     });

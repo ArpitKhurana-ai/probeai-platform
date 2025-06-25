@@ -4,12 +4,12 @@ import cors from "cors";
 import { db } from "./db";
 import { registerRoutes } from "./routes";
 import { initializeAlgolia } from "./algoliaSync";
-import { createServer } from "http"; // ✅ ADD THIS
+import { createServer } from "http";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8787;
+const PORT = Number(process.env.PORT ?? 8787); // ✅ FIXED FOR RAILWAY
 
 // ✅ Add CORS middleware
 const allowedOrigins = [
@@ -44,7 +44,7 @@ async function startServer() {
     await initializeAlgolia();
     await registerRoutes(app);
 
-    const httpServer = createServer(app); // ✅ CREATE HTTP SERVER
+    const httpServer = createServer(app);
     httpServer.listen(PORT, () => {
       console.log("✅ ProbeAI backend server running successfully!");
       console.log(`🚀 Listening on http://0.0.0.0:${PORT}`);

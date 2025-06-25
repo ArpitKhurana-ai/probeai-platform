@@ -1,10 +1,9 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
-import searchRoutes from "./routes/search"; // ✅ Use new router
+import searchRoutes from "./routes/search";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   const { healthCheck } = await import("./health.js");
   app.get("/health", healthCheck);
 
@@ -86,6 +85,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ✅ Mount Algolia search and suggestions
   app.use("/api/search", searchRoutes);
 
-  const httpServer = createServer(app);
-  return httpServer;
+  console.log("✅ All API routes registered.");
 }

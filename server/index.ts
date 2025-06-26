@@ -15,6 +15,7 @@ if (!process.env.PORT) {
   throw new Error("❌ Missing PORT in environment variables. Railway must inject this.");
 }
 const PORT = Number(process.env.PORT);
+const HOST = "0.0.0.0"; // ✅ Required by Railway (explicit bind)
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -37,16 +38,22 @@ app.use(
 
 app.use(express.json());
 
+// ✅ Root route for liveliness check
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", message: "✅ ProbeAI backend root is alive." });
+});
+
 // ✅ Debug route
 app.get("/cors-check", (_req, res) => {
   res.json({ message: "✅ CORS check passed" });
 });
 
-// ✅ Catch-all route to prove reachability (helps debug 502s)
+// ✅ Catch-all route to debug 502s
 app.get("*", (_req, res) => {
   res.status(200).send("✅ Catch-all route hit. Server is alive.");
 });
 
+// ✅ Start Server
 async function startServer() {
   try {
     console.log("\n===============================");
@@ -62,9 +69,9 @@ async function startServer() {
     console.log("📦 Routes registered");
 
     const httpServer = createServer(app);
-    httpServer.listen(PORT, () => {
+    httpServer.listen(PORT, HOST, () => {
       console.log("✅ ProbeAI backend server running successfully!");
-      console.log(`🔗 Listening on http://0.0.0.0:${PORT}`);
+      console.log(`🔗 Listening on http://${HOST}:${PORT}`);
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err);

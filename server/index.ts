@@ -10,14 +10,11 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Fail fast if PORT not injected
-if (!process.env.PORT) {
-  throw new Error("❌ Missing PORT in environment variables. Railway must inject this.");
-}
-const PORT = Number(process.env.PORT);
-const HOST = "0.0.0.0"; // ✅ Required for Railway
+// ✅ Fail fast if PORT not set (important for production on Railway)
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8787;
+const HOST = "0.0.0.0";
 
-// ✅ Allow specific origins
+// ✅ CORS setup
 const allowedOrigins = [
   "http://localhost:3000",
   "https://probeai.vercel.app",
@@ -28,7 +25,10 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));
@@ -39,17 +39,16 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Root health route
+// ✅ Health route
 app.get("/", (_req, res) => {
   res.json({ status: "ok", message: "✅ ProbeAI backend root is alive." });
 });
 
-// ✅ CORS test
+// ✅ CORS debug route
 app.get("/cors-check", (_req, res) => {
   res.json({ message: "✅ CORS check passed" });
 });
 
-// ✅ Start Server
 async function startServer() {
   try {
     console.log("\n===============================");
@@ -64,7 +63,7 @@ async function startServer() {
     await registerRoutes(app);
     console.log("📦 Routes registered");
 
-    // ✅ Add catch-all route LAST
+    // ✅ Catch-all must be last
     app.get("*", (_req, res) => {
       res.status(404).json({ error: "Route not found" });
     });

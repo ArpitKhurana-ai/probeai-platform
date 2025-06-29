@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient"; // ✅ ADDED
 import type { Tool } from "./shared/schema";
 
 interface SearchResults {
@@ -40,23 +41,8 @@ export default function SearchPage() {
       });
       const url = `/api/search?${params}`;
       console.log('Making search request:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Don't include credentials for public search
-      });
-      
-      console.log('Search response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Search API error:', errorText);
-        throw new Error(`Search failed: ${response.status} ${errorText}`);
-      }
-      
+
+      const response = await apiRequest(url); // ✅ FIXED
       const data = await response.json();
       console.log('Search response data:', data);
       return data;
@@ -84,7 +70,6 @@ export default function SearchPage() {
   const handleSearch = (query: string) => {
     if (query.trim()) {
       const searchUrl = `/search?q=${encodeURIComponent(query.trim())}`;
-      // Force full page reload to ensure proper state update
       window.location.href = searchUrl;
     }
   };

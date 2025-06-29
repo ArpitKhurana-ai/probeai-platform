@@ -54,8 +54,15 @@ export function SearchBar({
 
   const fetchSuggestions = async (searchQuery: string) => {
     setIsLoadingSuggestions(true);
+    const baseURL =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:8787"
+        : "https://probeai-platform-production.up.railway.app";
+
     try {
-      const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(searchQuery)}&limit=5`);
+      const response = await fetch(
+        `${baseURL}/api/search/suggestions?q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data);

@@ -17,7 +17,6 @@ import ToolPage from "@/pages/ToolPage";
 import SearchPage from "@/pages/SearchPage";
 import NewsPage from "@/pages/NewsPage";
 import BlogPage from "@/pages/BlogPage";
-
 import SubmitPage from "@/pages/SubmitPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -38,8 +37,9 @@ function Router() {
           <Route path="/admin" component={AdminDashboard} />
         </>
       )}
-      
+
       {/* Public routes */}
+      <Route path="/tools" component={CategoryPage} /> {/* ✅ AI Tools page */}
       <Route path="/category/:category" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/tool/:id" component={ToolPage} />
@@ -47,9 +47,8 @@ function Router() {
       <Route path="/news" component={NewsPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPage} />
-
       <Route path="/submit" component={SubmitPage} />
-      
+
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

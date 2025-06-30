@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "AI Tools", href: "/", active: location === "/" },
+    { name: "AI Tools", href: "/tools", active: location === "/" },
     { name: "AI News", href: "/news", active: location === "/news" },
     { name: "Blog", href: "/blog", active: location.startsWith("/blog") },
     { name: "Submit", href: "/submit", active: location === "/submit" },

@@ -77,6 +77,7 @@ async function createTables() {
       CREATE TABLE IF NOT EXISTS tools (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) UNIQUE,
         description TEXT,
         short_description VARCHAR(500),
         website VARCHAR(500),
@@ -206,12 +207,13 @@ async function seedData() {
     // Seed tools data directly
     await client.query(`
       INSERT INTO tools (
-        name, description, short_description, website, logo_url, category, tags, 
+        name, slug, description, short_description, website, logo_url, category, tags, 
         key_features, pricing_type, access_type, ai_tech, audience, 
         is_featured, is_hot, submitted_by, is_approved
       ) VALUES
       (
         'ChatGPT',
+        'chatgpt',
         'Advanced conversational AI that can assist with writing, coding, analysis, and creative tasks. It understands context and can engage in detailed conversations while helping with various professional and creative tasks.',
         'Advanced conversational AI for writing, coding, and analysis',
         'https://chat.openai.com',
@@ -230,6 +232,7 @@ async function seedData() {
       ),
       (
         'Midjourney',
+        'midjourney',
         'AI art generator that creates stunning images from text descriptions. Known for its artistic style and high-quality outputs, perfect for creative professionals and artists.',
         'AI art generator creating stunning images from text',
         'https://midjourney.com',
@@ -248,6 +251,7 @@ async function seedData() {
       ),
       (
         'GitHub Copilot',
+        'gitHub-copilot',
         'AI coding assistant that suggests code and entire functions in real-time. Trained on billions of lines of code to help developers write better code faster.',
         'AI coding assistant with real-time suggestions',
         'https://github.com/features/copilot',
@@ -266,6 +270,7 @@ async function seedData() {
       ),
       (
         'Claude',
+        'claude',
         'Anthropic''s helpful, harmless, and honest AI assistant designed for safe and beneficial interactions. Excels at analysis, writing, and complex reasoning tasks.',
         'Safe and helpful AI assistant for analysis and writing',
         'https://claude.ai',
@@ -284,6 +289,7 @@ async function seedData() {
       ),
       (
         'Loom AI',
+        'loom-ai',
         'AI-powered video messaging with automatic transcription and summaries. Perfect for asynchronous communication and creating engaging video content.',
         'AI-powered video messaging with transcription',
         'https://loom.com',
@@ -302,6 +308,7 @@ async function seedData() {
       ),
       (
         'Notion AI',
+        'notion-ai',
         'AI writing assistant integrated into the popular productivity workspace. Helps with content creation, summarization, and knowledge management.',
         'AI writing assistant integrated into Notion workspace',
         'https://notion.so',

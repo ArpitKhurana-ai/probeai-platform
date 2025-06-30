@@ -41,6 +41,7 @@ export const users = pgTable("users", {
 export const tools = pgTable("tools", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   description: text("description").notNull(),
   shortDescription: varchar("short_description", { length: 500 }),
   website: varchar("website", { length: 500 }),

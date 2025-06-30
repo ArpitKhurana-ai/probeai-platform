@@ -75,6 +75,7 @@ var init_schema = __esm({
     tools = pgTable("tools", {
       id: serial("id").primaryKey(),
       name: varchar("name", { length: 255 }).notNull(),
+      slug: varchar("slug", { length: 255 }),
       description: text("description").notNull(),
       shortDescription: varchar("short_description", { length: 500 }),
       website: varchar("website", { length: 500 }),
@@ -379,11 +380,13 @@ var init_storage = __esm({
         return tool;
       }
       async getToolBySlug(slug) {
-        const allTools = await db.select().from(tools).where(eq(tools.isApproved, true));
-        const tool = allTools.find((tool2) => {
-          const toolSlug = tool2.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-          return toolSlug === slug;
-        });
+        const normalizedSlug = slug.toLowerCase();
+        const [tool] = await db.select().from(tools).where(
+          and(
+            eq(tools.isApproved, true),
+            sql`lower(regexp_replace(${tools.name}, '[^a-z0-9]+', '-', 'g')) = ${normalizedSlug}`
+          )
+        ).limit(1);
         return tool;
       }
       async searchTools(options) {
@@ -704,10 +707,10 @@ var health_exports = {};
 __export(health_exports, {
   healthCheck: () => healthCheck
 });
-import { sql as sql2 } from "drizzle-orm";
+import { sql as sql3 } from "drizzle-orm";
 async function healthCheck(req, res) {
   try {
-    await db.execute(sql2`SELECT 1`);
+    await db.execute(sql3`SELECT 1`);
     res.json({
       status: "healthy",
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -737,7 +740,6 @@ import cors from "cors";
 
 // routes.ts
 init_storage();
-import { createServer } from "http";
 
 // replitAuth.ts
 init_storage();
@@ -914,6 +916,30 @@ router.get("/suggestions", async (req, res) => {
 });
 var search_default = router;
 
+// routes/tools.ts
+init_db();
+init_schema();
+import { Router as Router2 } from "express";
+import { sql as sql2 } from "drizzle-orm";
+var router2 = Router2();
+router2.get("/:slug", async (req, res) => {
+  const { slug } = req.params;
+  console.log("\u{1F50D} Requested tool slug:", slug);
+  try {
+    const result = await db.select().from(tools).where(sql2`LOWER(${tools.slug}) = LOWER(${slug})`);
+    if (result.length === 0) {
+      console.warn("\u26A0\uFE0F Tool not found for slug:", slug);
+      return res.status(404).json({ error: "Tool not found" });
+    }
+    console.log("\u2705 Tool found:", result[0].name);
+    res.json(result[0]);
+  } catch (error) {
+    console.error("\u274C FULL ERROR fetching tool by slug:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+var tools_default = router2;
+
 // routes.ts
 async function registerRoutes(app2) {
   const { healthCheck: healthCheck2 } = await Promise.resolve().then(() => (init_health(), health_exports));
@@ -988,8 +1014,8 @@ async function registerRoutes(app2) {
     }
   });
   app2.use("/api/search", search_default);
-  const httpServer = createServer(app2);
-  return httpServer;
+  app2.use("/api/tools", tools_default);
+  console.log("\u2705 All API routes registered.");
 }
 
 // algoliaSync.ts
@@ -1045,14 +1071,15 @@ async function initializeAlgolia() {
 }
 
 // index.ts
+import { createServer } from "http";
 dotenv3.config();
 var app = express();
-var PORT = process.env.PORT || 8787;
+var PORT = process.env.PORT ? Number(process.env.PORT) : 8787;
+var HOST = "0.0.0.0";
 var allowedOrigins = [
   "http://localhost:3000",
   "https://probeai.vercel.app",
   /\.vercel\.app$/
-  // Allow all Vercel Preview URLs
 ];
 app.use(
   cors({
@@ -1068,16 +1095,30 @@ app.use(
   })
 );
 app.use(express.json());
-app.get("/cors-check", (req, res) => {
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", message: "\u2705 ProbeAI backend root is alive." });
+});
+app.get("/cors-check", (_req, res) => {
   res.json({ message: "\u2705 CORS check passed" });
 });
 async function startServer() {
   try {
+    console.log("\n===============================");
+    console.log("\u{1F680} Booting ProbeAI Backend...");
+    console.log(`\u{1F310} PORT: ${PORT}`);
+    console.log(`\u{1F30D} ENV: ${process.env.NODE_ENV}`);
+    console.log("===============================\n");
     await initializeAlgolia();
+    console.log("\u{1F501} Algolia sync initialized");
     await registerRoutes(app);
-    app.listen(PORT, () => {
+    console.log("\u{1F4E6} Routes registered");
+    app.get("*", (_req, res) => {
+      res.status(404).json({ error: "Route not found" });
+    });
+    const httpServer = createServer(app);
+    httpServer.listen(PORT, HOST, () => {
       console.log("\u2705 ProbeAI backend server running successfully!");
-      console.log(`\u{1F680} Listening on http://0.0.0.0:${PORT}`);
+      console.log(`\u{1F517} Listening on http://${HOST}:${PORT}`);
     });
   } catch (err) {
     console.error("\u274C Failed to start server:", err);

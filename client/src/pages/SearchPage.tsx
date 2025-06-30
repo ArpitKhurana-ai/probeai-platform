@@ -4,14 +4,11 @@ import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import algoliasearch from "algoliasearch/lite"; // ✅ Fix here
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import algoliasearch from "algoliasearch/lite"; // ✅ fixed
 
-const client = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67"); // ✅ Fix here
+const client = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
 const index = client.initIndex("tools");
-
-// ✳️ The rest of your file remains unchanged.
-
 
 interface Tool {
   objectID: string;

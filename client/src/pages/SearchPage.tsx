@@ -5,7 +5,8 @@ import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import algoliasearch from "algoliasearch/lite";
+import * as algoliasearchModule from "algoliasearch/lite";
+const algoliasearch = (algoliasearchModule as any).default;
 
 const algoliaClient = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
 const algoliaIndex = algoliaClient.initIndex("tools");

@@ -4,14 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import algoliasearchModule from "algoliasearch/lite";
-const algoliasearch =
-  typeof algoliasearchModule === "function"
-    ? algoliasearchModule
-    : (algoliasearchModule as any).default || algoliasearchModule;
+import { liteClient } from "algoliasearch/lite";
 
-
-
+const client = liteClient("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const index = client.initIndex("tools");
 
 interface SearchBarProps {
   placeholder?: string;
@@ -28,14 +24,11 @@ interface Suggestion {
   highlighted: string;
 }
 
-const algoliaClient = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
-const algoliaIndex = algoliaClient.initIndex("tools");
-
-export function SearchBar({ 
-  placeholder = "Search AI tools, categories, or features...", 
+export function SearchBar({
+  placeholder = "Search AI tools, categories, or features...",
   onSearch,
   className,
-  initialValue = ""
+  initialValue = "",
 }: SearchBarProps) {
   const [query, setQuery] = useState(initialValue);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -66,7 +59,7 @@ export function SearchBar({
   const fetchSuggestions = async (searchQuery: string) => {
     setIsLoadingSuggestions(true);
     try {
-      const result = await algoliaIndex.search(searchQuery, {
+      const result = await index.search(searchQuery, {
         hitsPerPage: 5,
         attributesToHighlight: ["name"],
       });
@@ -218,7 +211,7 @@ export function SearchBar({
                   <span
                     className="text-foreground font-medium"
                     dangerouslySetInnerHTML={{
-                      __html: suggestion.highlighted || suggestion.name
+                      __html: suggestion.highlighted || suggestion.name,
                     }}
                   />
                 </div>

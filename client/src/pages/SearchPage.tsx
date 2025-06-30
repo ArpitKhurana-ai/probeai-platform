@@ -5,10 +5,13 @@ import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { liteClient } from "algoliasearch/lite";
+import algoliasearch from "algoliasearch/lite"; // ✅ Fix here
 
-const client = liteClient("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const client = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67"); // ✅ Fix here
 const index = client.initIndex("tools");
+
+// ✳️ The rest of your file remains unchanged.
+
 
 interface Tool {
   objectID: string;

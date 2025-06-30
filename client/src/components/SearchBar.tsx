@@ -4,225 +4,199 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { liteClient } from "algoliasearch/lite";
+import algoliasearch from "algoliasearch/lite"; // ✅ Fix here
 
-const client = liteClient("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const client = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67"); // ✅ Fix here
 const index = client.initIndex("tools");
 
-interface SearchBarProps {
-  placeholder?: string;
-  onSearch?: (query: string) => void;
-  className?: string;
-  initialValue?: string;
-}
+// ✳️ The rest of your file remains exactly the same.
 
-interface Suggestion {
+
+interface Tool {
   objectID: string;
   name: string;
-  query: string;
+  description: string;
+  slug: string;
   category: string;
-  highlighted: string;
+  logo: string;
 }
 
-export function SearchBar({
-  placeholder = "Search AI tools, categories, or features...",
-  onSearch,
-  className,
-  initialValue = "",
-}: SearchBarProps) {
-  const [query, setQuery] = useState(initialValue);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [, setLocation] = useLocation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+export default function SearchPage() {
+  const [location, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [totalResults, setTotalResults] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toolsPerPage = 10;
 
   useEffect(() => {
-    setQuery(initialValue);
-  }, [initialValue]);
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get("q") || "";
+    const page = parseInt(urlParams.get("page") || "1");
+    setSearchQuery(query);
+    setCurrentPage(page);
+  }, [location]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (query.trim().length >= 2 && isFocused) {
-        fetchSuggestions(query.trim());
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
+    const fetchResults = async () => {
+      if (!searchQuery.trim()) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await index.search(searchQuery, {
+          hitsPerPage: toolsPerPage,
+          page: currentPage - 1,
+        });
+        setTools(result.hits as Tool[]);
+        setTotalResults(result.nbHits);
+      } catch (err: any) {
+        console.error("Algolia search error:", err);
+        setError(err?.message || "Unknown error");
+      } finally {
+        setIsLoading(false);
       }
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [query, isFocused]);
+    };
 
-  const fetchSuggestions = async (searchQuery: string) => {
-    setIsLoadingSuggestions(true);
-    try {
-      const result = await index.search(searchQuery, {
-        hitsPerPage: 5,
-        attributesToHighlight: ["name"],
-      });
-      const hits = result.hits.map((hit: any) => ({
-        objectID: hit.objectID,
-        name: hit.name,
-        query: hit.query || hit.name,
-        category: hit.category || "General",
-        highlighted: hit._highlightResult?.name?.value || hit.name,
-      }));
-      setSuggestions(hits);
-      setShowSuggestions(hits.length > 0);
-      setSelectedSuggestionIndex(-1);
-    } catch (error) {
-      console.error("Algolia suggestion error", error);
-    } finally {
-      setIsLoadingSuggestions(false);
+    fetchResults();
+  }, [searchQuery, currentPage]);
+
+  const totalPages = Math.ceil(totalResults / toolsPerPage);
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      const searchUrl = `/search?q=${encodeURIComponent(query.trim())}`;
+      window.location.href = searchUrl;
     }
   };
 
-  const handleSearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const searchQuery = query.trim();
-    if (!searchQuery) return;
-    setShowSuggestions(false);
-    if (onSearch) {
-      onSearch(searchQuery);
-    } else {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
-    }
+  const handlePageChange = (page: number) => {
+    const newUrl = `/search?q=${encodeURIComponent(searchQuery)}&page=${page}`;
+    setLocation(newUrl);
   };
 
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    const searchTerm = suggestion.query || suggestion.name;
-    setQuery(searchTerm);
-    setShowSuggestions(false);
-    if (onSearch) {
-      onSearch(searchTerm);
-    } else {
-      window.location.href = `/search?q=${encodeURIComponent(searchTerm)}`;
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showSuggestions || suggestions.length === 0) return;
-
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setSelectedSuggestionIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case "Enter":
-        if (selectedSuggestionIndex >= 0) {
-          e.preventDefault();
-          handleSuggestionClick(suggestions[selectedSuggestionIndex]);
-        }
-        break;
-      case "Escape":
-        setShowSuggestions(false);
-        setSelectedSuggestionIndex(-1);
-        break;
-    }
-  };
-
-  const handleInputBlur = () => {
-    setTimeout(() => {
-      if (!suggestionsRef.current?.contains(document.activeElement)) {
-        setShowSuggestions(false);
-        setSelectedSuggestionIndex(-1);
-      }
-    }, 200);
-  };
-
-  const handleInputFocus = () => {
-    setIsFocused(true);
-    if (suggestions.length > 0 && query.trim().length >= 2) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleClear = () => {
-    setQuery("");
-    setSuggestions([]);
-    setShowSuggestions(false);
-    inputRef.current?.focus();
-  };
+  if (!searchQuery) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-foreground mb-8">
+              Search AI Tools
+            </h1>
+            <SearchBar onSearch={handleSearch} initialValue="" />
+            <p className="text-muted-foreground mt-4">
+              Search across thousands of AI tools by name, category, features,
+              and more.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <div className={`relative w-full max-w-2xl mx-auto ${className}`}>
-      <form onSubmit={handleSearch} className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-        <Input
-          ref={inputRef}
-          type="text"
-          placeholder={placeholder}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => {
-            setIsFocused(false);
-            handleInputBlur();
-          }}
-          onFocus={handleInputFocus}
-          className="pl-12 pr-24 py-6 text-lg rounded-xl border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          autoComplete="off"
-        />
-        {query.length > 0 && (
-          <X
-            className="absolute right-20 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground cursor-pointer"
-            onClick={handleClear}
+    <Layout>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <SearchBar
+            onSearch={handleSearch}
+            className="max-w-4xl"
+            initialValue={searchQuery}
           />
-        )}
-        <Button
-          type="submit"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6"
-          disabled={isLoadingSuggestions}
-        >
-          {isLoadingSuggestions ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : null}
-          Search
-        </Button>
-      </form>
-
-      {showSuggestions && suggestions.length > 0 && (
-        <div
-          ref={suggestionsRef}
-          className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto"
-        >
-          {suggestions.map((suggestion, index) => (
-            <div
-              key={suggestion.objectID || index}
-              className={cn(
-                "px-4 py-3 cursor-pointer border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors",
-                selectedSuggestionIndex === index && "bg-muted"
-              )}
-              onClick={() => handleSuggestionClick(suggestion)}
-              onMouseEnter={() => setSelectedSuggestionIndex(index)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <span
-                    className="text-foreground font-medium"
-                    dangerouslySetInnerHTML={{
-                      __html: suggestion.highlighted || suggestion.name,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                  {suggestion.category}
-                </span>
-              </div>
-            </div>
-          ))}
         </div>
-      )}
-    </div>
+
+        <div className="mb-8">
+          {isLoading ? (
+            <div className="animate-pulse">
+              <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+              <div className="h-4 bg-muted rounded w-1/4"></div>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Search results for '{searchQuery}'
+              </h1>
+              <p className="text-muted-foreground">
+                {totalResults} tools found
+              </p>
+            </>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="bg-muted rounded-lg h-64"></div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">Search failed: {error}</p>
+          </div>
+        ) : tools.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {tools.map((tool) => (
+                <ToolCard key={tool.objectID} tool={tool} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * toolsPerPage + 1} to{" "}
+                  {Math.min(currentPage * toolsPerPage, totalResults)} of{" "}
+                  {totalResults} tools
+                </p>
+
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No tools found
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              We couldn't find any tools matching "{searchQuery}". Try different
+              keywords or browse our categories.
+            </p>
+            <Button onClick={() => setLocation("/")}>Browse All Tools</Button>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }

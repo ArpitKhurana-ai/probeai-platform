@@ -204,20 +204,23 @@ export class DatabaseStorage implements IStorage {
     return tool;
   }
 
-  async getToolBySlug(slug: string): Promise<Tool | undefined> {
-    // Get all approved tools and find matching slug
-    const allTools = await db
-      .select()
-      .from(tools)
-      .where(eq(tools.isApproved, true));
-    
-    const tool = allTools.find(tool => {
-      const toolSlug = tool.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      return toolSlug === slug;
-    });
-    
-    return tool;
-  }
+async getToolBySlug(slug: string): Promise<Tool | undefined> {
+  const normalizedSlug = slug.toLowerCase();
+
+  const [tool] = await db
+    .select()
+    .from(tools)
+    .where(
+      and(
+        eq(tools.isApproved, true),
+        sql`lower(regexp_replace(${tools.name}, '[^a-z0-9]+', '-', 'g')) = ${normalizedSlug}`
+      )
+    )
+    .limit(1);
+
+  return tool;
+}
+
 
   async searchTools(options: {
     query: string;

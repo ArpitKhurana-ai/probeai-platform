@@ -1,71 +1,69 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient"; // ✅ ADDED
-import type { Tool } from "./shared/schema";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import algoliasearch from "algoliasearch/lite";
 
-interface SearchResults {
-  items: Tool[];
-  total: number;
-  query: string;
+const algoliaClient = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const algoliaIndex = algoliaClient.initIndex("tools");
+
+interface Tool {
+  objectID: string;
+  name: string;
+  description: string;
+  slug: string;
+  category: string;
+  logo: string;
 }
 
 export default function SearchPage() {
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [totalResults, setTotalResults] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const toolsPerPage = 10;
 
-  // Update state when URL parameters change
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q') || '';
     const page = parseInt(urlParams.get('page') || '1');
-    
     setSearchQuery(query);
     setCurrentPage(page);
   }, [location]);
-  
-  const { data: searchResults, isLoading, error } = useQuery<SearchResults>({
-    queryKey: ["/api/search", searchQuery, currentPage, toolsPerPage],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        q: searchQuery,
-        page: currentPage.toString(),
-        limit: toolsPerPage.toString()
-      });
-      const url = `/api/search?${params}`;
-      console.log('Making search request:', url);
 
-      const response = await apiRequest(url); // ✅ FIXED
-      const data = await response.json();
-      console.log('Search response data:', data);
-      return data;
-    },
-    enabled: !!searchQuery && searchQuery.trim().length > 0,
-    retry: (failureCount, error) => {
-      if (error.message.includes('401')) {
-        return false;
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!searchQuery.trim()) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await algoliaIndex.search(searchQuery, {
+          hitsPerPage: toolsPerPage,
+          page: currentPage - 1,
+        });
+        setTools(result.hits as Tool[]);
+        setTotalResults(result.nbHits);
+      } catch (err: any) {
+        console.error("Algolia search error:", err);
+        setError(err?.message || "Unknown error");
+      } finally {
+        setIsLoading(false);
       }
-      return failureCount < 3;
-    },
-  });
+    };
 
-  console.log('Search component state:', {
-    searchQuery,
-    enabled: !!searchQuery && searchQuery.trim().length > 0,
-    isLoading,
-    error: error?.message,
-    hasResults: searchResults?.items?.length,
-    totalResults: searchResults?.total
-  });
+    fetchResults();
+  }, [searchQuery, currentPage]);
 
-  const totalPages = searchResults ? Math.ceil(searchResults.total / toolsPerPage) : 0;
+  const totalPages = Math.ceil(totalResults / toolsPerPage);
 
   const handleSearch = (query: string) => {
     if (query.trim()) {
@@ -123,7 +121,7 @@ export default function SearchPage() {
                 Search results for '{searchQuery}'
               </h1>
               <p className="text-muted-foreground">
-                {searchResults?.total || 0} tools found
+                {totalResults} tools found
               </p>
             </>
           )}
@@ -140,13 +138,13 @@ export default function SearchPage() {
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-destructive">Search failed: {(error as any)?.message || 'Unknown error'}</p>
+            <p className="text-destructive">Search failed: {error}</p>
           </div>
-        ) : searchResults && searchResults.items && searchResults.items.length > 0 ? (
+        ) : tools.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {searchResults.items.map((tool: any) => (
-                <ToolCard key={tool.id} tool={tool} />
+              {tools.map((tool) => (
+                <ToolCard key={tool.objectID} tool={tool} />
               ))}
             </div>
 
@@ -154,7 +152,7 @@ export default function SearchPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * toolsPerPage + 1} to {Math.min(currentPage * toolsPerPage, searchResults.total)} of {searchResults.total} tools
+                  Showing {(currentPage - 1) * toolsPerPage + 1} to {Math.min(currentPage * toolsPerPage, totalResults)} of {totalResults} tools
                 </p>
                 
                 <div className="flex items-center space-x-2">
@@ -185,7 +183,7 @@ export default function SearchPage() {
               </div>
             )}
           </>
-        ) : searchQuery ? (
+        ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -197,12 +195,6 @@ export default function SearchPage() {
             <Button onClick={() => setLocation('/')}>
               Browse All Tools
             </Button>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              Enter a search term to find AI tools
-            </p>
           </div>
         )}
       </div>

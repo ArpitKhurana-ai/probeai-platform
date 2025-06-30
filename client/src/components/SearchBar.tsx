@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import algoliasearch from "algoliasearch/lite";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -19,6 +20,9 @@ interface Suggestion {
   category: string;
   highlighted: string;
 }
+
+const algoliaClient = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const algoliaIndex = algoliaClient.initIndex("tools");
 
 export function SearchBar({ 
   placeholder = "Search AI tools, categories, or features...", 
@@ -54,23 +58,23 @@ export function SearchBar({
 
   const fetchSuggestions = async (searchQuery: string) => {
     setIsLoadingSuggestions(true);
-    const baseURL =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:8787"
-        : "https://probeai-platform-production.up.railway.app";
-
     try {
-      const response = await fetch(
-        `${baseURL}/api/search/suggestions?q=${encodeURIComponent(searchQuery)}&limit=5`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data);
-        setShowSuggestions(data.length > 0);
-        setSelectedSuggestionIndex(-1);
-      }
+      const result = await algoliaIndex.search(searchQuery, {
+        hitsPerPage: 5,
+        attributesToHighlight: ["name"],
+      });
+      const hits = result.hits.map((hit: any) => ({
+        objectID: hit.objectID,
+        name: hit.name,
+        query: hit.query || hit.name,
+        category: hit.category || "General",
+        highlighted: hit._highlightResult?.name?.value || hit.name,
+      }));
+      setSuggestions(hits);
+      setShowSuggestions(hits.length > 0);
+      setSelectedSuggestionIndex(-1);
     } catch (error) {
-      console.error("Failed to fetch suggestions:", error);
+      console.error("Algolia suggestion error", error);
     } finally {
       setIsLoadingSuggestions(false);
     }

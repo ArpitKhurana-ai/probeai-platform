@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../db';
+import { db } from '../db';
 import { eq } from 'drizzle-orm';
 import { tools } from '../db-init'; // Adjust this path if `tools` model is elsewhere
 

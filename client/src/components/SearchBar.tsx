@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import algoliasearchModule from "algoliasearch/lite";
-const algoliasearch = algoliasearchModule.default || algoliasearchModule;
+import * as algoliasearchModule from "algoliasearch/lite";
+const algoliasearch = (algoliasearchModule as any).default;
+
 
 
 interface SearchBarProps {

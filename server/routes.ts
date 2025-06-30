@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
 import searchRoutes from "./routes/search";
+import toolRoutes from "./routes/tools"; // ✅ added
 
 export async function registerRoutes(app: Express): Promise<void> {
   const { healthCheck } = await import("./health.js");
@@ -84,6 +85,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // ✅ Mount Algolia search and suggestions
   app.use("/api/search", searchRoutes);
+
+  // ✅ Mount tool detail route
+  app.use("/api/tools", toolRoutes);
 
   console.log("✅ All API routes registered.");
 }

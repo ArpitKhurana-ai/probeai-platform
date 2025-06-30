@@ -21,6 +21,7 @@ import SubmitPage from "@/pages/SubmitPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/not-found";
+import ToolsPage from "@/pages/ToolsPage"; // ✅ Import your new grouped-category view
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -39,7 +40,7 @@ function Router() {
       )}
 
       {/* Public routes */}
-      <Route path="/tools" component={CategoryPage} /> {/* ✅ AI Tools page */}
+      <Route path="/tools" component={ToolsPage} />         {/* ✅ New Grouped Tools Page */}
       <Route path="/category/:category" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/tool/:id" component={ToolPage} />
@@ -58,7 +59,7 @@ function Router() {
 function App() {
   useEffect(() => {
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+      console.warn("Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID");
     } else {
       initGA();
     }

@@ -5,15 +5,10 @@ import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/SearchBar";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import algoliasearchModule from "algoliasearch/lite";
-const algoliasearch =
-  typeof algoliasearchModule === "function"
-    ? algoliasearchModule
-    : (algoliasearchModule as any).default || algoliasearchModule;
+import { liteClient } from "algoliasearch/lite";
 
-
-const algoliaClient = algoliasearch("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
-const algoliaIndex = algoliaClient.initIndex("tools");
+const client = liteClient("N19W8QAGPY", "4d9d414ea3f63d0952ea96f2dac8ec67");
+const index = client.initIndex("tools");
 
 interface Tool {
   objectID: string;
@@ -26,7 +21,7 @@ interface Tool {
 
 export default function SearchPage() {
   const [location, setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [tools, setTools] = useState<Tool[]>([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -37,8 +32,8 @@ export default function SearchPage() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q') || '';
-    const page = parseInt(urlParams.get('page') || '1');
+    const query = urlParams.get("q") || "";
+    const page = parseInt(urlParams.get("page") || "1");
     setSearchQuery(query);
     setCurrentPage(page);
   }, [location]);
@@ -51,7 +46,7 @@ export default function SearchPage() {
       setError(null);
 
       try {
-        const result = await algoliaIndex.search(searchQuery, {
+        const result = await index.search(searchQuery, {
           hitsPerPage: toolsPerPage,
           page: currentPage - 1,
         });
@@ -87,13 +82,13 @@ export default function SearchPage() {
       <Layout>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-8">Search AI Tools</h1>
-            <SearchBar 
-              onSearch={handleSearch}
-              initialValue=""
-            />
+            <h1 className="text-3xl font-bold text-foreground mb-8">
+              Search AI Tools
+            </h1>
+            <SearchBar onSearch={handleSearch} initialValue="" />
             <p className="text-muted-foreground mt-4">
-              Search across thousands of AI tools by name, category, features, and more.
+              Search across thousands of AI tools by name, category, features,
+              and more.
             </p>
           </div>
         </div>
@@ -104,16 +99,14 @@ export default function SearchPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Bar */}
         <div className="mb-8">
-          <SearchBar 
+          <SearchBar
             onSearch={handleSearch}
             className="max-w-4xl"
             initialValue={searchQuery}
           />
         </div>
 
-        {/* Search Results Header */}
         <div className="mb-8">
           {isLoading ? (
             <div className="animate-pulse">
@@ -132,7 +125,6 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* Search Results */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -153,13 +145,14 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * toolsPerPage + 1} to {Math.min(currentPage * toolsPerPage, totalResults)} of {totalResults} tools
+                  Showing {(currentPage - 1) * toolsPerPage + 1} to{" "}
+                  {Math.min(currentPage * toolsPerPage, totalResults)} of{" "}
+                  {totalResults} tools
                 </p>
-                
+
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
@@ -170,11 +163,11 @@ export default function SearchPage() {
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
-                  
+
                   <span className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -195,11 +188,10 @@ export default function SearchPage() {
               No tools found
             </h3>
             <p className="text-muted-foreground mb-6">
-              We couldn't find any tools matching "{searchQuery}". Try different keywords or browse our categories.
+              We couldn't find any tools matching "{searchQuery}". Try different
+              keywords or browse our categories.
             </p>
-            <Button onClick={() => setLocation('/')}>
-              Browse All Tools
-            </Button>
+            <Button onClick={() => setLocation("/")}>Browse All Tools</Button>
           </div>
         )}
       </div>

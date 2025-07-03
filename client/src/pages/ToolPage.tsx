@@ -130,17 +130,13 @@ export default function ToolPage() {
           </CardContent>
         </Card>
 
-        {similarTools && similarTools.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {similarTools.map((tool: any) => (
-                <ToolCard key={tool.id} tool={tool} showDescription={false} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </Layout>
-  );
-}
+{similarTools && similarTools.length > 0 && (
+  <div className="mb-12">
+    <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {similarTools.map((tool: any) => (
+        <ToolCard key={tool.id} tool={tool} showDescription={false} />
+      ))}
+    </div>
+  </div>
+)}

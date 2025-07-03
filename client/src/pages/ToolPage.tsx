@@ -1,5 +1,3 @@
-// ToolPage.tsx (updated layout + SEO + mobile fix)
-
 import { useParams, Link } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -67,7 +65,6 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6">
-        {/* SEO: H1 and logo with alt */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
           {tool.logoUrl && (
             <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-16 h-16 rounded-lg object-cover" />
@@ -78,7 +75,6 @@ export default function ToolPage() {
           </div>
         </div>
 
-        {/* Promote is most important button */}
         <div className="flex flex-wrap gap-3 justify-center sm:justify-start mb-8">
           <Button variant="outline" onClick={handleLike}><Heart className="w-4 h-4 mr-2" /> Like</Button>
           <Button variant="ghost" onClick={handleShare}><Share2 className="w-4 h-4 mr-2" /> Share</Button>
@@ -104,7 +100,6 @@ export default function ToolPage() {
           </Dialog>
         </div>
 
-        {/* About + How it works + Key features */}
         <div className="prose dark:prose-invert mb-8">
           <h2>About {tool.name}</h2>
           <p>{tool.description}</p>
@@ -124,7 +119,6 @@ export default function ToolPage() {
           )}
         </div>
 
-        {/* Tool Information - moved above Featured */}
         <Card className="mb-8">
           <CardHeader><CardTitle>Tool Information</CardTitle></CardHeader>
           <CardContent className="space-y-2">
@@ -136,7 +130,6 @@ export default function ToolPage() {
           </CardContent>
         </Card>
 
-        {/* Similar Tools */}
         {similarTools && similarTools.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>

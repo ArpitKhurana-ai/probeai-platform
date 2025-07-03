@@ -29,24 +29,23 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// ✅ POST /api/tools/sync-from-sheet
+// ✅ POST /api/tools/sync-from-sheet (supports { tools: [...] })
 router.post('/sync-from-sheet', async (req, res) => {
   try {
-    const incomingTools = req.body;
+    const { tools: incomingTools } = req.body;
 
     if (!Array.isArray(incomingTools)) {
-      return res.status(400).json({ error: 'Invalid payload. Expected an array of tools.' });
+      return res.status(400).json({ error: 'Invalid payload. Expected an object with tools array.' });
     }
 
     const results = [];
 
     for (const tool of incomingTools) {
-      const { name, slug, logo, description, category, tags, website, isFeatured } = tool;
+      const { name, slug, logo, description, category, tags, url, isFeatured, isPublished } = tool;
 
-      // Check if tool exists by slug
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
+
       if (existing.length > 0) {
-        // Update existing
         await db.update(tools)
           .set({
             name,
@@ -54,14 +53,14 @@ router.post('/sync-from-sheet', async (req, res) => {
             description,
             category,
             tags,
-            website,
+            website: url,
             isFeatured,
+            isPublished,
           })
           .where(eq(tools.slug, slug));
 
         results.push({ slug, status: 'updated' });
       } else {
-        // Insert new
         await db.insert(tools).values({
           name,
           slug,
@@ -69,8 +68,9 @@ router.post('/sync-from-sheet', async (req, res) => {
           description,
           category,
           tags,
-          website,
+          website: url,
           isFeatured,
+          isPublished,
         });
 
         results.push({ slug, status: 'inserted' });

@@ -29,19 +29,32 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// ✅ POST /api/tools/sync-from-sheet (supports { tools: [...] })
+// ✅ POST /api/tools/sync-from-sheet
 router.post('/sync-from-sheet', async (req, res) => {
   try {
     const { tools: incomingTools } = req.body;
 
     if (!Array.isArray(incomingTools)) {
-      return res.status(400).json({ error: 'Invalid payload. Expected an object with tools array.' });
+      return res.status(400).json({ error: 'Invalid payload. Expected an array of tools.' });
     }
 
     const results = [];
 
     for (const tool of incomingTools) {
-      const { name, slug, logo, description, category, tags, url, isFeatured, isPublished } = tool;
+      const {
+        name,
+        slug,
+        description,
+        logo,           // from sheet
+        website,        // from sheet
+        category,
+        tags,
+        isFeatured,
+        isPublished
+      } = tool;
+
+      // ✅ Map logo → logo_url (DB uses logo_url)
+      const logo_url = logo;
 
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
 
@@ -49,13 +62,15 @@ router.post('/sync-from-sheet', async (req, res) => {
         await db.update(tools)
           .set({
             name,
-            logo,
+            slug,
             description,
+            logo_url,
+            website,
             category,
             tags,
-            website: url,
-            isFeatured,
-            isPublished,
+            is_featured: isFeatured,
+            is_approved: isPublished,
+            updated_at: new Date(),
           })
           .where(eq(tools.slug, slug));
 
@@ -64,13 +79,15 @@ router.post('/sync-from-sheet', async (req, res) => {
         await db.insert(tools).values({
           name,
           slug,
-          logo,
           description,
+          logo_url,
+          website,
           category,
           tags,
-          website: url,
-          isFeatured,
-          isPublished,
+          is_featured: isFeatured,
+          is_approved: isPublished,
+          created_at: new Date(),
+          updated_at: new Date(),
         });
 
         results.push({ slug, status: 'inserted' });

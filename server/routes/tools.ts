@@ -45,15 +45,16 @@ router.post('/sync-from-sheet', async (req, res) => {
         name,
         slug,
         description,
-        logo,        // from Google Sheet
-        website,     // from Google Sheet
+        logo,        // from sheet
+        url,         // Google Sheet sends this as 'url'
         category,
         tags,
         isFeatured,
-        isPublished
+        isPublished,
       } = tool;
 
       const logo_url = logo;
+      const website = url;
 
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
 

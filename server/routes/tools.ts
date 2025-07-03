@@ -45,24 +45,24 @@ router.post('/sync-from-sheet', async (req, res) => {
         name,
         slug,
         description,
-        logo,           // from sheet
-        website,        // from sheet
+        logo,        // from Google Sheet
+        website,     // from Google Sheet
         category,
         tags,
         isFeatured,
         isPublished
       } = tool;
 
-      // ✅ Map logo → logo_url (DB uses logo_url)
       const logo_url = logo;
 
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
 
       if (existing.length > 0) {
-        await db.update(tools)
+        // ✅ Update existing tool
+        await db
+          .update(tools)
           .set({
             name,
-            slug,
             description,
             logo_url,
             website,
@@ -76,6 +76,7 @@ router.post('/sync-from-sheet', async (req, res) => {
 
         results.push({ slug, status: 'updated' });
       } else {
+        // ✅ Insert new tool
         await db.insert(tools).values({
           name,
           slug,

@@ -130,6 +130,7 @@ export default function ToolPage() {
           </CardContent>
         </Card>
 
+{/* Similar Tools */}
 {similarTools && similarTools.length > 0 && (
   <div className="mb-12">
     <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>

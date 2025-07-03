@@ -45,8 +45,8 @@ router.post('/sync-from-sheet', async (req, res) => {
         name,
         slug,
         description,
-        logo,        // from sheet
-        url,         // Google Sheet sends this as 'url'
+        logo,
+        website,
         category,
         tags,
         isFeatured,
@@ -54,30 +54,24 @@ router.post('/sync-from-sheet', async (req, res) => {
       } = tool;
 
       const logo_url = logo;
-      const website = url;
-
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
 
       if (existing.length > 0) {
-        // ✅ Update existing tool
-        await db
-          .update(tools)
-          .set({
-            name,
-            description,
-            logo_url,
-            website,
-            category,
-            tags,
-            is_featured: isFeatured,
-            is_approved: isPublished,
-            updated_at: new Date(),
-          })
-          .where(eq(tools.slug, slug));
+        // ✅ Update instead of insert().where()
+        await db.update(tools).set({
+          name,
+          description,
+          logo_url,
+          website,
+          category,
+          tags,
+          is_featured: isFeatured,
+          is_approved: isPublished,
+          updated_at: new Date(),
+        }).where(eq(tools.slug, slug));
 
         results.push({ slug, status: 'updated' });
       } else {
-        // ✅ Insert new tool
         await db.insert(tools).values({
           name,
           slug,

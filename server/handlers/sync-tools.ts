@@ -6,12 +6,12 @@ import algoliasearch from 'algoliasearch';
 import { config } from 'dotenv';
 config();
 
-// Algolia setup
+// ✅ Algolia setup — renamed index from 'probeai_tools' → 'tools'
 const algoliaClient = algoliasearch(
   process.env.ALGOLIA_APP_ID!,
   process.env.ALGOLIA_API_KEY!
 );
-const algoliaIndex = algoliaClient.initIndex('probeai_tools');
+const algoliaIndex = algoliaClient.initIndex('tools');
 
 // Type definitions
 interface IncomingTool {
@@ -120,7 +120,7 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
           console.log(`➕ Inserted: ${tool.slug}`);
         }
 
-        // ✅ Push to Algolia
+        // ✅ Push to Algolia (now on 'tools' index)
         await algoliaIndex.saveObject({
           objectID: tool.slug,
           ...tool,

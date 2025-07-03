@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { eq } from 'drizzle-orm';
 import { db } from '../db'; // Adjust path to your db instance
-import { tools } from '../db/schema'; // Adjust path to your schema
+import { tools } from '../shared/schema'; // Adjust path to your schema
 
 // Type definitions
 interface IncomingTool {

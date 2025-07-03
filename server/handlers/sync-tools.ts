@@ -1,7 +1,17 @@
 import { Request, Response } from 'express';
 import { eq } from 'drizzle-orm';
-import { db } from '../db'; // Adjust path to your db instance
-import { tools } from '../shared/schema'; // Adjust path to your schema
+import { db } from '../db';
+import { tools } from '../shared/schema';
+import algoliasearch from 'algoliasearch';
+import { config } from 'dotenv';
+config();
+
+// Algolia setup
+const algoliaClient = algoliasearch(
+  process.env.ALGOLIA_APP_ID!,
+  process.env.ALGOLIA_API_KEY!
+);
+const algoliaIndex = algoliaClient.initIndex('probeai_tools');
 
 // Type definitions
 interface IncomingTool {
@@ -11,7 +21,7 @@ interface IncomingTool {
   url: string;
   logo: string;
   category: string;
-  tags: string;
+  tags: string[];
   isFeatured: boolean;
   isPublished: boolean;
 }
@@ -35,17 +45,17 @@ interface SyncResponse {
 // Transform incoming tool data to match DB schema
 function transformToolData(tool: IncomingTool) {
   const now = new Date();
-  
+
   return {
     slug: tool.slug,
     name: tool.name,
     description: tool.description,
-    website: tool.url, // Transform url → website
-    logo_url: tool.logo, // Transform logo → logo_url
+    website: tool.url,
+    logo_url: tool.logo,
     category: tool.category,
     tags: tool.tags,
     is_featured: tool.isFeatured,
-    is_approved: tool.isPublished, // Transform isPublished → is_approved
+    is_approved: tool.isPublished,
     updated_at: now,
   };
 }
@@ -55,12 +65,11 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
   try {
     const { tools: incomingTools }: SyncRequest = req.body;
 
-    // Validation
     if (!incomingTools || !Array.isArray(incomingTools)) {
       res.status(400).json({
         success: false,
         message: 'Invalid request: tools array is required',
-        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
+        stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
       });
       return;
     }
@@ -69,20 +78,19 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
       res.status(400).json({
         success: false,
         message: 'Invalid request: tools array cannot be empty',
-        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
+        stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
       });
       return;
     }
 
-    // Validate required fields
     const requiredFields = ['name', 'slug', 'description', 'url', 'logo', 'category'];
     for (const tool of incomingTools) {
       for (const field of requiredFields) {
         if (!tool[field as keyof IncomingTool]) {
           res.status(400).json({
             success: false,
-            message: `Invalid tool data: missing required field '${field}' for tool with slug '${tool.slug || 'unknown'}'`,
-            stats: { total: incomingTools.length, inserted: 0, updated: 0, errors: 1 }
+            message: `Missing field '${field}' in tool '${tool.slug || 'unknown'}'`,
+            stats: { total: incomingTools.length, inserted: 0, updated: 0, errors: 1 },
           });
           return;
         }
@@ -94,84 +102,62 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
     let errorsCount = 0;
     const errors: string[] = [];
 
-    console.log(`🔄 Processing ${incomingTools.length} tools from Google Sheets...`);
-
-    // Process each tool individually to handle upserts properly
-    for (const incomingTool of incomingTools) {
+    for (const tool of incomingTools) {
       try {
-        // Check if tool exists
-        const existingTool = await db
-          .select()
-          .from(tools)
-          .where(eq(tools.slug, incomingTool.slug))
-          .limit(1);
+        const exists = await db.select().from(tools).where(eq(tools.slug, tool.slug)).limit(1);
+        const transformed = transformToolData(tool);
 
-        const transformedData = transformToolData(incomingTool);
-
-        if (existingTool.length > 0) {
-          // Tool exists - UPDATE
-          await db
-            .update(tools)
-            .set(transformedData)
-            .where(eq(tools.slug, incomingTool.slug));
-          
+        if (exists.length > 0) {
+          await db.update(tools).set(transformed).where(eq(tools.slug, tool.slug));
           updatedCount++;
-          console.log(`✅ Updated tool: ${incomingTool.slug}`);
+          console.log(`✅ Updated: ${tool.slug}`);
         } else {
-          // Tool doesn't exist - INSERT
-          const insertData = {
-            ...transformedData,
-            created_at: new Date(), // Set created_at only for new records
-          };
-
-          await db
-            .insert(tools)
-            .values(insertData);
-          
+          await db.insert(tools).values({
+            ...transformed,
+            created_at: new Date(),
+          });
           insertedCount++;
-          console.log(`➕ Inserted new tool: ${incomingTool.slug}`);
+          console.log(`➕ Inserted: ${tool.slug}`);
         }
-      } catch (toolError) {
+
+        // ✅ Push to Algolia
+        await algoliaIndex.saveObject({
+          objectID: tool.slug,
+          ...tool,
+        });
+
+      } catch (err) {
         errorsCount++;
-        const errorMessage = `Failed to process tool '${incomingTool.slug}': ${toolError instanceof Error ? toolError.message : 'Unknown error'}`;
-        errors.push(errorMessage);
-        console.error(`❌ ${errorMessage}`);
+        errors.push(`❌ ${tool.slug}: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
 
-    // Response
     const response: SyncResponse = {
       success: errorsCount === 0,
-      message: errorsCount === 0 
-        ? `Successfully synced ${incomingTools.length} tools`
-        : `Synced with ${errorsCount} errors`,
+      message:
+        errorsCount === 0
+          ? `Successfully synced ${incomingTools.length} tools`
+          : `Synced with ${errorsCount} errors`,
       stats: {
         total: incomingTools.length,
         inserted: insertedCount,
         updated: updatedCount,
-        errors: errorsCount
-      }
+        errors: errorsCount,
+      },
     };
 
     if (errors.length > 0) {
       response.errors = errors;
     }
 
-    console.log(`🎉 Sync complete: ${insertedCount} inserted, ${updatedCount} updated, ${errorsCount} errors`);
-
-    res.status(errorsCount === 0 ? 200 : 207).json(response); // 207 = Multi-Status for partial success
-
+    res.status(errorsCount === 0 ? 200 : 207).json(response);
   } catch (error) {
-    console.error('❌ Sync endpoint error:', error);
-    
+    console.error('❌ Sync failed:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during sync',
       stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
-      errors: [error instanceof Error ? error.message : 'Unknown server error']
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
     });
   }
 }
-
-// Express route registration (add this to your routes file)
-// app.post('/api/tools/sync-from-sheet', syncToolsFromSheet);

@@ -59,7 +59,7 @@ router.post('/sync-from-sheet', async (req, res) => {
       const existing = await db.select().from(tools).where(eq(tools.slug, slug));
 
       if (existing.length > 0) {
-        // ✅ UPDATE
+        // ✅ UPDATE existing tool
         await db
           .update(tools)
           .set({
@@ -77,7 +77,7 @@ router.post('/sync-from-sheet', async (req, res) => {
 
         results.push({ slug, status: 'updated' });
       } else {
-        // ✅ INSERT
+        // ✅ INSERT new tool
         await db.insert(tools).values({
           name,
           slug,

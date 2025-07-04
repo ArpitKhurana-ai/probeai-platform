@@ -1,5 +1,3 @@
-// client/src/pages/ToolPage.tsx
-
 import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -49,7 +47,10 @@ export default function ToolPage() {
 
   const toolIdentifier = id;
 
-  const { data: tool } = useQuery({ queryKey: [`/api/tools/${toolIdentifier}`] });
+  const { data: tool } = useQuery({
+    queryKey: [`/api/tools/${toolIdentifier}`],
+  });
+
   const { data: similarTools = [] } = useQuery({
     queryKey: [`/api/tools/${toolIdentifier}/similar`],
     enabled: !!toolIdentifier,
@@ -58,11 +59,15 @@ export default function ToolPage() {
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/tools/${toolIdentifier}/like`, { method: "POST" });
+      return await apiRequest(`/api/tools/${toolIdentifier}/like`, {
+        method: "POST",
+      });
     },
     onSuccess: () => {
       setIsLiked(!isLiked);
-      queryClient.invalidateQueries({ queryKey: [`/api/tools/${toolIdentifier}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/tools/${toolIdentifier}`],
+      });
     },
   });
 
@@ -77,7 +82,6 @@ export default function ToolPage() {
     }
     likeMutation.mutate();
   };
-
   const handleShare = (platform: string) => {
     const url = encodeURIComponent(window.location.href);
     const links: Record<string, string> = {
@@ -100,13 +104,32 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
+
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
-          {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 mx-auto rounded-lg object-cover" />}
-          {tool.badge && <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">{tool.badge}</span>}
+          {tool.logoUrl && (
+            <img
+              src={tool.logoUrl}
+              alt={`${tool.name} logo`}
+              className="w-20 h-20 mx-auto rounded-lg object-cover"
+            />
+          )}
 
-          <a href={tool.website} target="_blank" rel="noopener noreferrer" className="w-full">
-            <Button className="w-full"><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
+          {tool.badge && (
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">
+              {tool.badge}
+            </span>
+          )}
+
+          <a
+            href={tool.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full"
+          >
+            <Button className="w-full">
+              <ExternalLink className="w-4 h-4 mr-2" /> Visit
+            </Button>
           </a>
 
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
@@ -118,17 +141,23 @@ export default function ToolPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Promote {tool.name}</DialogTitle>
-                <DialogDescription>Get featured for 30 days on homepage, search, and newsletter</DialogDescription>
+                <DialogDescription>
+                  Get featured for 30 days on homepage, search, and newsletter
+                </DialogDescription>
               </DialogHeader>
               <div className="text-center py-4">
                 <p className="text-xl font-bold mb-2">$100</p>
-                <Button><DollarSign className="mr-2 w-4 h-4" /> Promote Now</Button>
+                <Button>
+                  <DollarSign className="mr-2 w-4 h-4" /> Promote Now
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
-
           <div className="flex gap-4 justify-center w-full items-center mt-2">
-            <Heart className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`} onClick={handleLike} />
+            <Heart
+              className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
+              onClick={handleLike}
+            />
             <img onClick={() => handleShare("twitter")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" className="w-5 h-5 cursor-pointer" />
             <img onClick={() => handleShare("linkedin")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" className="w-5 h-5 cursor-pointer" />
             <img onClick={() => handleShare("facebook")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" className="w-5 h-5 cursor-pointer" />
@@ -222,8 +251,8 @@ export default function ToolPage() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between"><span>Category</span><span>{tool.category}</span></div>
               <div className="flex justify-between"><span>Pricing</span><span>{tool.pricingType}</span></div>
-              <div className="flex justify-between"><span>Access</span><span>{tool.accessType}</span></div>
-              <div className="flex justify-between"><span>Audience</span><span>{tool.audience}</span></div>
+              <div className="flex justify-between"><span>Access</span><span>{Array.isArray(tool.accessType) ? tool.accessType.join(", ") : tool.accessType}</span></div>
+              <div className="flex justify-between"><span>Audience</span><span>{Array.isArray(tool.audience) ? tool.audience.join(", ") : tool.audience}</span></div>
             </CardContent>
           </Card>
 
@@ -237,20 +266,34 @@ export default function ToolPage() {
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {[1, 2, 3].map((_, i) => (
+                <div key={i} className="flex gap-2 items-center border rounded p-2">
+                  <img src="https://placehold.co/32x32" className="rounded" />
+                  <div className="text-xs">
+                    <div className="font-semibold">Tool {i + 1}</div>
+                    <div className="text-muted-foreground">Short description here</div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* SIMILAR TOOLS - FULL WIDTH BELOW */}
+      {/* SIMILAR TOOLS */}
       <div className="container mx-auto px-4 pt-12">
         <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tool && similarTools.length > 0
             ? similarTools
                 .filter((t: any) => t.id !== tool.id)
                 .slice(0, 6)
-                .map((similarTool: any) => (
-                  <ToolCard key={similarTool.id} tool={similarTool} showDescription={false} />
+                .map((t: any) => (
+                  <ToolCard key={t.id} tool={t} showDescription={false} />
                 ))
             : [1, 2, 3].map((_, i) => (
                 <ToolCard

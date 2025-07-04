@@ -1,5 +1,3 @@
-// client/src/pages/ToolPage.tsx
-
 import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -100,7 +98,6 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
-
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 mx-auto rounded-lg object-cover" />}
@@ -141,13 +138,10 @@ export default function ToolPage() {
           <div className="bg-muted p-3 rounded w-full">
             <h3 className="font-semibold text-sm mb-1">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
-            {/* Light badge */}
             <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-1 w-full" />
             <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
-
-            {/* Dark badge */}
             <img src="https://probeai.io/badges/featured-dark.png" className="rounded border my-2 w-full" />
             <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -219,19 +213,6 @@ export default function ToolPage() {
             Google Ad Banner Placeholder (Large)
           </div>
 
-          <div className="border-t pt-6">
-            <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
-            {similarTools.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {similarTools.map((tool: any) => (
-                  <ToolCard key={tool.id} tool={tool} showDescription={false} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground text-sm">No similar tools available.</p>
-            )}
-          </div>
-
           <div className="text-center mt-10 border-t pt-6">
             <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
             <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
@@ -279,6 +260,20 @@ export default function ToolPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* ✅ FULL WIDTH SIMILAR TOOLS SECTION */}
+      <div className="container mx-auto px-4 pt-12 pb-20 border-t mt-10">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
+        {similarTools.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {similarTools.map((tool: any) => (
+              <ToolCard key={tool.id} tool={tool} showDescription={false} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground text-sm">No similar tools available.</p>
+        )}
       </div>
     </Layout>
   );

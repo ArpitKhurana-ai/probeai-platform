@@ -43,8 +43,9 @@ export default function ToolPage() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
 
   const toolIdentifier = id;
 
@@ -55,10 +56,26 @@ export default function ToolPage() {
     retry: false,
   });
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`<a href='https://probeai.io/tools/${tool?.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/tools/${toolIdentifier}/like`, { method: "POST" });
+    },
+    onSuccess: () => {
+      setIsLiked(!isLiked);
+      queryClient.invalidateQueries({ queryKey: [`/api/tools/${toolIdentifier}`] });
+    },
+  });
+
+  const handleLike = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to like tools",
+        variant: "destructive",
+      });
+      return;
+    }
+    likeMutation.mutate();
   };
 
   const handleShare = (platform: string) => {
@@ -71,6 +88,13 @@ export default function ToolPage() {
     window.open(links[platform], "_blank");
   };
 
+  const handleCopyEmbed = (mode: "light" | "dark") => {
+    const code = `<a href='https://probeai.io/tools/${tool?.slug}' target='_blank'><img src='https://probeai.io/badges/featured-${mode}.png' width="160" height="600"/></a>`;
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (!tool) return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
 
   return (
@@ -78,13 +102,9 @@ export default function ToolPage() {
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
 
         {/* LEFT SIDEBAR */}
-        <div className="flex flex-col items-center gap-4 sticky top-10">
-          {tool.logoUrl && (
-            <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />
-          )}
-          {tool.badge && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">{tool.badge}</span>
-          )}
+        <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
+          {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 mx-auto rounded-lg object-cover" />}
+          {tool.badge && <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">{tool.badge}</span>}
 
           <a href={tool.website} target="_blank" rel="noopener noreferrer" className="w-full">
             <Button className="w-full"><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
@@ -108,20 +128,29 @@ export default function ToolPage() {
             </DialogContent>
           </Dialog>
 
-          <div className="flex gap-3 justify-center w-full">
-            <Heart className="w-5 h-5 cursor-pointer" />
-            <img onClick={() => handleShare('twitter')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" className="w-5 h-5 cursor-pointer" />
-            <img onClick={() => handleShare('linkedin')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" className="w-5 h-5 cursor-pointer" />
-            <img onClick={() => handleShare('facebook')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" className="w-5 h-5 cursor-pointer" />
+          <div className="flex gap-4 justify-center w-full items-center mt-2">
+            <Heart
+              className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
+              onClick={handleLike}
+            />
+            <img onClick={() => handleShare("twitter")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" className="w-5 h-5 cursor-pointer" />
+            <img onClick={() => handleShare("linkedin")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" className="w-5 h-5 cursor-pointer" />
+            <img onClick={() => handleShare("facebook")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" className="w-5 h-5 cursor-pointer" />
           </div>
 
-          {/* EMBED BADGE */}
-          <div className="bg-muted p-4 rounded w-full">
-            <h3 className="font-semibold text-sm mb-2">Get more visibility</h3>
+          <div className="bg-muted p-3 rounded w-full">
+            <h3 className="font-semibold text-sm mb-1">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
-            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2 w-full h-auto max-w-[180px]" />
-            <Button size="icon" variant="ghost" className="mx-auto block" onClick={handleCopy}>
-              {copied ? <Check size={16} /> : <Copy size={16} />}
+            {/* Light badge */}
+            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-1 w-full" />
+            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}>
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
+
+            {/* Dark badge */}
+            <img src="https://probeai.io/badges/featured-dark.png" className="rounded border my-2 w-full" />
+            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}>
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
 
@@ -131,64 +160,75 @@ export default function ToolPage() {
         </div>
 
         {/* CENTER COLUMN */}
-        <div className="prose dark:prose-invert max-w-none">
-          <h1>{tool.name}</h1>
-          <p>{tool.shortDescription}</p>
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-bold">{tool.name}</h1>
+            <p className="text-muted-foreground mt-1">{tool.shortDescription}</p>
+          </div>
 
-          <h2>About</h2>
-          <p>{tool.description}</p>
+          <div className="bg-white border rounded p-4">
+            <h2 className="text-xl font-semibold mb-2">About</h2>
+            <p>{tool.description}</p>
+          </div>
 
           {tool.howItWorks && (
-            <>
-              <h2>How it works</h2>
+            <div className="bg-white border rounded p-4">
+              <h2 className="text-xl font-semibold mb-2">How it works</h2>
               <p>{tool.howItWorks}</p>
-            </>
+            </div>
           )}
 
-          <h2>Tool Comparison</h2>
-          <p>Comparison Table Placeholder</p>
+          <div className="bg-white border rounded p-4">
+            <h2 className="text-xl font-semibold mb-2">Key Features</h2>
+            <ul className="list-disc list-inside space-y-1">
+              {tool.keyFeatures?.map((feature: string, idx: number) => <li key={idx}>{feature}</li>)}
+            </ul>
+          </div>
 
-          {tool.keyFeatures?.length > 0 && (
-            <>
-              <h2>Key Features</h2>
-              <ul>{tool.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}</ul>
-            </>
-          )}
+          <div className="bg-white border rounded p-4">
+            <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
+            <p>Placeholder for pros/cons</p>
+          </div>
 
-          <h2>Pros & Cons</h2>
-          <p>Placeholder for pros/cons</p>
+          <div className="bg-white border rounded p-4">
+            <h2 className="text-xl font-semibold mb-2">FAQs</h2>
+            {tool.faqs?.length > 0 ? (
+              <Accordion type="multiple">
+                {tool.faqs.map((faq: any, i: number) => (
+                  <AccordionItem value={`faq-${i}`} key={i}>
+                    <AccordionTrigger>{faq.question}</AccordionTrigger>
+                    <AccordionContent>{faq.answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <p className="text-muted-foreground text-sm">No FAQs available.</p>
+            )}
+          </div>
 
-          <h2>FAQs</h2>
-          {tool.faqs?.length > 0 ? (
-            <Accordion type="multiple">
-              {tool.faqs.map((faq: any, i: number) => (
-                <AccordionItem value={`faq-${i}`} key={i}>
-                  <AccordionTrigger>{faq.question}</AccordionTrigger>
-                  <AccordionContent>{faq.answer}</AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            <p>No FAQs available.</p>
-          )}
+          <div className="bg-white border rounded p-4">
+            <h2 className="text-xl font-semibold mb-2">Tool Comparison</h2>
+            <p>Comparison Table Placeholder</p>
+          </div>
 
-          <div className="bg-yellow-100 h-[150px] text-center flex items-center justify-center my-6">
+          <div className="bg-yellow-100 p-4 text-center rounded font-medium text-sm">
             Featured Tool Banner Placeholder (Large)
           </div>
-          <div className="bg-gray-100 h-[120px] text-center flex items-center justify-center mb-6">
+
+          <div className="bg-gray-100 p-4 text-center rounded font-medium text-sm">
             Google Ad Banner Placeholder (Large)
           </div>
 
-          <div className="bg-gray-50 py-6 px-2 border-t">
-            <h2 className="text-xl font-bold mb-4 text-center">Similar Tools</h2>
-            {Array.isArray(similarTools) && similarTools.length > 0 ? (
+          <div className="border-t pt-6">
+            <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
+            {similarTools.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {similarTools.map((tool: any) => (
                   <ToolCard key={tool.id} tool={tool} showDescription={false} />
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center">No similar tools available.</p>
+              <p className="text-center text-muted-foreground text-sm">No similar tools available.</p>
             )}
           </div>
 
@@ -202,7 +242,7 @@ export default function ToolPage() {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <div className="sticky top-10 space-y-4 hidden lg:block">
+        <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
           <Card>
             <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
@@ -227,10 +267,13 @@ export default function ToolPage() {
           <Card>
             <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="border p-2 rounded text-sm">
-                  <strong>Tool {i}</strong><br />
-                  <span className="text-muted-foreground">Short description here</span>
+              {[1, 2, 3].map((_, i) => (
+                <div key={i} className="flex gap-2 items-center border rounded p-2">
+                  <img src="https://placehold.co/32x32" className="rounded" />
+                  <div className="text-xs">
+                    <div className="font-semibold">Tool {i + 1}</div>
+                    <div className="text-muted-foreground">Short description here</div>
+                  </div>
                 </div>
               ))}
             </CardContent>

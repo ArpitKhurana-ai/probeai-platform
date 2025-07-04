@@ -66,8 +66,12 @@ export default function ToolPage() {
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col items-center gap-4">
-          {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />}
-          {tool.badge && <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">{tool.badge}</span>}
+          {tool.logoUrl && (
+            <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />
+          )}
+          {tool.badge && (
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">{tool.badge}</span>
+          )}
 
           <a href={tool.website} target="_blank" rel="noopener noreferrer" className="w-full">
             <Button className="w-full"><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
@@ -82,7 +86,9 @@ export default function ToolPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Promote {tool.name}</DialogTitle>
-                <DialogDescription>Get featured for 30 days on homepage, search, and newsletter</DialogDescription>
+                <DialogDescription>
+                  Get featured for 30 days on homepage, search, and newsletter
+                </DialogDescription>
               </DialogHeader>
               <div className="text-center py-4">
                 <p className="text-xl font-bold mb-2">$100</p>
@@ -103,7 +109,11 @@ export default function ToolPage() {
             <h3 className="font-semibold text-sm mb-2">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
             <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2 w-full h-auto" />
-            <Button size="sm" onClick={() => navigator.clipboard.writeText(`<a href='https://probeai.io/tools/${tool.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`)}>Copy Light Embed</Button>
+            <Button size="sm" onClick={() => navigator.clipboard.writeText(
+              `<a href='https://probeai.io/tools/${tool.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`
+            )}>
+              Copy Light Embed
+            </Button>
           </div>
 
           <div className="bg-gray-100 w-full h-[300px] rounded-md text-center text-sm flex items-center justify-center">
@@ -119,25 +129,38 @@ export default function ToolPage() {
           <h2>About</h2>
           <p>{tool.description}</p>
 
-          {tool.howItWorks && <><h2>How it works</h2><p>{tool.howItWorks}</p></>}
+          {tool.howItWorks && (
+            <>
+              <h2>How it works</h2>
+              <p>{tool.howItWorks}</p>
+            </>
+          )}
 
           <h2>Tool Comparison</h2>
           <p>Comparison Table Placeholder</p>
 
           {tool.keyFeatures?.length > 0 && (
-            <><h2>Key Features</h2><ul>{tool.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}</ul></>
+            <>
+              <h2>Key Features</h2>
+              <ul>{tool.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}</ul>
+            </>
           )}
 
           <h2>Pros & Cons</h2>
           <p>Placeholder for pros/cons</p>
 
           {tool.faqs?.length > 0 && (
-            <><h2>FAQs</h2><Accordion type="multiple">{tool.faqs.map((faq: any, i: number) => (
-              <AccordionItem value={`faq-${i}`} key={i}>
-                <AccordionTrigger>{faq.question}</AccordionTrigger>
-                <AccordionContent>{faq.answer}</AccordionContent>
-              </AccordionItem>
-            ))}</Accordion></>
+            <>
+              <h2>FAQs</h2>
+              <Accordion type="multiple">
+                {tool.faqs.map((faq: any, i: number) => (
+                  <AccordionItem value={`faq-${i}`} key={i}>
+                    <AccordionTrigger>{faq.question}</AccordionTrigger>
+                    <AccordionContent>{faq.answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </>
           )}
 
           <div className="bg-gray-100 h-[90px] text-center flex items-center justify-center my-4">Ad Placeholder</div>
@@ -145,11 +168,15 @@ export default function ToolPage() {
 
           <div className="bg-gray-50 mt-8 py-4 px-2 border-t">
             <h2 className="text-xl font-bold mb-4">Similar Tools</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {similarTools.map((tool: any) => (
-                <ToolCard key={tool.id} tool={tool} showDescription={false} />
-              ))}
-            </div>
+            {Array.isArray(similarTools) && similarTools.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {similarTools.map((tool: any) => (
+                  <ToolCard key={tool.id} tool={tool} showDescription={false} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No similar tools available.</p>
+            )}
           </div>
 
           <div className="text-center mt-10 border-t pt-6">

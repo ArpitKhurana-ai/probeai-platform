@@ -259,25 +259,36 @@ export default function ToolPage() {
 
       {/* SIMILAR TOOLS - FULL WIDTH BELOW */}
       <div className="container mx-auto px-4 pt-12">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {similarTools.length > 0
-            ? similarTools.map((tool: any) => (
-                <ToolCard key={tool.id} tool={tool} showDescription={false} />
-              ))
-            : [1, 2, 3].map((_, i) => (
-                <ToolCard
-                  key={i}
-                  tool={{
-                    name: `Sample Tool ${i + 1}`,
-                    slug: `sample-tool-${i + 1}`,
-                    logoUrl: "https://placehold.co/64x64",
-                    shortDescription: "This is a placeholder tool.",
-                  }}
-                  showDescription={true}
-                />
-              ))}
-        </div>
+  <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {similarTools.length > 0
+      ? similarTools
+          .filter((t: any) => t.id !== tool.id) // avoid showing same tool
+          .slice(0, 6) // optionally limit
+          .map((tool: any) => (
+            <ToolCard key={tool.id} tool={tool} showDescription={false} />
+          ))
+      : [1, 2, 3].map((_, i) => (
+          <ToolCard
+            key={i}
+            tool={{
+              name: `Sample Tool ${i + 1}`,
+              slug: `sample-tool-${i + 1}`,
+              logoUrl: "https://placehold.co/64x64",
+              shortDescription: "This is a placeholder tool.",
+              category: "Example Category",
+              accessType: ["Web App", "API"],
+              audience: ["Developers", "Startups"],
+              isFeatured: i === 0,
+              isHot: i === 1,
+              views: 1200 + i * 200,
+              likes: 50 + i * 10,
+            }}
+            showDescription={true}
+          />
+        ))}
+  </div>
 
         {/* Submit Section */}
         <div className="text-center mt-10 border-t pt-6">

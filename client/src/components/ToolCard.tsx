@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ExternalLink } from "lucide-react";
+import { Heart, Eye, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -23,9 +22,7 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/tools/${tool.id}/like`, {
-        method: "POST",
-      });
+      return await apiRequest(`/api/tools/${tool.id}/like`, { method: "POST" });
     },
     onSuccess: () => {
       setIsLiked(!isLiked);
@@ -44,34 +41,25 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!isAuthenticated) {
       toast({
-        title: "Authentication Required",
+        title: "Login required",
         description: "Please sign in to like tools",
         variant: "destructive",
       });
       return;
     }
-
     likeMutation.mutate();
-  };
-
-  const getPricingBadgeVariant = (pricing: string) => {
-    switch (pricing?.toLowerCase()) {
-      case "free": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "freemium": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "paid": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      case "open source": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
   };
 
   const getSpecialBadgeVariant = (type: string) => {
     switch (type?.toLowerCase()) {
-      case "featured": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "hot": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+      case "featured":
+        return "bg-yellow-100 text-yellow-800";
+      case "hot":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -79,92 +67,99 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
 
   return (
     <Link href={`/tools/${toolSlug}`}>
-      <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer group">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
+      <Card className="transition-all duration-200 hover:shadow-md hover:scale-[1.01] cursor-pointer group h-full">
+        <CardContent className="p-5 space-y-4">
+          {/* Header row with logo and badges */}
+          <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
               {tool.logoUrl ? (
                 <img
                   src={tool.logoUrl}
-                  alt={`${tool.name} logo`}
-                  className="w-12 h-12 rounded-lg object-cover"
+                  alt={tool.name}
+                  className="w-10 h-10 rounded object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = "none";
                   }}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {tool.name.charAt(0)}
-                  </span>
+                <div className="w-10 h-10 rounded bg-gray-300 flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br from-primary to-blue-600">
+                  {tool.name.charAt(0)}
                 </div>
               )}
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {tool.name}
-                </h3>
-                <div className="flex gap-1 mt-1">
-                  {tool.isFeatured && (
-                    <Badge variant="secondary" className={getSpecialBadgeVariant("featured")}>
-                      Featured
-                    </Badge>
-                  )}
-                  {tool.isHot && (
-                    <Badge variant="secondary" className={getSpecialBadgeVariant("hot")}>
-                      Hot
-                    </Badge>
-                  )}
-                </div>
+              <div className="flex gap-1 flex-wrap">
+                {tool.isFeatured && (
+                  <Badge className={getSpecialBadgeVariant("featured")}>Featured</Badge>
+                )}
+                {tool.isHot && (
+                  <Badge className={getSpecialBadgeVariant("hot")}>Hot</Badge>
+                )}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLike}
-              disabled={likeMutation.isPending}
-              className="shrink-0"
-            >
-              <Heart
-                className={`h-4 w-4 transition-colors ${
-                  isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"
-                }`}
-              />
-            </Button>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
           </div>
 
-          {showDescription && tool.shortDescription && (
-            <p className="text-muted-foreground mb-4 text-sm line-clamp-2">
-              {tool.shortDescription}
-            </p>
+          {/* Category */}
+          {tool.category && (
+            <div className="text-xs text-muted-foreground font-medium">{tool.category}</div>
           )}
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {tool.pricingType && (
-              <Badge variant="secondary" className={getPricingBadgeVariant(tool.pricingType)}>
-                {tool.pricingType}
-              </Badge>
-            )}
-            {tool.accessType && (
-              <Badge variant="outline">
-                {Array.isArray(tool.accessType) ? tool.accessType.join(", ") : tool.accessType}
-              </Badge>
-            )}
-            {tool.audience && (
-              <Badge variant="outline">
-                {Array.isArray(tool.audience) ? tool.audience.join(", ") : tool.audience}
-              </Badge>
+          {/* Name and Description */}
+          <div>
+            <h3 className="font-semibold text-base group-hover:text-primary">
+              {tool.name}
+            </h3>
+            {showDescription && tool.shortDescription && (
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {tool.shortDescription}
+              </p>
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center text-primary hover:text-primary/80 transition-colors">
-              <span className="text-sm font-medium">View Details</span>
-              <ExternalLink className="ml-1 h-3 w-3" />
+          {/* Pills */}
+          <div className="flex flex-wrap gap-2">
+            {Array.isArray(tool.accessType)
+              ? tool.accessType.map((a, i) => (
+                  <Badge key={i} variant="outline" className="text-xs">
+                    {a}
+                  </Badge>
+                ))
+              : tool.accessType && (
+                  <Badge variant="outline" className="text-xs">
+                    {tool.accessType}
+                  </Badge>
+                )}
+            {Array.isArray(tool.audience)
+              ? tool.audience.map((a, i) => (
+                  <Badge key={i} variant="outline" className="text-xs">
+                    {a}
+                  </Badge>
+                ))
+              : tool.audience && (
+                  <Badge variant="outline" className="text-xs">
+                    {tool.audience}
+                  </Badge>
+                )}
+          </div>
+
+          {/* Footer row: likes & views */}
+          <div className="flex justify-between items-center text-xs text-muted-foreground pt-1">
+            <div className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              <span>{tool.views?.toLocaleString() || "0"}</span>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Heart className="h-4 w-4" />
-              <span>{tool.likes || 0}</span>
+            <div
+              className={`flex items-center gap-1 ${
+                isLiked ? "text-red-500" : ""
+              }`}
+              onClick={handleLike}
+            >
+              <Heart
+                className={`h-4 w-4 cursor-pointer ${
+                  isLiked ? "fill-red-500 text-red-500" : "hover:text-red-500"
+                }`}
+              />
+              <span>{tool.likes?.toLocaleString() || "0"}</span>
             </div>
           </div>
         </CardContent>

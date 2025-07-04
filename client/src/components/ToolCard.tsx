@@ -1,4 +1,4 @@
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { ArrowRight, Flame, Heart, Star, Users, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const handleClick = () => {
     navigate(`/tools/${tool.slug}`);
@@ -44,7 +44,6 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
       className="relative bg-white rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition p-4 flex flex-col gap-3"
       onClick={handleClick}
     >
-      {/* Featured and Hot Badges */}
       <div className="absolute top-2 left-2 flex gap-2">
         {tool.isFeatured && (
           <span className="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -58,7 +57,6 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
         )}
       </div>
 
-      {/* Tool Logo and Name */}
       <div className="flex items-center gap-3 mt-2">
         {tool.logoUrl && (
           <img
@@ -76,14 +74,12 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
         <ArrowRight className="w-4 h-4 text-muted-foreground" />
       </div>
 
-      {/* Short Description */}
       {showDescription && tool.shortDescription && (
         <p className="text-sm text-muted-foreground line-clamp-3">
           {tool.shortDescription}
         </p>
       )}
 
-      {/* Metadata Chips */}
       <div className="flex flex-wrap gap-2 mt-1 text-xs">
         {accessItems.map((item, i) => (
           <span
@@ -103,7 +99,6 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
         ))}
       </div>
 
-      {/* Views & Likes */}
       <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
         <span className="flex items-center gap-1">
           <Eye className="w-3 h-3" /> {tool.views ?? 0}

@@ -29,10 +29,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
-  Heart,
   ExternalLink,
   Star,
   DollarSign,
+  Heart,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,89 +41,41 @@ export default function ToolPage() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isLiked, setIsLiked] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
 
   const toolIdentifier = id;
 
-  const { data: tool } = useQuery({
-    queryKey: [`/api/tools/${toolIdentifier}`],
-  });
-
+  const { data: tool } = useQuery({ queryKey: [`/api/tools/${toolIdentifier}`] });
   const { data: similarTools } = useQuery({
     queryKey: [`/api/tools/${toolIdentifier}/similar`],
     enabled: !!toolIdentifier,
   });
 
-  const likeMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest(`/api/tools/${toolIdentifier}/like`, {
-        method: "POST",
-      });
-    },
-    onSuccess: () => {
-      setIsLiked(!isLiked);
-      queryClient.invalidateQueries({
-        queryKey: [`/api/tools/${toolIdentifier}`],
-      });
-    },
-  });
-
-  const handleLike = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Sign in required",
-        description: "Login to like tools",
-        variant: "destructive",
-      });
-      return;
-    }
-    likeMutation.mutate();
+  const handleShare = (platform: string) => {
+    const url = encodeURIComponent(window.location.href);
+    const links: any = {
+      twitter: `https://twitter.com/share?url=${url}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+    };
+    window.open(links[platform], "_blank");
   };
 
-  if (!tool)
-    return (
-      <Layout>
-        <div className="text-center py-10">Tool not found</div>
-      </Layout>
-    );
+  if (!tool) return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
+
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col items-center gap-4">
-          {tool.logoUrl && (
-            <img
-              src={tool.logoUrl}
-              alt={`${tool.name} logo`}
-              className="w-20 h-20 rounded-lg object-cover"
-            />
-          )}
-          {tool.badge && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-              {tool.badge}
-            </span>
-          )}
-          <Button variant="outline" onClick={handleLike} className="w-full">
-            <Heart className="w-4 h-4 mr-2" /> Like
-          </Button>
-          <div className="flex gap-3 justify-center w-full">
-            <a href={`https://twitter.com/share?url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener noreferrer">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" alt="Twitter" className="w-5 h-5 hover:opacity-80" />
-            </a>
-            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener noreferrer">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" alt="LinkedIn" className="w-5 h-5 hover:opacity-80" />
-            </a>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener noreferrer">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" alt="Facebook" className="w-5 h-5 hover:opacity-80" />
-            </a>
-          </div>
+          {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />}
+          {tool.badge && <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">{tool.badge}</span>}
+
           <a href={tool.website} target="_blank" rel="noopener noreferrer" className="w-full">
-            <Button className="w-full">
-              <ExternalLink className="w-4 h-4 mr-2" /> Visit
-            </Button>
+            <Button className="w-full"><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
           </a>
+
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>
               <Button className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold w-full">
@@ -142,137 +94,68 @@ export default function ToolPage() {
             </DialogContent>
           </Dialog>
 
-          <div className="bg-gray-100 w-full h-[300px] rounded-md mt-4 text-center text-sm flex items-center justify-center">
-            Ad Placeholder (300x600)
+          <div className="flex gap-3 justify-center w-full">
+            <Heart className="w-5 h-5 cursor-pointer" />
+            <img onClick={() => handleShare('twitter')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" className="w-5 h-5 cursor-pointer" />
+            <img onClick={() => handleShare('linkedin')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" className="w-5 h-5 cursor-pointer" />
+            <img onClick={() => handleShare('facebook')} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" className="w-5 h-5 cursor-pointer" />
           </div>
 
-          <div className="bg-muted p-4 rounded w-full mt-4">
+          {/* EMBED BADGE */}
+          <div className="bg-muted p-4 rounded w-full">
             <h3 className="font-semibold text-sm mb-2">Get more visibility</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Add this badge to your site to show you're featured on Probe AI.
-            </p>
+            <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
+            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2" />
+            <Button size="sm" onClick={() => navigator.clipboard.writeText(`<a href='https://probeai.io/tools/${tool.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`)}>Copy Light Embed</Button>
+          </div>
 
-            {/* Light Badge */}
-            <div className="bg-white p-2 rounded border mb-4">
-              <img
-                src="https://probeai.io/badges/featured-light.png"
-                alt="Featured on Probe AI - Light"
-                className="w-full rounded"
-              />
-              <Button
-                size="sm"
-                className="w-full mt-2 text-xs"
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    `<a href="https://probeai.io/tools/${tool.slug}" target="_blank" rel="noopener">
-  <img src="https://probeai.io/badges/featured-light.png" alt="Featured on Probe AI" width="160" height="600" />
-</a>`
-                  )
-                }
-              >
-                Copy Embed Code (Light)
-              </Button>
-            </div>
-
-            {/* Dark Badge */}
-            <div className="bg-white p-2 rounded border">
-              <img
-                src="https://probeai.io/badges/featured-dark.png"
-                alt="Featured on Probe AI - Dark"
-                className="w-full rounded"
-              />
-              <Button
-                size="sm"
-                className="w-full mt-2 text-xs"
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    `<a href="https://probeai.io/tools/${tool.slug}" target="_blank" rel="noopener">
-  <img src="https://probeai.io/badges/featured-dark.png" alt="Featured on Probe AI" width="160" height="600" />
-</a>`
-                  )
-                }
-              >
-                Copy Embed Code (Dark)
-              </Button>
-            </div>
+          <div className="bg-gray-100 w-full h-[300px] rounded-md text-center text-sm flex items-center justify-center">
+            Ad Placeholder (300x600)
           </div>
         </div>
 
         {/* CENTER COLUMN */}
         <div className="prose dark:prose-invert max-w-none">
           <h1>{tool.name}</h1>
-          <p className="text-muted-foreground">{tool.shortDescription}</p>
+          <p>{tool.shortDescription}</p>
 
-          <h2>About {tool.name}</h2>
-          <p>{tool.description || "No description available."}</p>
+          <h2>About</h2>
+          <p>{tool.description}</p>
 
-          {tool.howItWorks && (
-            <>
-              <h2>How it works</h2>
-              <p>{tool.howItWorks}</p>
-            </>
-          )}
+          {tool.howItWorks && <><h2>How it works</h2><p>{tool.howItWorks}</p></>}
+
+          <h2>Tool Comparison</h2>
+          <p>Comparison Table Placeholder</p>
 
           {tool.keyFeatures?.length > 0 && (
-            <>
-              <h2>Key Features</h2>
-              <ul>
-                {tool.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}
-              </ul>
-            </>
+            <><h2>Key Features</h2><ul>{tool.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}</ul></>
           )}
+
+          <h2>Pros & Cons</h2>
+          <p>Placeholder for pros/cons</p>
 
           {tool.faqs?.length > 0 && (
-            <>
-              <h2>FAQs</h2>
-              <Accordion type="multiple">
-                {tool.faqs.map((faq: any, i: number) => (
-                  <AccordionItem value={`faq-${i}`} key={i}>
-                    <AccordionTrigger>{faq.question}</AccordionTrigger>
-                    <AccordionContent>{faq.answer}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </>
+            <><h2>FAQs</h2><Accordion type="multiple">{tool.faqs.map((faq: any, i: number) => (
+              <AccordionItem value={`faq-${i}`} key={i}>
+                <AccordionTrigger>{faq.question}</AccordionTrigger>
+                <AccordionContent>{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}</Accordion></>
           )}
 
-          <div className="bg-gray-100 w-full h-[90px] rounded-md my-6 text-center text-sm flex items-center justify-center">
-            Ad Placeholder (728x90)
+          <div className="bg-gray-100 h-[90px] text-center flex items-center justify-center my-4">Ad Placeholder</div>
+          <div className="bg-yellow-100 p-4 text-center">Featured Tool Banner Placeholder</div>
+
+          <div className="bg-gray-50 mt-8 py-4 px-2 border-t">
+            <h2 className="text-xl font-bold mb-4">Similar Tools</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {similarTools?.map((tool: any) => (
+                <ToolCard key={tool.id} tool={tool} showDescription={false} />
+              ))}
+            </div>
           </div>
 
-          <div className="border-t pt-4 mt-8">
-            <h2>User Reviews</h2>
-            <p className="text-muted-foreground text-sm">Ratings and reviews coming soon.</p>
-          </div>
-
-          {tool.videoUrl && (
-            <div className="mt-6">
-              <h2>Product Demo</h2>
-              <div className="aspect-video">
-                <iframe
-                  src={tool.videoUrl}
-                  className="w-full h-full rounded"
-                  frameBorder="0"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  title={`${tool.name} demo video`}
-                />
-              </div>
-            </div>
-          )}
-
-          {similarTools && similarTools.length > 0 && (
-            <div className="mt-12">
-              <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {similarTools.map((tool: any) => (
-                  <ToolCard key={tool.id} tool={tool} showDescription={false} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-10 text-center border-t pt-6">
+          <div className="text-center mt-10 border-t pt-6">
             <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
             <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
             <a href="/submit">
@@ -284,15 +167,12 @@ export default function ToolPage() {
         {/* RIGHT SIDEBAR */}
         <div className="sticky top-10 space-y-4 hidden lg:block">
           <Card>
-            <CardHeader><CardTitle>Tool Information</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Category:</span><span>{tool.category}</span></div>
-              <div className="flex justify-between"><span>Pricing:</span><span>{tool.pricingType}</span></div>
-              <div className="flex justify-between"><span>Access:</span><span>{tool.accessType}</span></div>
-              <div className="flex justify-between"><span>Audience:</span><span>{tool.audience}</span></div>
-              <div className="flex justify-between"><span>AI Tech:</span><span>{tool.aiTech}</span></div>
-              <div className="flex justify-between"><span>Rating:</span><span>{tool.rating || "4.8"}</span></div>
-              <div className="flex justify-between"><span>Reviews:</span><span>{tool.reviews || "1.2K"}</span></div>
+              <div className="flex justify-between"><span>Category</span><span>{tool.category}</span></div>
+              <div className="flex justify-between"><span>Pricing</span><span>{tool.pricingType}</span></div>
+              <div className="flex justify-between"><span>Access</span><span>{tool.accessType}</span></div>
+              <div className="flex justify-between"><span>Audience</span><span>{tool.audience}</span></div>
             </CardContent>
           </Card>
 
@@ -308,14 +188,9 @@ export default function ToolPage() {
           )}
 
           <Card>
-            <CardHeader><CardTitle>Stay Updated</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
             <CardContent>
-              <input
-                type="email"
-                placeholder="Your email"
-                className="w-full border rounded px-2 py-1 mb-2 text-sm"
-              />
-              <Button className="w-full">Subscribe</Button>
+              <p className="text-sm">Promoted tool cards go here</p>
             </CardContent>
           </Card>
         </div>

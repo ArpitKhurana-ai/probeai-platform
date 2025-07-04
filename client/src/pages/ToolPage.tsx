@@ -63,14 +63,18 @@ export default function ToolPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[220px_1fr_280px] gap-8">
+      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col items-center gap-4">
           {tool.logoUrl && (
             <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />
           )}
           {/* BADGE */}
-          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Featured</span>
+          {tool.badge && (
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+              {tool.badge}
+            </span>
+          )}
           {/* ACTION BUTTONS */}
           <Button variant="outline" onClick={handleLike} className="w-full"><Heart className="w-4 h-4 mr-2" /> Like</Button>
           <Button variant="ghost" onClick={handleShare} className="w-full"><Share2 className="w-4 h-4 mr-2" /> Share</Button>
@@ -106,7 +110,7 @@ export default function ToolPage() {
           <p className="text-muted-foreground">{tool.shortDescription}</p>
 
           <h2>About {tool.name}</h2>
-          <p>{tool.description}</p>
+          <p>{tool.description || "No description available."}</p>
 
           {tool.howItWorks && (
             <>
@@ -143,12 +147,30 @@ export default function ToolPage() {
             Ad Placeholder (728x90)
           </div>
 
-          {/* Future reviews section */}
+          {/* Reviews */}
           <div className="border-t pt-4 mt-8">
             <h2>User Reviews</h2>
-            <p className="text-muted-foreground text-sm">Coming soon...</p>
+            <p className="text-muted-foreground text-sm">Ratings and reviews coming soon.</p>
           </div>
 
+          {/* Embedded Video */}
+          {tool.videoUrl && (
+            <div className="mt-6">
+              <h2>Product Demo</h2>
+              <div className="aspect-video">
+                <iframe
+                  src={tool.videoUrl}
+                  className="w-full h-full rounded"
+                  frameBorder="0"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  title={`${tool.name} demo video`}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Similar Tools */}
           {similarTools && similarTools.length > 0 && (
             <div className="mt-12">
               <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
@@ -159,6 +181,15 @@ export default function ToolPage() {
               </div>
             </div>
           )}
+
+          {/* Submit Your Tool CTA */}
+          <div className="mt-10 text-center border-t pt-6">
+            <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
+            <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
+            <a href="/submit">
+              <Button>Submit Your Tool</Button>
+            </a>
+          </div>
         </div>
 
         {/* RIGHT SIDEBAR */}
@@ -175,6 +206,17 @@ export default function ToolPage() {
               <div className="flex justify-between"><span>Reviews:</span><span>{tool.reviews || "1.2K"}</span></div>
             </CardContent>
           </Card>
+
+          {tool.tags?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {tool.tags.map((tag: string, i: number) => (
+                  <span key={i} className="bg-muted px-2 py-1 text-xs rounded">{tag}</span>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle>Stay Updated</CardTitle></CardHeader>

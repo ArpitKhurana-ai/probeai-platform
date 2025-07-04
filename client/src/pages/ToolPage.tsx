@@ -1,5 +1,3 @@
-// ToolPage.tsx
-
 import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -42,18 +40,18 @@ export default function ToolPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPromoteModal, setShowPromoteModal] = useState(false);
-
   const toolIdentifier = id;
 
   const { data: tool } = useQuery({ queryKey: [`/api/tools/${toolIdentifier}`] });
-  const { data: similarTools } = useQuery({
+  const { data: similarTools = [] } = useQuery({
     queryKey: [`/api/tools/${toolIdentifier}/similar`],
     enabled: !!toolIdentifier,
+    retry: false,
   });
 
   const handleShare = (platform: string) => {
     const url = encodeURIComponent(window.location.href);
-    const links: any = {
+    const links: Record<string, string> = {
       twitter: `https://twitter.com/share?url=${url}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
@@ -66,7 +64,6 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
-
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col items-center gap-4">
           {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />}
@@ -105,7 +102,7 @@ export default function ToolPage() {
           <div className="bg-muted p-4 rounded w-full">
             <h3 className="font-semibold text-sm mb-2">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
-            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2" />
+            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2 w-full h-auto" />
             <Button size="sm" onClick={() => navigator.clipboard.writeText(`<a href='https://probeai.io/tools/${tool.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`)}>Copy Light Embed</Button>
           </div>
 
@@ -149,7 +146,7 @@ export default function ToolPage() {
           <div className="bg-gray-50 mt-8 py-4 px-2 border-t">
             <h2 className="text-xl font-bold mb-4">Similar Tools</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {similarTools?.map((tool: any) => (
+              {similarTools.map((tool: any) => (
                 <ToolCard key={tool.id} tool={tool} showDescription={false} />
               ))}
             </div>

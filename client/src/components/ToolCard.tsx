@@ -106,17 +106,20 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
             <h3 className="text-base font-semibold text-primary group-hover:text-blue-600 mb-1">
               {tool.name}
             </h3>
+
             {tool.shortDescription && (
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-2 min-h-[2.5rem]">
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2 min-h-[3.25rem]">
                 {tool.shortDescription}
               </p>
             )}
+
             {tool.category && (
               <p className="text-xs font-medium text-foreground mb-2">
                 {tool.category}
               </p>
             )}
-            <div className="flex flex-wrap gap-2 mb-2">
+
+            <div className="flex flex-wrap gap-2 mb-4">
               {tool.accessType?.split(",").map((type) => (
                 <Badge key={type} variant="outline">
                   {type.trim()}
@@ -130,10 +133,8 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-4">
-            <div className="flex items-center gap-1">
-              <ExternalLink className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
+            <ExternalLink className="w-4 h-4" />
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Eye className="w-4 h-4 text-yellow-600" />

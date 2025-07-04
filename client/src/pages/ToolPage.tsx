@@ -41,7 +41,7 @@ export default function ToolPage() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [copied, setCopied] = useState(false);
+  const [copiedBadge, setCopiedBadge] = useState<"light" | "dark" | null>(null);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -89,8 +89,8 @@ export default function ToolPage() {
   const handleCopyEmbed = (mode: "light" | "dark") => {
     const code = `<a href='https://probeai.io/tools/${tool?.slug}' target='_blank'><img src='https://probeai.io/badges/featured-${mode}.png' width="160" height="600"/></a>`;
     navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedBadge(mode);
+    setTimeout(() => setCopiedBadge(null), 2000);
   };
 
   if (!tool) return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
@@ -98,6 +98,7 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
+
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 mx-auto rounded-lg object-cover" />}
@@ -138,13 +139,15 @@ export default function ToolPage() {
           <div className="bg-muted p-3 rounded w-full">
             <h3 className="font-semibold text-sm mb-1">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
+
             <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-1 w-full" />
             <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}>
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedBadge === "light" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
-            <img src="https://probeai.io/badges/featured-dark.png" className="rounded border my-2 w-full" />
+
+            <img src="https://probeai.io/badges/featured-dark.png" className="rounded border mt-3 mb-1 w-full" />
             <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}>
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedBadge === "dark" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
 
@@ -205,20 +208,12 @@ export default function ToolPage() {
             <p>Comparison Table Placeholder</p>
           </div>
 
-          <div className="bg-yellow-100 p-4 text-center rounded font-medium text-sm">
-            Featured Tool Banner Placeholder (Large)
+          <div className="bg-yellow-100 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+            Featured Tool Banner Placeholder (728x90)
           </div>
 
-          <div className="bg-gray-100 p-4 text-center rounded font-medium text-sm">
-            Google Ad Banner Placeholder (Large)
-          </div>
-
-          <div className="text-center mt-10 border-t pt-6">
-            <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
-            <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
-            <a href="/submit">
-              <Button>Submit Your Tool</Button>
-            </a>
+          <div className="bg-gray-100 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+            Google Ad Banner Placeholder (728x90)
           </div>
         </div>
 
@@ -262,18 +257,41 @@ export default function ToolPage() {
         </div>
       </div>
 
-      {/* ✅ FULL WIDTH SIMILAR TOOLS SECTION */}
-      <div className="container mx-auto px-4 pt-12 pb-20 border-t mt-10">
+      {/* SIMILAR TOOLS - FULL WIDTH BELOW */}
+      <div className="container mx-auto px-4 pt-12">
         <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
-        {similarTools.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {similarTools.map((tool: any) => (
-              <ToolCard key={tool.id} tool={tool} showDescription={false} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground text-sm">No similar tools available.</p>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {similarTools.length > 0
+            ? similarTools.map((tool: any) => (
+                <ToolCard key={tool.id} tool={tool} showDescription={false} />
+              ))
+            : [1, 2, 3].map((_, i) => (
+                <ToolCard
+                  key={i}
+                  tool={{
+                    name: `Sample Tool ${i + 1}`,
+                    slug: `sample-tool-${i + 1}`,
+                    logoUrl: "https://placehold.co/64x64",
+                    shortDescription: "This is a placeholder tool.",
+                  }}
+                  showDescription={true}
+                />
+              ))}
+        </div>
+
+        {/* Submit Section */}
+        <div className="text-center mt-10 border-t pt-6">
+          <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
+          <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
+          <a href="/submit">
+            <Button>Submit Your Tool</Button>
+          </a>
+        </div>
+
+        {/* Second Ad Banner */}
+        <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
+          Google Ad Banner Placeholder (728x90)
+        </div>
       </div>
     </Layout>
   );

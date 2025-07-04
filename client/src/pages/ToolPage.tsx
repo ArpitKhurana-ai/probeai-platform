@@ -258,14 +258,14 @@ export default function ToolPage() {
       </div>
 
       {/* SIMILAR TOOLS - FULL WIDTH BELOW */}
-      <div className="container mx-auto px-4 pt-12">
+<div className="container mx-auto px-4 pt-12">
   <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
 
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    {similarTools.length > 0
+    {tool && similarTools.length > 0
       ? similarTools
-          .filter((t: any) => t.id !== tool.id) // avoid showing same tool
-          .slice(0, 6) // optionally limit
+          .filter((t: any) => t.id !== tool.id)
+          .slice(0, 6)
           .map((tool: any) => (
             <ToolCard key={tool.id} tool={tool} showDescription={false} />
           ))
@@ -290,20 +290,20 @@ export default function ToolPage() {
         ))}
   </div>
 
-        {/* Submit Section */}
-        <div className="text-center mt-10 border-t pt-6">
-          <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
-          <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
-          <a href="/submit">
-            <Button>Submit Your Tool</Button>
-          </a>
-        </div>
+  {/* Submit Section */}
+  <div className="text-center mt-10 border-t pt-6">
+    <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
+    <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
+    <a href="/submit">
+      <Button>Submit Your Tool</Button>
+    </a>
+  </div>
 
-        {/* Second Ad Banner */}
-        <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
-          Google Ad Banner Placeholder (728x90)
-        </div>
-      </div>
+  {/* Second Ad Banner */}
+  <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
+    Google Ad Banner Placeholder (728x90)
+  </div>
+</div>
     </Layout>
   );
 }

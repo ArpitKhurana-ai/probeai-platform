@@ -1,3 +1,5 @@
+// client/src/pages/ToolPage.tsx
+
 import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -31,6 +33,8 @@ import {
   Star,
   DollarSign,
   Heart,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -40,6 +44,8 @@ export default function ToolPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const toolIdentifier = id;
 
   const { data: tool } = useQuery({ queryKey: [`/api/tools/${toolIdentifier}`] });
@@ -48,6 +54,12 @@ export default function ToolPage() {
     enabled: !!toolIdentifier,
     retry: false,
   });
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`<a href='https://probeai.io/tools/${tool?.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleShare = (platform: string) => {
     const url = encodeURIComponent(window.location.href);
@@ -64,8 +76,9 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
+
         {/* LEFT SIDEBAR */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 sticky top-10">
           {tool.logoUrl && (
             <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />
           )}
@@ -86,9 +99,7 @@ export default function ToolPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Promote {tool.name}</DialogTitle>
-                <DialogDescription>
-                  Get featured for 30 days on homepage, search, and newsletter
-                </DialogDescription>
+                <DialogDescription>Get featured for 30 days on homepage, search, and newsletter</DialogDescription>
               </DialogHeader>
               <div className="text-center py-4">
                 <p className="text-xl font-bold mb-2">$100</p>
@@ -108,11 +119,9 @@ export default function ToolPage() {
           <div className="bg-muted p-4 rounded w-full">
             <h3 className="font-semibold text-sm mb-2">Get more visibility</h3>
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
-            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2 w-full h-auto" />
-            <Button size="sm" onClick={() => navigator.clipboard.writeText(
-              `<a href='https://probeai.io/tools/${tool.slug}'><img src='https://probeai.io/badges/featured-light.png'/></a>`
-            )}>
-              Copy Light Embed
+            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-2 w-full h-auto max-w-[180px]" />
+            <Button size="icon" variant="ghost" className="mx-auto block" onClick={handleCopy}>
+              {copied ? <Check size={16} /> : <Copy size={16} />}
             </Button>
           </div>
 
@@ -149,25 +158,29 @@ export default function ToolPage() {
           <h2>Pros & Cons</h2>
           <p>Placeholder for pros/cons</p>
 
-          {tool.faqs?.length > 0 && (
-            <>
-              <h2>FAQs</h2>
-              <Accordion type="multiple">
-                {tool.faqs.map((faq: any, i: number) => (
-                  <AccordionItem value={`faq-${i}`} key={i}>
-                    <AccordionTrigger>{faq.question}</AccordionTrigger>
-                    <AccordionContent>{faq.answer}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </>
+          <h2>FAQs</h2>
+          {tool.faqs?.length > 0 ? (
+            <Accordion type="multiple">
+              {tool.faqs.map((faq: any, i: number) => (
+                <AccordionItem value={`faq-${i}`} key={i}>
+                  <AccordionTrigger>{faq.question}</AccordionTrigger>
+                  <AccordionContent>{faq.answer}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <p>No FAQs available.</p>
           )}
 
-          <div className="bg-gray-100 h-[90px] text-center flex items-center justify-center my-4">Ad Placeholder</div>
-          <div className="bg-yellow-100 p-4 text-center">Featured Tool Banner Placeholder</div>
+          <div className="bg-yellow-100 h-[150px] text-center flex items-center justify-center my-6">
+            Featured Tool Banner Placeholder (Large)
+          </div>
+          <div className="bg-gray-100 h-[120px] text-center flex items-center justify-center mb-6">
+            Google Ad Banner Placeholder (Large)
+          </div>
 
-          <div className="bg-gray-50 mt-8 py-4 px-2 border-t">
-            <h2 className="text-xl font-bold mb-4">Similar Tools</h2>
+          <div className="bg-gray-50 py-6 px-2 border-t">
+            <h2 className="text-xl font-bold mb-4 text-center">Similar Tools</h2>
             {Array.isArray(similarTools) && similarTools.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {similarTools.map((tool: any) => (
@@ -175,7 +188,7 @@ export default function ToolPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No similar tools available.</p>
+              <p className="text-sm text-muted-foreground text-center">No similar tools available.</p>
             )}
           </div>
 
@@ -213,8 +226,13 @@ export default function ToolPage() {
 
           <Card>
             <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm">Promoted tool cards go here</p>
+            <CardContent className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="border p-2 rounded text-sm">
+                  <strong>Tool {i}</strong><br />
+                  <span className="text-muted-foreground">Short description here</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

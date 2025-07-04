@@ -1,8 +1,7 @@
-import { useParams, Link } from "wouter";
+import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -64,26 +63,23 @@ export default function ToolPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
+      <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[220px_1fr_280px] gap-8">
+        {/* LEFT SIDEBAR */}
+        <div className="flex flex-col items-center gap-4">
           {tool.logoUrl && (
-            <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-16 h-16 rounded-lg object-cover" />
+            <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 rounded-lg object-cover" />
           )}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{tool.name}</h1>
-            <p className="text-lg text-muted-foreground mb-4">{tool.shortDescription}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3 justify-center sm:justify-start mb-8">
-          <Button variant="outline" onClick={handleLike}><Heart className="w-4 h-4 mr-2" /> Like</Button>
-          <Button variant="ghost" onClick={handleShare}><Share2 className="w-4 h-4 mr-2" /> Share</Button>
-          <a href={tool.website} target="_blank" rel="noopener noreferrer">
-            <Button><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
+          {/* BADGE */}
+          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Featured</span>
+          {/* ACTION BUTTONS */}
+          <Button variant="outline" onClick={handleLike} className="w-full"><Heart className="w-4 h-4 mr-2" /> Like</Button>
+          <Button variant="ghost" onClick={handleShare} className="w-full"><Share2 className="w-4 h-4 mr-2" /> Share</Button>
+          <a href={tool.website} target="_blank" rel="noopener noreferrer" className="w-full">
+            <Button className="w-full"><ExternalLink className="w-4 h-4 mr-2" /> Visit</Button>
           </a>
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>
-              <Button className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold">
+              <Button className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold w-full">
                 <Star className="w-4 h-4 mr-2" /> Promote
               </Button>
             </DialogTrigger>
@@ -98,18 +94,28 @@ export default function ToolPage() {
               </div>
             </DialogContent>
           </Dialog>
+          {/* Vertical Ad Placeholder */}
+          <div className="bg-gray-100 w-full h-[300px] rounded-md mt-4 text-center text-sm flex items-center justify-center">
+            Ad Placeholder (300x600)
+          </div>
         </div>
 
-        <div className="prose dark:prose-invert mb-8">
+        {/* MAIN CONTENT */}
+        <div className="prose dark:prose-invert max-w-none">
+          <h1>{tool.name}</h1>
+          <p className="text-muted-foreground">{tool.shortDescription}</p>
+
           <h2>About {tool.name}</h2>
           <p>{tool.description}</p>
+
           {tool.howItWorks && (
             <>
               <h2>How it works</h2>
               <p>{tool.howItWorks}</p>
             </>
           )}
-          {tool.keyFeatures && tool.keyFeatures.length > 0 && (
+
+          {tool.keyFeatures?.length > 0 && (
             <>
               <h2>Key Features</h2>
               <ul>
@@ -117,29 +123,71 @@ export default function ToolPage() {
               </ul>
             </>
           )}
+
+          {tool.faqs?.length > 0 && (
+            <>
+              <h2>FAQs</h2>
+              <Accordion type="multiple">
+                {tool.faqs.map((faq: any, i: number) => (
+                  <AccordionItem value={`faq-${i}`} key={i}>
+                    <AccordionTrigger>{faq.question}</AccordionTrigger>
+                    <AccordionContent>{faq.answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </>
+          )}
+
+          {/* Inline Ad Placeholder */}
+          <div className="bg-gray-100 w-full h-[90px] rounded-md my-6 text-center text-sm flex items-center justify-center">
+            Ad Placeholder (728x90)
+          </div>
+
+          {/* Future reviews section */}
+          <div className="border-t pt-4 mt-8">
+            <h2>User Reviews</h2>
+            <p className="text-muted-foreground text-sm">Coming soon...</p>
+          </div>
+
+          {similarTools && similarTools.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {similarTools.map((tool: any) => (
+                  <ToolCard key={tool.id} tool={tool} showDescription={false} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <Card className="mb-8">
-          <CardHeader><CardTitle>Tool Information</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-sm"><span>Category:</span><span>{tool.category}</span></div>
-            <div className="flex justify-between text-sm"><span>Pricing:</span><span>{tool.pricingType}</span></div>
-            <div className="flex justify-between text-sm"><span>Access:</span><span>{tool.accessType}</span></div>
-            <div className="flex justify-between text-sm"><span>Audience:</span><span>{tool.audience}</span></div>
-            <div className="flex justify-between text-sm"><span>AI Tech:</span><span>{tool.aiTech}</span></div>
-          </CardContent>
-        </Card>
+        {/* RIGHT SIDEBAR */}
+        <div className="sticky top-10 space-y-4 hidden lg:block">
+          <Card>
+            <CardHeader><CardTitle>Tool Information</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span>Category:</span><span>{tool.category}</span></div>
+              <div className="flex justify-between"><span>Pricing:</span><span>{tool.pricingType}</span></div>
+              <div className="flex justify-between"><span>Access:</span><span>{tool.accessType}</span></div>
+              <div className="flex justify-between"><span>Audience:</span><span>{tool.audience}</span></div>
+              <div className="flex justify-between"><span>AI Tech:</span><span>{tool.aiTech}</span></div>
+              <div className="flex justify-between"><span>Rating:</span><span>{tool.rating || "4.8"}</span></div>
+              <div className="flex justify-between"><span>Reviews:</span><span>{tool.reviews || "1.2K"}</span></div>
+            </CardContent>
+          </Card>
 
-        {similarTools && similarTools.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Similar Tools</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {similarTools.map((tool: any) => (
-                <ToolCard key={tool.id} tool={tool} showDescription={false} />
-              ))}
-            </div>
-          </div>
-        )}
+          <Card>
+            <CardHeader><CardTitle>Stay Updated</CardTitle></CardHeader>
+            <CardContent>
+              <input
+                type="email"
+                placeholder="Your email"
+                className="w-full border rounded px-2 py-1 mb-2 text-sm"
+              />
+              <Button className="w-full">Subscribe</Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );

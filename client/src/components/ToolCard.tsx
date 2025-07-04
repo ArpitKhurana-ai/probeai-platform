@@ -41,23 +41,25 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
 
   return (
     <div
-      className="relative bg-white rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition p-4 flex flex-col gap-3"
       onClick={handleClick}
+      className="relative group border rounded-lg bg-white hover:shadow transition cursor-pointer p-4 flex flex-col gap-2"
     >
-      <div className="absolute top-2 left-2 flex gap-2">
+      {/* BADGES */}
+      <div className="absolute top-2 left-2 flex gap-2 z-10">
         {tool.isFeatured && (
-          <span className="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span className="text-[10px] font-medium bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded flex items-center gap-1">
             <Star className="w-3 h-3" /> Featured
           </span>
         )}
         {tool.isHot && (
-          <span className="text-xs font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span className="text-[10px] font-medium bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-1">
             <Flame className="w-3 h-3" /> Hot
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-3 mt-2">
+      {/* LOGO + TITLE */}
+      <div className="flex items-center gap-3">
         {tool.logoUrl && (
           <img
             src={tool.logoUrl}
@@ -66,25 +68,28 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
           />
         )}
         <div className="flex-1">
-          <h3 className="text-lg font-semibold">{tool.name}</h3>
+          <h3 className="text-sm font-semibold">{tool.name}</h3>
           {tool.category && (
             <span className="text-xs text-muted-foreground">{tool.category}</span>
           )}
         </div>
-        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+
+        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition" />
       </div>
 
+      {/* DESCRIPTION */}
       {showDescription && tool.shortDescription && (
-        <p className="text-sm text-muted-foreground line-clamp-3">
+        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
           {tool.shortDescription}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2 mt-1 text-xs">
+      {/* TAGS */}
+      <div className="flex flex-wrap gap-1 mt-1">
         {accessItems.map((item, i) => (
           <span
             key={`access-${i}`}
-            className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
+            className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
           >
             {item}
           </span>
@@ -92,14 +97,15 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
         {audienceItems.map((item, i) => (
           <span
             key={`audience-${i}`}
-            className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full"
+            className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full"
           >
             {item}
           </span>
         ))}
       </div>
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+      {/* VIEWS + LIKES */}
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2">
         <span className="flex items-center gap-1">
           <Eye className="w-3 h-3" /> {tool.views ?? 0}
         </span>

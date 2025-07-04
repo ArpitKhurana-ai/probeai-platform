@@ -1,3 +1,5 @@
+// client/src/pages/ToolPage.tsx
+
 import { useParams } from "wouter";
 import { Layout } from "@/components/Layout";
 import { ToolCard } from "@/components/ToolCard";
@@ -98,7 +100,6 @@ export default function ToolPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
-
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           {tool.logoUrl && <img src={tool.logoUrl} alt={`${tool.name} logo`} className="w-20 h-20 mx-auto rounded-lg object-cover" />}
@@ -127,10 +128,7 @@ export default function ToolPage() {
           </Dialog>
 
           <div className="flex gap-4 justify-center w-full items-center mt-2">
-            <Heart
-              className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
-              onClick={handleLike}
-            />
+            <Heart className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`} onClick={handleLike} />
             <img onClick={() => handleShare("twitter")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/twitter.svg" className="w-5 h-5 cursor-pointer" />
             <img onClick={() => handleShare("linkedin")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/linkedin.svg" className="w-5 h-5 cursor-pointer" />
             <img onClick={() => handleShare("facebook")} src="https://cdn.jsdelivr.net/npm/simple-icons/icons/facebook.svg" className="w-5 h-5 cursor-pointer" />
@@ -239,71 +237,54 @@ export default function ToolPage() {
               </CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {[1, 2, 3].map((_, i) => (
-                <div key={i} className="flex gap-2 items-center border rounded p-2">
-                  <img src="https://placehold.co/32x32" className="rounded" />
-                  <div className="text-xs">
-                    <div className="font-semibold">Tool {i + 1}</div>
-                    <div className="text-muted-foreground">Short description here</div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
         </div>
       </div>
 
       {/* SIMILAR TOOLS - FULL WIDTH BELOW */}
-<div className="container mx-auto px-4 pt-12">
-  <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
+      <div className="container mx-auto px-4 pt-12">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    {tool && similarTools.length > 0
-      ? similarTools
-          .filter((t: any) => t.id !== tool.id)
-          .slice(0, 6)
-          .map((tool: any) => (
-            <ToolCard key={tool.id} tool={tool} showDescription={false} />
-          ))
-      : [1, 2, 3].map((_, i) => (
-          <ToolCard
-            key={i}
-            tool={{
-              name: `Sample Tool ${i + 1}`,
-              slug: `sample-tool-${i + 1}`,
-              logoUrl: "https://placehold.co/64x64",
-              shortDescription: "This is a placeholder tool.",
-              category: "Example Category",
-              accessType: ["Web App", "API"],
-              audience: ["Developers", "Startups"],
-              isFeatured: i === 0,
-              isHot: i === 1,
-              views: 1200 + i * 200,
-              likes: 50 + i * 10,
-            }}
-            showDescription={true}
-          />
-        ))}
-  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tool && similarTools.length > 0
+            ? similarTools
+                .filter((t: any) => t.id !== tool.id)
+                .slice(0, 6)
+                .map((similarTool: any) => (
+                  <ToolCard key={similarTool.id} tool={similarTool} showDescription={false} />
+                ))
+            : [1, 2, 3].map((_, i) => (
+                <ToolCard
+                  key={i}
+                  tool={{
+                    name: `Sample Tool ${i + 1}`,
+                    slug: `sample-tool-${i + 1}`,
+                    logoUrl: "https://placehold.co/64x64",
+                    shortDescription: "This is a placeholder tool.",
+                    category: "Example Category",
+                    accessType: ["Web App", "API"],
+                    audience: ["Developers", "Startups"],
+                    isFeatured: i === 0,
+                    isHot: i === 1,
+                    views: 1200 + i * 200,
+                    likes: 50 + i * 10,
+                  }}
+                  showDescription={true}
+                />
+              ))}
+        </div>
 
-  {/* Submit Section */}
-  <div className="text-center mt-10 border-t pt-6">
-    <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
-    <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
-    <a href="/submit">
-      <Button>Submit Your Tool</Button>
-    </a>
-  </div>
+        <div className="text-center mt-10 border-t pt-6">
+          <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
+          <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
+          <a href="/submit">
+            <Button>Submit Your Tool</Button>
+          </a>
+        </div>
 
-  {/* Second Ad Banner */}
-  <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
-    Google Ad Banner Placeholder (728x90)
-  </div>
-</div>
+        <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
+          Google Ad Banner Placeholder (728x90)
+        </div>
+      </div>
     </Layout>
   );
 }

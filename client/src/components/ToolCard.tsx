@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
+import { Heart, Eye, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,16 +43,14 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!isAuthenticated) {
       toast({
-        title: "Login Required",
-        description: "Please sign in to like tools",
+        title: "Login required",
+        description: "Please sign in to like tools.",
         variant: "destructive",
       });
       return;
     }
-
     likeMutation.mutate();
   };
 
@@ -60,48 +58,57 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
 
   return (
     <Link href={`/tools/${toolSlug}`}>
-      <Card className="h-full transition-all duration-200 hover:shadow-md hover:scale-[1.01] cursor-pointer group">
-        <CardContent className="p-5 flex flex-col justify-between h-full">
-          {/* TOP BADGES + ARROW */}
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex flex-wrap gap-1">
-              {tool.isFeatured && (
-                <Badge className="bg-yellow-100 text-yellow-800 text-xs">⭐ Featured</Badge>
-              )}
-              {tool.isHot && (
-                <Badge className="bg-red-100 text-red-800 text-xs">🔥 Hot</Badge>
+      <Card className="h-full cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.01] group">
+        <CardContent className="p-4 space-y-3">
+          {/* Top row with logo and arrow */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-2">
+              {tool.logoUrl ? (
+                <img
+                  src={tool.logoUrl}
+                  alt={`${tool.name} logo`}
+                  className="w-10 h-10 rounded-lg object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
+                  {tool.name?.[0] || "T"}
+                </div>
               )}
             </div>
-            <div className="text-muted-foreground text-xl group-hover:text-primary transition-colors">
-              →
-            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
           </div>
 
-          {/* CATEGORY */}
-          {tool.category && (
-            <div className="text-xs text-muted-foreground font-medium mb-1">
-              {tool.category}
-            </div>
-          )}
-
-          {/* NAME + DESCRIPTION */}
-          <div className="mb-3">
-            <h3 className="text-md font-semibold text-primary group-hover:underline line-clamp-1">
-              {tool.name}
-            </h3>
-            {showDescription && tool.shortDescription && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {tool.shortDescription}
-              </p>
+          {/* Tool name and description */}
+          <div>
+            <h3 className="font-semibold text-lg group-hover:text-primary">{tool.name}</h3>
+            {showDescription && (
+              <p className="text-sm text-muted-foreground line-clamp-2">{tool.shortDescription}</p>
             )}
           </div>
 
-          {/* TAGS */}
-          <div className="flex flex-wrap gap-1 text-xs mb-3">
+          {/* Category + Badges */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">{tool.category}</span>
+            <div className="flex gap-1">
+              {tool.isFeatured && (
+                <Badge className="bg-yellow-100 text-yellow-800 text-[10px]">✨ Featured</Badge>
+              )}
+              {tool.isHot && (
+                <Badge className="bg-red-100 text-red-800 text-[10px]">🔥 Hot</Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2">
             {Array.isArray(tool.accessType)
-              ? tool.accessType.map((a, i) => (
+              ? tool.accessType.map((type, i) => (
                   <Badge key={i} variant="outline" className="text-xs">
-                    {a}
+                    {type}
                   </Badge>
                 ))
               : tool.accessType && (
@@ -110,9 +117,9 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
                   </Badge>
                 )}
             {Array.isArray(tool.audience)
-              ? tool.audience.map((a, i) => (
+              ? tool.audience.map((aud, i) => (
                   <Badge key={i} variant="outline" className="text-xs">
-                    {a}
+                    {aud}
                   </Badge>
                 ))
               : tool.audience && (
@@ -122,15 +129,22 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
                 )}
           </div>
 
-          {/* VIEWS + LIKES */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-auto">
-            <div className="flex items-center gap-1">
-              <span>👁️</span>
-              <span>{tool.views?.toLocaleString() || "0"}</span>
+          {/* Views & Likes */}
+          <div className="flex items-center gap-4 pt-1">
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Eye className="w-4 h-4 mr-1" />
+              {tool.views ?? 0}
             </div>
-            <div className="flex items-center gap-1">
-              <span>❤️</span>
-              <span>{tool.likes?.toLocaleString() || "0"}</span>
+            <div
+              className="flex items-center text-xs text-muted-foreground"
+              onClick={handleLike}
+            >
+              <Heart
+                className={`w-4 h-4 mr-1 cursor-pointer transition ${
+                  isLiked ? "fill-red-500 text-red-500" : "hover:text-red-500"
+                }`}
+              />
+              {tool.likes ?? 0}
             </div>
           </div>
         </CardContent>

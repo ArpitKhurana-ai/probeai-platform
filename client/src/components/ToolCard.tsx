@@ -1,103 +1,157 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Eye, Heart, ExternalLink, Flame, Sparkles } from "lucide-react";
 import { Link } from "wouter";
-import { Eye, Heart } from "lucide-react";
-import { Tool } from "@shared/types";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import type { Tool } from "@shared/types";
 
 interface ToolCardProps {
-  tool: Tool;
+  tool: Tool & { isLiked?: boolean };
   showDescription?: boolean;
 }
 
 export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
-  const toolSlug = tool.slug || tool.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isLiked, setIsLiked] = useState(tool.isLiked || false);
+
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/tools/${tool.id}/like`, {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      setIsLiked(!isLiked);
+      queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/likes"] });
+    },
+    onError: (error) => {
+      console.error("Error toggling like:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update like status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to like tools",
+        variant: "destructive",
+      });
+      return;
+    }
+    likeMutation.mutate();
+  };
+
+  const getBadge = (type: string) => {
+    const base =
+      "text-xs px-2 py-0.5 rounded-full flex items-center gap-1 font-medium";
+    switch (type.toLowerCase()) {
+      case "featured":
+        return (
+          <div className={`${base} bg-yellow-100 text-yellow-800`}>
+            <Sparkles className="w-3 h-3" /> Featured
+          </div>
+        );
+      case "hot":
+        return (
+          <div className={`${base} bg-red-100 text-red-800`}>
+            <Flame className="w-3 h-3" /> Hot
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const toolSlug = tool.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return (
     <Link href={`/tools/${toolSlug}`}>
-      <Card className="cursor-pointer hover:shadow-md transition-all h-full group">
-        <CardContent className="p-5 flex flex-col justify-between h-full">
-          {/* Top Section: Logo + badges */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3">
-              {tool.logoUrl ? (
-                <img
-                  src={tool.logoUrl}
-                  alt={tool.name}
-                  className="w-10 h-10 rounded-md object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                  }}
-                />
-              ) : (
-                <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center text-sm font-bold text-gray-500">
-                  {tool.name.charAt(0)}
-                </div>
-              )}
-
-              <div className="flex gap-2 mt-0.5">
-                {tool.isFeatured && (
-                  <Badge className="bg-yellow-100 text-yellow-800 text-xs">✨ Featured</Badge>
-                )}
-                {tool.isHot && (
-                  <Badge className="bg-red-100 text-red-700 text-xs">🔥 Hot</Badge>
-                )}
+      <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer group">
+        <CardContent className="p-6 flex flex-col justify-between h-full">
+          <div className="flex justify-between items-start mb-4">
+            {tool.logoUrl ? (
+              <img
+                src={tool.logoUrl}
+                alt={tool.name}
+                className="w-12 h-12 rounded-lg object-cover"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center text-gray-600 font-semibold text-lg">
+                {tool.name.charAt(0)}
               </div>
+            )}
+
+            <div className="flex gap-2">
+              {tool.isFeatured && getBadge("featured")}
+              {tool.isHot && getBadge("hot")}
             </div>
           </div>
 
-          {/* Tool Name + Description */}
-          <div className="mb-3">
-            <h3 className="font-semibold text-[16px] text-gray-900 group-hover:text-primary transition line-clamp-1">
+          <div className="flex-grow">
+            <h3 className="text-base font-semibold text-primary group-hover:text-blue-600 mb-1">
               {tool.name}
             </h3>
-            {showDescription && tool.shortDescription && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{tool.shortDescription}</p>
+            {tool.shortDescription && (
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2 min-h-[2.5rem]">
+                {tool.shortDescription}
+              </p>
             )}
+            {tool.category && (
+              <p className="text-xs font-medium text-foreground mb-2">
+                {tool.category}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tool.accessType?.split(",").map((type) => (
+                <Badge key={type} variant="outline">
+                  {type.trim()}
+                </Badge>
+              ))}
+              {tool.audience?.split(",").map((aud) => (
+                <Badge key={aud} variant="outline">
+                  {aud.trim()}
+                </Badge>
+              ))}
+            </div>
           </div>
 
-          {/* Category + Tags */}
-          <div className="text-sm text-gray-700 font-medium mb-2">
-            {tool.category}
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-4">
+            <div className="flex items-center gap-1">
+              <ExternalLink className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Eye className="w-4 h-4 text-yellow-600" />
+                {tool.views || 0}
+              </div>
+              <div
+                className="flex items-center gap-1 cursor-pointer"
+                onClick={handleLike}
+              >
+                <Heart
+                  className={`w-4 h-4 transition-colors ${
+                    isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"
+                  }`}
+                />
+                {tool.likes || 0}
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {Array.isArray(tool.accessType)
-              ? tool.accessType.map((type, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">{type}</Badge>
-                ))
-              : tool.accessType && (
-                  <Badge variant="outline" className="text-xs">{tool.accessType}</Badge>
-                )}
-            {Array.isArray(tool.audience)
-              ? tool.audience.map((aud, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">{aud}</Badge>
-                ))
-              : tool.audience && (
-                  <Badge variant="outline" className="text-xs">{tool.audience}</Badge>
-                )}
-          </div>
-
-      {/* Bottom Row: External Link on left, Views + Likes on right */}
-<div className="flex justify-between items-center mt-auto pt-2 text-sm text-muted-foreground">
-  {/* External link icon on bottom-left */}
-  <div className="flex items-center gap-1 text-blue-500">
-    <ExternalLink className="w-4 h-4" />
-  </div>
-
-  {/* Views and Likes on bottom-right */}
-  <div className="flex gap-4">
-    <div className="flex items-center gap-1">
-      <Eye className="w-4 h-4 text-yellow-600" />
-      <span>{tool.views || 0}</span>
-    </div>
-    <div className="flex items-center gap-1">
-      <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-      <span>{tool.likes || 0}</span>
-    </div>
-  </div>
-</div>
-
         </CardContent>
       </Card>
     </Link>

@@ -1,103 +1,117 @@
-// client/src/components/ToolCard.tsx
-
-import { ExternalLink } from "lucide-react";
-import { useLocation } from "wouter";
+import { useNavigate } from "wouter";
+import { ArrowRight, Flame, Heart, Star, Users, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ToolCardProps = {
+interface ToolCardProps {
   tool: {
-    id: string;
-    slug: string;
+    id?: string;
     name: string;
-    logoUrl: string;
-    shortDescription: string;
+    slug: string;
+    logoUrl?: string;
+    shortDescription?: string;
+    accessType?: string[] | string;
+    audience?: string[] | string;
     category?: string;
-    accessType?: string;
-    audience?: string;
     isFeatured?: boolean;
     isHot?: boolean;
     views?: number;
     likes?: number;
   };
   showDescription?: boolean;
-};
+}
 
-export const ToolCard = ({ tool, showDescription = true }: ToolCardProps) => {
-  const [, navigate] = useLocation();
+export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
+  const navigate = useNavigate();
 
   const handleClick = () => {
     navigate(`/tools/${tool.slug}`);
   };
 
-  const accessList = tool.accessType ? tool.accessType.split(",").slice(0, 2) : [];
-  const audienceList = tool.audience ? tool.audience.split(",").slice(0, 2) : [];
+  const accessItems = Array.isArray(tool.accessType)
+    ? tool.accessType
+    : typeof tool.accessType === "string"
+    ? tool.accessType.split(",").map((s) => s.trim())
+    : [];
+
+  const audienceItems = Array.isArray(tool.audience)
+    ? tool.audience
+    : typeof tool.audience === "string"
+    ? tool.audience.split(",").map((s) => s.trim())
+    : [];
 
   return (
     <div
+      className="relative bg-white rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition p-4 flex flex-col gap-3"
       onClick={handleClick}
-      className="cursor-pointer border rounded-lg p-4 hover:shadow-md transition bg-white dark:bg-zinc-900"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {tool.logoUrl && (
-            <img
-              src={tool.logoUrl}
-              alt={`${tool.name} logo`}
-              className="w-10 h-10 object-cover rounded"
-            />
-          )}
-          <div className="text-sm font-medium text-muted-foreground">
-            {tool.category}
-          </div>
-        </div>
-        <div className="flex gap-1">
-          {tool.isFeatured && (
-            <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-[2px] rounded-full">
-              Featured
-            </span>
-          )}
-          {tool.isHot && (
-            <span className="bg-red-100 text-red-700 text-[10px] px-2 py-[2px] rounded-full">
-              🔥 Hot
-            </span>
-          )}
-        </div>
+      {/* Featured and Hot Badges */}
+      <div className="absolute top-2 left-2 flex gap-2">
+        {tool.isFeatured && (
+          <span className="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3" /> Featured
+          </span>
+        )}
+        {tool.isHot && (
+          <span className="text-xs font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Flame className="w-3 h-3" /> Hot
+          </span>
+        )}
       </div>
 
-      <h3 className="text-lg font-semibold line-clamp-1">{tool.name}</h3>
+      {/* Tool Logo and Name */}
+      <div className="flex items-center gap-3 mt-2">
+        {tool.logoUrl && (
+          <img
+            src={tool.logoUrl}
+            alt={tool.name}
+            className="w-10 h-10 rounded object-cover"
+          />
+        )}
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold">{tool.name}</h3>
+          {tool.category && (
+            <span className="text-xs text-muted-foreground">{tool.category}</span>
+          )}
+        </div>
+        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+      </div>
 
-      {showDescription && (
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+      {/* Short Description */}
+      {showDescription && tool.shortDescription && (
+        <p className="text-sm text-muted-foreground line-clamp-3">
           {tool.shortDescription}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2 mt-3">
-        {accessList.map((access, i) => (
+      {/* Metadata Chips */}
+      <div className="flex flex-wrap gap-2 mt-1 text-xs">
+        {accessItems.map((item, i) => (
           <span
             key={`access-${i}`}
-            className="bg-gray-100 dark:bg-zinc-700 text-xs px-2 py-[2px] rounded"
+            className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
           >
-            {access.trim()}
+            {item}
           </span>
         ))}
-        {audienceList.map((aud, i) => (
+        {audienceItems.map((item, i) => (
           <span
-            key={`aud-${i}`}
-            className="bg-gray-100 dark:bg-zinc-700 text-xs px-2 py-[2px] rounded"
+            key={`audience-${i}`}
+            className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full"
           >
-            {aud.trim()}
+            {item}
           </span>
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
-        <div className="flex gap-4">
-          <span>❤️ {tool.likes ?? "1.2K"}</span>
-          <span>👁️ {tool.views ?? "9.1K"}</span>
-        </div>
-        <ExternalLink className="w-4 h-4 opacity-50" />
+      {/* Views & Likes */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+        <span className="flex items-center gap-1">
+          <Eye className="w-3 h-3" /> {tool.views ?? 0}
+        </span>
+        <span className="flex items-center gap-1">
+          <Heart className="w-3 h-3" /> {tool.likes ?? 0}
+        </span>
       </div>
     </div>
   );
-};
+}

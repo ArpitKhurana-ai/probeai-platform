@@ -78,17 +78,26 @@ export function ToolCard({ tool, showDescription = true }: ToolCardProps) {
                 )}
           </div>
 
-          {/* Bottom: Views + Likes */}
-          <div className="flex justify-end gap-4 mt-auto pt-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4 text-yellow-600" />
-              <span>{tool.views || 0}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-              <span>{tool.likes || 0}</span>
-            </div>
-          </div>
+      {/* Bottom Row: External Link on left, Views + Likes on right */}
+<div className="flex justify-between items-center mt-auto pt-2 text-sm text-muted-foreground">
+  {/* External link icon on bottom-left */}
+  <div className="flex items-center gap-1 text-blue-500">
+    <ExternalLink className="w-4 h-4" />
+  </div>
+
+  {/* Views and Likes on bottom-right */}
+  <div className="flex gap-4">
+    <div className="flex items-center gap-1">
+      <Eye className="w-4 h-4 text-yellow-600" />
+      <span>{tool.views || 0}</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+      <span>{tool.likes || 0}</span>
+    </div>
+  </div>
+</div>
+
         </CardContent>
       </Card>
     </Link>

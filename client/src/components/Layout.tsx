@@ -39,14 +39,18 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-<Link href="/" className="flex items-center space-x-2">
+{/* Logo */}
+<Link href="/" className="flex items-center space-x-3">
   <img
     src="/logo-dark.png"
     alt="Probe AI Logo"
-    className="h-8 w-auto"
+    className="h-10 w-auto" // increase logo height
   />
-  <span className="text-xl font-bold text-foreground">Probe AI</span>
+  <span className="text-2xl font-extrabold text-foreground tracking-tight">
+    Probe AI
+  </span>
 </Link>
+
 
 
             {/* Desktop Navigation */}

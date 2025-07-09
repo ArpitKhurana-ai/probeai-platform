@@ -3,56 +3,66 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(239, 84%, 67%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
-  --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  --background: #ffffff;
+  --foreground: #0A0F3C;
+
+  --muted: #f2f2f2;
+  --muted-foreground: #555555;
+
+  --popover: #ffffff;
+  --popover-foreground: #0A0F3C;
+
+  --card: #ffffff;
+  --card-foreground: #0A0F3C;
+
+  --border: #e0e0e0;
+  --input: #e0e0e0;
+
+  --primary: #6F00FF; /* Electric Violet */
+  --primary-foreground: #ffffff;
+
+  --secondary: #FFA843; /* Golden Orange */
+  --secondary-foreground: #0A0F3C;
+
+  --accent: #00F0FF; /* Neon Blue */
+  --accent-foreground: #0A0F3C;
+
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+
+  --ring: #6F00FF;
   --radius: 0.5rem;
-  
-  /* Custom colors for AI theme */
-  --ai-blue: hsl(239, 84%, 67%);
-  --ai-purple: hsl(266, 85%, 58%);
-  --ai-cyan: hsl(184, 81%, 54%);
-  --success: hsl(142, 76%, 36%);
-  --warning: hsl(48, 96%, 53%);
-  --error: hsl(0, 84%, 60%);
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(239, 84%, 67%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --background: #0A0F3C;       /* Deep Blue */
+  --foreground: #F8F8F8;       /* Soft White */
+
+  --muted: #1C1C3A;
+  --muted-foreground: #B0B0B0;
+
+  --popover: #0A0F3C;
+  --popover-foreground: #F8F8F8;
+
+  --card: #0A0F3C;
+  --card-foreground: #F8F8F8;
+
+  --border: #2D2D5A;
+  --input: #2D2D5A;
+
+  --primary: #6F00FF;
+  --primary-foreground: #ffffff;
+
+  --secondary: #FFA843;
+  --secondary-foreground: #0A0F3C;
+
+  --accent: #00F0FF;
+  --accent-foreground: #0A0F3C;
+
+  --destructive: #ff4d4f;
+  --destructive-foreground: #ffffff;
+
+  --ring: #00F0FF;
   --radius: 0.5rem;
 }
 
@@ -65,17 +75,16 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Gradient backgrounds */
   .gradient-bg {
-    background: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(266, 85%, 58%) 100%);
+    background: linear-gradient(135deg, #6F00FF 0%, #00F0FF 100%);
   }
 
   .hero-gradient {
-    background: linear-gradient(135deg, hsl(219, 74%, 96%) 0%, hsl(266, 100%, 97%) 100%);
+    background: linear-gradient(135deg, #F8F8FF 0%, #EFEFFF 100%);
   }
 
   .dark .hero-gradient {
-    background: linear-gradient(135deg, hsl(240, 10%, 3.9%) 0%, hsl(240, 3.7%, 15.9%) 100%);
+    background: linear-gradient(135deg, #0A0F3C 0%, #1C1C3A 100%);
   }
 
   /* Custom scrollbar */
@@ -183,10 +192,10 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground));
+  background-color: var(--muted-foreground);
   border-radius: 2px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--foreground));
+  background-color: var(--foreground);
 }

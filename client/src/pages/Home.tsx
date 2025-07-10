@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { SearchBar } from "@/components/SearchBar";
-import { ToolCard } from "@/components/ToolCard";
+import ToolCard from "@/components/ToolCard";
 import { NewsCard } from "@/components/NewsCard";
 import { VideoCard } from "@/components/VideoCard";
 import { BlogCard } from "@/components/BlogCard";

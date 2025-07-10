@@ -218,7 +218,7 @@ export function Layout({ children }: LayoutProps) {
     {/* Left: Logo + About */}
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <img src="/logo.png" alt="Probe AI" className="h-6 w-6" />
+        <img src="/logo-dark.png" alt="Probe AI" className="h-6 w-6" />
         <span className="font-semibold text-lg">Probe AI</span>
       </div>
       <p className="text-muted-foreground max-w-md">

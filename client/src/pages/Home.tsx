@@ -99,27 +99,28 @@ export default function Home() {
         </div>
       </section>
 
- <section className="py-16 bg-muted/50">
+<section className="py-16 bg-muted/50">
   <div className="container mx-auto px-4">
     <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
 
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Large video spans full width */}
-      {featuredVideos?.items?.[0] && (
-        <div className="lg:col-span-3">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left: Large video */}
+      <div className="lg:col-span-2">
+        {featuredVideos?.items?.[0] && (
           <VideoCard video={featuredVideos.items[0]} size="large" />
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Bottom row of 3 small videos */}
-      {featuredVideos?.items?.slice(1, 4).map((video: any) => (
-        <div key={video.id}>
-          <VideoCard video={video} size="small" />
-        </div>
-      ))}
+      {/* Right: 3 stacked small videos */}
+      <div className="flex flex-col gap-4">
+        {featuredVideos?.items?.slice(1, 4).map((video: any) => (
+          <VideoCard key={video.id} video={video} size="small" />
+        ))}
+      </div>
     </div>
   </div>
 </section>
+
 
 
 

@@ -1,78 +1,28 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Play } from "lucide-react";
-import type { Video } from "@shared/types";
+import { PlayCircle } from "lucide-react";
 
-interface VideoCardProps {
-  video: Video;
-}
-
-export function VideoCard({ video }: VideoCardProps) {
-  const handleClick = () => {
-    window.open(video.videoUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  // Extract YouTube video ID for thumbnail
-  const getYouTubeThumbnail = (url: string) => {
-    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-    return videoId ? `https://img.youtube.com/vi/${videoId[1]}/maxresdefault.jpg` : null;
-  };
-
-  const thumbnailUrl = video.thumbnailUrl || getYouTubeThumbnail(video.videoUrl);
-
+export function VideoCard({ video, size = "small" }: { video: any; size?: "small" | "large" }) {
+  const isLarge = size === "large";
   return (
-    <Card 
-      className="overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer group"
-      onClick={handleClick}
+    <a
+      href={video.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`block overflow-hidden rounded-xl border border-border hover:shadow-lg transition-all duration-200 bg-background group ${
+        isLarge ? "md:h-[300px] xl:h-[360px]" : "h-[180px]"
+      }`}
     >
-      <div className="relative">
-        {thumbnailUrl ? (
-          <img 
-            src={thumbnailUrl}
-            alt={video.title}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=225';
-            }}
-          />
-        ) : (
-          <div className="w-full h-48 bg-gradient-to-br from-primary/20 to-blue-600/20 flex items-center justify-center">
-            <Play className="h-12 w-12 text-primary" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Play className="text-white text-xl ml-1" />
-          </div>
-        </div>
-        {video.duration && (
-          <div className="absolute bottom-3 right-3 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-            {video.duration}
-          </div>
-        )}
+      <div className="relative h-full w-full">
+        <img
+          src={video.thumbnail}
+          alt={video.title}
+          className="object-cover w-full h-full"
+        />
+        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all duration-200" />
+        <PlayCircle className="absolute top-1/2 left-1/2 text-white w-12 h-12 transform -translate-x-1/2 -translate-y-1/2 opacity-80 group-hover:opacity-100" />
       </div>
-      
-      <CardContent className="p-6">
-        <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
-          {video.title}
-        </h3>
-        
-        {video.description && (
-          <p className="text-muted-foreground text-sm mb-2 line-clamp-2">
-            {video.description}
-          </p>
-        )}
-        
-        <div className="flex items-center text-sm text-muted-foreground">
-          {video.channel && <span>{video.channel}</span>}
-          {video.views && (
-            <>
-              <span className="mx-2">•</span>
-              <span>{video.views}</span>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      <div className="p-4 bg-background">
+        <p className="font-medium text-foreground line-clamp-2">{video.title}</p>
+      </div>
+    </a>
   );
 }

@@ -66,7 +66,7 @@ export default function Home() {
       <section className="hero-gradient py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-            Discover the Best <span className="text-primary">Nex-Gen AI Tools</span>
+            Discover the Best <span className="text-primary">AI Tools</span>
           </h1>
           <p className="text-xl text-muted-foreground mt-4 mb-8 max-w-3xl mx-auto">
             Find, compare, and discover the perfect AI tools for your projects.
@@ -99,14 +99,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {featuredVideos?.items?.map((video: any) => <VideoCard key={video.id} video={video} />)}
-          </div>
-        </div>
-      </section>
+   
 
       <section className="py-16">
         <div className="container mx-auto px-4">

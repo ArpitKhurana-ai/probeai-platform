@@ -131,29 +131,29 @@ export default function Home() {
 
 
 
-   <section className="py-16">
+  <section className="py-16">
   <div className="container mx-auto px-4">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
       {/* 🗞️ Latest AI News */}
       <div>
         <h2 className="text-xl font-bold mb-4">🗞️ Latest AI News</h2>
-        <ul className="space-y-2">
+        <ul className="space-y-3 pl-2">
           {latestNews?.items?.slice(0, 4).map((article: any) => {
-            const date = article.publishedAt
-              ? new Date(article.publishedAt).toLocaleDateString("en-US", {
+            const parsedDate = article.publishedAt ? new Date(article.publishedAt) : null;
+            const dateStr = parsedDate
+              ? parsedDate.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
+                  year: "numeric",
                 })
               : null;
 
             return (
-              <li key={article.id} className="text-sm text-muted-foreground">
+              <li key={article.id} className="text-sm">
                 <span className="font-medium text-foreground">• {article.title}</span>{" "}
-                {date && (
-                  <span className="text-xs text-muted-foreground">
-                    [{date}]
-                  </span>
+                {dateStr && (
+                  <span className="text-xs text-muted-foreground">· {dateStr}</span>
                 )}
               </li>
             );
@@ -169,14 +169,12 @@ export default function Home() {
       {/* 📚 Featured Blogs */}
       <div>
         <h2 className="text-xl font-bold mb-4">📚 Featured Blogs</h2>
-        <ul className="space-y-2">
+        <ul className="space-y-3 pl-2">
           {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
-            <li key={blog.id} className="text-sm text-muted-foreground">
+            <li key={blog.id} className="text-sm">
               <span className="font-medium text-foreground">• {blog.title}</span>{" "}
               {blog.readTime && (
-                <span className="text-xs text-muted-foreground">
-                  · {blog.readTime} min read
-                </span>
+                <span className="text-xs text-muted-foreground">· {blog.readTime} min read</span>
               )}
             </li>
           ))}

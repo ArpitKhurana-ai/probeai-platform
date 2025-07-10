@@ -3,20 +3,16 @@ import { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { SearchBar } from "@/components/SearchBar";
 import { ToolCard } from "@/components/ToolCard";
-import { NewsCard } from "@/components/NewsCard";
 import { VideoCard } from "@/components/VideoCard";
-import { BlogCard } from "@/components/BlogCard";
 import { CategoryCard } from "@/components/CategoryCard";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import {
-  Bot, Image, Code, TrendingUp, PenTool, Music, ArrowRight, Sparkles, BarChart3,
-  ShoppingCart, Headphones, Video, Users, Search, Palette, BookOpen, DollarSign,
-  Zap, Share2, Phone, Gauge, Camera
+  Bot, Image, Code, TrendingUp, PenTool, Music, BarChart3, ShoppingCart, Headphones,
+  Video, Users, Search, Palette, BookOpen, DollarSign, Zap, Share2, Phone, Gauge, Camera
 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
+// 🧠 Define categories
 const categories = [
   { name: "Marketing", icon: TrendingUp, href: "/category/marketing" },
   { name: "Sales", icon: DollarSign, href: "/category/sales" },
@@ -42,6 +38,17 @@ const categories = [
   { name: "Search", icon: Search, href: "/category/search" },
   { name: "Profile Pic Gen", icon: Camera, href: "/category/profile-pic-gen" },
 ];
+
+// 🧠 Date formatter
+const formatDate = (dateStr: string) => {
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    });
+  }
+  return null;
+};
 
 export default function Home() {
   const { data: featuredTools } = useQuery({ queryKey: ["/api/tools?featured=true&limit=4"] });
@@ -80,7 +87,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🔥 Featured + Trending Tools */}
+      {/* Featured + Trending Tools */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -104,7 +111,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🎥 Featured Videos */}
+      {/* Videos */}
       <section className="py-16 bg-muted/50">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
@@ -121,29 +128,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🗞️ News + 📚 Blogs */}
+      {/* News + Blogs */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-            {/* 🗞️ News */}
+            {/* News */}
             <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
               <h2 className="text-xl md:text-2xl font-semibold mb-4">🗞️ Latest AI News</h2>
               <ul className="space-y-3 pl-2">
                 {latestNews?.items?.slice(0, 4).map((article: any) => {
-                  const parsedDate = article.publishedAt ? new Date(article.publishedAt) : null;
-                  const dateStr = parsedDate && !isNaN(parsedDate.getTime())
-                    ? parsedDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : null;
+                  const dateStr = formatDate(article.publishedAt);
                   return (
-                    <li key={article.id} className="text-sm">
-                      <span className="font-medium text-foreground">• {article.title}</span>
+                    <li key={article.id} className="text-sm flex items-center justify-between truncate">
+                      <span className="font-medium text-foreground truncate whitespace-nowrap overflow-hidden text-ellipsis">• {article.title}</span>
                       {dateStr && (
-                        <span className="ml-1 text-xs text-muted-foreground">· {dateStr}</span>
+                        <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">{dateStr}</span>
                       )}
                     </li>
                   );
@@ -156,15 +156,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 📚 Blogs */}
+            {/* Blogs */}
             <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
               <h2 className="text-xl md:text-2xl font-semibold mb-4">📚 Featured Blogs</h2>
               <ul className="space-y-3 pl-2">
                 {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
-                  <li key={blog.id} className="text-sm">
-                    <span className="font-medium text-foreground">• {blog.title}</span>
+                  <li key={blog.id} className="text-sm flex items-center justify-between truncate">
+                    <span className="font-medium text-foreground truncate whitespace-nowrap overflow-hidden text-ellipsis">• {blog.title}</span>
                     {blog.readTime && (
-                      <span className="ml-1 text-xs text-muted-foreground">· {blog.readTime} min read</span>
+                      <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">{blog.readTime} min read</span>
                     )}
                   </li>
                 ))}

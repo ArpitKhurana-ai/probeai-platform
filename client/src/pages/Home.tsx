@@ -131,24 +131,61 @@ export default function Home() {
 
 
 
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div>
-              <h2 className="text-2xl font-bold mb-4">📰 Latest AI News</h2>
-              <div className="space-y-4">
-                {latestNews?.items?.map((article: any) => <NewsCard key={article.id} article={article} />)}
-              </div>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-4">📝 Featured Blogs</h2>
-              <div className="space-y-4">
-                {featuredBlogs?.items?.map((blog: any) => <BlogCard key={blog.id} blog={blog} />)}
-              </div>
-            </div>
-          </div>
+     <section className="py-16">
+  <div className="container mx-auto px-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+      {/* 🗞️ AI News Headlines */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">🗞️ AI News Headlines</h2>
+        <ul className="space-y-2">
+          {latestNews?.items?.slice(0, 4).map((article: any) => (
+            <li key={article.id} className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                • {article.title}
+              </span>{" "}
+              <span className="text-xs text-muted-foreground">
+                [{new Date(article.publishedAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}]
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4">
+          <a href="/news" className="text-sm text-primary hover:underline">
+            → See all News
+          </a>
         </div>
-      </section>
+      </div>
+
+      {/* 📚 Featured Blogs */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">📚 Featured Blogs</h2>
+        <ul className="space-y-2">
+          {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
+            <li key={blog.id} className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                • {blog.title}
+              </span>{" "}
+              <span className="text-xs text-muted-foreground">
+                [{blog.readTime ?? "5 min read"}]
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 text-right">
+          <a href="/blogs" className="text-sm text-primary hover:underline">
+            → Browse all Blogs
+          </a>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
     </Layout>
   );
 }

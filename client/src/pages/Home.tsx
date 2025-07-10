@@ -134,27 +134,39 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* News */}
-            <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
-              <h2 className="text-xl md:text-2xl font-semibold mb-4">🗞️ Latest AI News</h2>
-              <ul className="space-y-3 pl-2">
-                {latestNews?.items?.slice(0, 4).map((article: any) => {
-                  const dateStr = formatDate(article.publishedAt);
-                  return (
-                    <li key={article.id} className="text-sm flex items-center justify-between truncate">
-                      <span className="font-medium text-foreground truncate whitespace-nowrap overflow-hidden text-ellipsis">• {article.title}</span>
-                      {dateStr && (
-                        <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">{dateStr}</span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-4">
-                <a href="/news" className="text-sm text-primary hover:underline">
-                  → See all News
-                </a>
-              </div>
-            </div>
+           {/* 🗞️ Boxed News Section */}
+<div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
+  <h2 className="text-xl md:text-2xl font-semibold mb-4">🗞️ Latest AI News</h2>
+  <ul className="space-y-3 pl-2">
+    {latestNews?.items?.slice(0, 4).map((article: any) => {
+      const dateToUse = article.publishedAt || article.createdAt;
+      const dateStr = dateToUse ? new Date(dateToUse).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }) : null;
+
+      return (
+        <li key={article.id} className="text-sm flex items-center justify-between truncate">
+          <span className="font-medium text-foreground truncate whitespace-nowrap overflow-hidden text-ellipsis">
+            • {article.title}
+          </span>
+          {dateStr && (
+            <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">
+              {dateStr}
+            </span>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+  <div className="mt-4 text-right">
+    <a href="/news" className="text-sm text-primary hover:underline">
+      → See all News
+    </a>
+  </div>
+</div>
+
 
             {/* Blogs */}
             <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">

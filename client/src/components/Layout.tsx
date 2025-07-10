@@ -212,8 +212,6 @@ export function Layout({ children }: LayoutProps) {
   <span className="text-xl font-bold text-foreground">Probe AI</span>
 </div>
 
-                <span className="text-xl font-bold">Probe AI</span>
-              </div>
               <p className="text-muted-foreground mb-6 max-w-md">
                 Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
               </p>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 export function ToolCard({ tool }: { tool: any }) {

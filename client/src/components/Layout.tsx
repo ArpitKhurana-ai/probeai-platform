@@ -1,5 +1,3 @@
-// client/src/components/Layout.tsx
-
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "AI Tools", href: "/tools", active: location === "/tools" },
+    { name: "AI Tools", href: "/tools", active: location === "/" },
     { name: "AI News", href: "/news", active: location === "/news" },
     { name: "Blog", href: "/blog", active: location.startsWith("/blog") },
     { name: "Submit", href: "/submit", active: location === "/submit" },
@@ -45,8 +43,14 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
-              <span className="text-2xl font-extrabold text-foreground tracking-tight">Probe AI</span>
+              <img
+                src="/logo-dark.png"
+                alt="Probe AI Logo"
+                className="h-10 w-auto"
+              />
+              <span className="text-2xl font-extrabold text-foreground tracking-tight">
+                Probe AI
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -66,6 +70,7 @@ export function Layout({ children }: LayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
+              {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -77,6 +82,7 @@ export function Layout({ children }: LayoutProps) {
                 <span className="sr-only">Toggle theme</span>
               </Button>
 
+              {/* User menu */}
               {isAuthenticated && user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -132,7 +138,7 @@ export function Layout({ children }: LayoutProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="cursor-pointer"
-                      onClick={() => window.location.href = "/api/logout"}
+                      onClick={() => (window.location.href = "/api/logout")}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Log out
@@ -140,16 +146,23 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={signInWithGoogle}>Sign In</Button>
+                <Button onClick={signInWithGoogle}>
+                  Sign In
+                </Button>
               )}
 
+              {/* Mobile menu button */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </div>
@@ -186,29 +199,15 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="bg-muted border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* ✅ Newsletter Section */}
-          <div className="mb-12 bg-muted/30 rounded-xl p-6 w-full max-w-3xl">
-            <h4 className="text-lg font-semibold mb-2">📬 Stay updated with AI trends</h4>
-            <p className="text-muted-foreground text-sm mb-4">
-              Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
-            </p>
-            <form className="flex flex-col sm:flex-row gap-3 w-full max-w-xl">
-              <input
-                type="email"
-                placeholder="you@example.com"
-                className="w-full flex-1 px-4 py-2 rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground"
-                required
-              />
-              <Button type="submit" className="w-full sm:w-auto">
-                Subscribe
-              </Button>
-            </form>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left: Brand */}
+            <div>
               <div className="flex items-center space-x-3 mb-4">
-                <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
+                <img
+                  src="/logo-dark.png"
+                  alt="Probe AI Logo"
+                  className="h-10 w-auto"
+                />
                 <span className="text-xl font-bold text-foreground">Probe AI</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">
@@ -230,30 +229,31 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
+            {/* Right: Newsletter Signup */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
-                <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
-                <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-                <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
-              </ul>
+              <h3 className="text-lg font-semibold mb-4">📬 Stay updated with AI trends</h3>
+              <p className="text-muted-foreground mb-4">
+                Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
+              </p>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="px-4 py-2 w-full rounded-md bg-background text-foreground border border-border"
+                />
+                <Button className="shrink-0 px-5 py-2 text-sm font-semibold">
+                  Subscribe
+                </Button>
+              </div>
             </div>
           </div>
 
           <hr className="border-border my-8" />
 
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">© 2024 Probe AI. All rights reserved.</p>
+            <p className="text-muted-foreground text-sm">
+              © 2024 Probe AI. All rights reserved.
+            </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
               <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>

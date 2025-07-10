@@ -82,6 +82,7 @@ export default function ToolPage() {
     }
     likeMutation.mutate();
   };
+
   const handleShare = (platform: string) => {
     const url = encodeURIComponent(window.location.href);
     const links: Record<string, string> = {
@@ -100,13 +101,12 @@ export default function ToolPage() {
   };
 
   if (!tool && !toolIdentifier) {
-  return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
-}
+    return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
+  }
 
-if (!tool) {
-  return <Layout><div className="text-center py-10">Loading...</div></Layout>;
-}
-
+  if (!tool) {
+    return <Layout><div className="text-center py-10">Loading...</div></Layout>;
+  }
 
   return (
     <Layout>
@@ -160,6 +160,7 @@ if (!tool) {
               </div>
             </DialogContent>
           </Dialog>
+
           <div className="flex gap-4 justify-center w-full items-center mt-2">
             <Heart
               className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
@@ -175,17 +176,13 @@ if (!tool) {
             <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
 
             <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-1 w-full" />
-            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}>
-              {copiedBadge === "light" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
+            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}> {copiedBadge === "light" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} </Button>
 
             <img src="https://probeai.io/badges/featured-dark.png" className="rounded border mt-3 mb-1 w-full" />
-            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}>
-              {copiedBadge === "dark" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
+            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}> {copiedBadge === "dark" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} </Button>
           </div>
 
-          <div className="bg-gray-100 w-full h-[300px] rounded-md text-center text-sm flex items-center justify-center">
+          <div className="bg-muted w-full h-[300px] rounded-md text-center text-sm flex items-center justify-center">
             Ad Placeholder (300x600)
           </div>
         </div>
@@ -197,31 +194,31 @@ if (!tool) {
             <p className="text-muted-foreground mt-1">{tool.shortDescription}</p>
           </div>
 
-          <div className="bg-white border rounded p-4">
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">About</h2>
             <p>{tool.description}</p>
           </div>
 
           {tool.howItWorks && (
-            <div className="bg-white border rounded p-4">
+            <div className="bg-card border border-muted rounded p-4 text-card-foreground">
               <h2 className="text-xl font-semibold mb-2">How it works</h2>
               <p>{tool.howItWorks}</p>
             </div>
           )}
 
-          <div className="bg-white border rounded p-4">
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Key Features</h2>
             <ul className="list-disc list-inside space-y-1">
               {tool.keyFeatures?.map((feature: string, idx: number) => <li key={idx}>{feature}</li>)}
             </ul>
           </div>
 
-          <div className="bg-white border rounded p-4">
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
             <p>Placeholder for pros/cons</p>
           </div>
 
-          <div className="bg-white border rounded p-4">
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">FAQs</h2>
             {tool.faqs?.length > 0 ? (
               <Accordion type="multiple">
@@ -237,16 +234,16 @@ if (!tool) {
             )}
           </div>
 
-          <div className="bg-white border rounded p-4">
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Tool Comparison</h2>
             <p>Comparison Table Placeholder</p>
           </div>
 
-          <div className="bg-yellow-100 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+          <div className="bg-yellow-100 dark:bg-yellow-900 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
             Featured Tool Banner Placeholder (728x90)
           </div>
 
-          <div className="bg-gray-100 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+          <div className="bg-muted p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
             Google Ad Banner Placeholder (728x90)
           </div>
         </div>
@@ -331,7 +328,7 @@ if (!tool) {
           </a>
         </div>
 
-        <div className="bg-gray-100 p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
+        <div className="bg-muted p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
           Google Ad Banner Placeholder (728x90)
         </div>
       </div>

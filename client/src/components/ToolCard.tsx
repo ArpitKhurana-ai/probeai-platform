@@ -1,33 +1,28 @@
+// client/src/components/ToolCard.tsx
 import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge";
 
 export function ToolCard({ tool }: { tool: any }) {
   return (
-    <Link href={`/tool/${tool.slug}`} className="block group">
-      <div className="flex items-start gap-4 p-4 bg-muted rounded-xl border hover:shadow transition">
-        {/* Logo */}
-        <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-white border">
-          <img
-            src={tool.logo}
-            alt={tool.name}
-            className="w-full h-full object-contain"
-          />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary truncate">
-            {tool.name}
-          </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {tool.description}
-          </p>
-          {tool.category && (
-            <Badge variant="outline" className="mt-2 text-xs">
-              {tool.category}
-            </Badge>
-          )}
-        </div>
+    <Link
+      href={`/tools/${tool.slug}`}
+      className="flex items-start gap-4 p-4 border rounded-lg hover:shadow bg-muted/10 transition-all"
+    >
+      <div className="w-12 h-12 min-w-[3rem] min-h-[3rem] overflow-hidden rounded-lg bg-white border">
+        <img
+          src={tool.logo}
+          alt={tool.name}
+          className="object-contain w-full h-full"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "/placeholder.png";
+          }}
+        />
+      </div>
+      <div className="flex flex-col">
+        <h3 className="text-sm font-semibold text-foreground">{tool.name}</h3>
+        <p className="text-muted-foreground text-xs line-clamp-2 mb-1">{tool.tagline}</p>
+        <span className="inline-block bg-muted text-xs font-medium px-2 py-0.5 rounded">
+          {tool.category || "Uncategorized"}
+        </span>
       </div>
     </Link>
   );

@@ -99,7 +99,14 @@ export default function ToolPage() {
     setTimeout(() => setCopiedBadge(null), 2000);
   };
 
-  if (!tool) return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
+  if (!tool && !toolIdentifier) {
+  return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
+}
+
+if (!tool) {
+  return <Layout><div className="text-center py-10">Loading...</div></Layout>;
+}
+
 
   return (
     <Layout>

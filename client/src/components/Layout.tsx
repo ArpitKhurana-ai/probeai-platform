@@ -212,93 +212,55 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-muted border-t border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Company Info */}
-            <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
-                <span className="text-xl font-bold text-foreground">Probe AI</span>
-              </div>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                Your go-to directory for discovering, comparing, and staying updated with
-                the latest AI tools and technologies.
-              </p>
-              <div className="flex space-x-4">
-                <a
-                  href="https://twitter.com/probeai"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://github.com/probeai"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://linkedin.com/company/probeai"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://youtube.com/@probeai"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="YouTube"
-                >
-                  <Youtube className="h-5 w-5" />
-                </a>
-              </div>
-            </div>
+      <footer className="border-t border-muted bg-muted/40 py-10 text-sm">
+  <div className="container mx-auto px-4 grid md:grid-cols-2 gap-10 items-start">
+    
+    {/* Left: Logo + About */}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <img src="/logo.png" alt="Probe AI" className="h-6 w-6" />
+        <span className="font-semibold text-lg">Probe AI</span>
+      </div>
+      <p className="text-muted-foreground max-w-md">
+        Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
+      </p>
+      <div className="flex gap-4 text-muted-foreground">
+        <a href="#" aria-label="Twitter"><i className="fab fa-twitter" /></a>
+        <a href="#" aria-label="GitHub"><i className="fab fa-github" /></a>
+        <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin" /></a>
+        <a href="#" aria-label="YouTube"><i className="fab fa-youtube" /></a>
+      </div>
+    </div>
 
-            {/* Newsletter Signup */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold mb-2">📬 Stay updated with AI trends</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
-              </p>
-              <form className="flex flex-col sm:flex-row items-center gap-4">
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  className="w-full sm:w-2/3 px-4 py-2 rounded-md border border-border bg-background text-sm text-foreground"
-                />
-                <Button type="submit" className="w-full sm:w-auto">
-                  Subscribe
-                </Button>
-              </form>
-            </div>
-          </div>
+    {/* Right: Newsletter */}
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">📬 Stay updated with AI trends</h3>
+      <p className="text-muted-foreground max-w-md">
+        Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
+      </p>
+      <form className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
+        <input
+          type="email"
+          placeholder="you@example.com"
+          className="w-full sm:w-auto px-4 py-2 rounded-md border border-input bg-background text-sm"
+        />
+        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-md text-sm">
+          Subscribe
+        </button>
+      </form>
+    </div>
 
-          <hr className="border-border my-8" />
+  </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">
-              © 2024 Probe AI. All rights reserved.
-            </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-              >
-                Terms of Service
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+  {/* Bottom Line */}
+  <div className="mt-10 text-center text-muted-foreground text-xs">
+    © 2024 Probe AI. All rights reserved.
+    <div className="mt-1">
+      <a href="/privacy" className="underline mr-4">Privacy Policy</a>
+      <a href="/terms" className="underline">Terms of Service</a>
+    </div>
+  </div>
+</footer>
     </div>
   );
 }

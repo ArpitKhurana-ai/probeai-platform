@@ -203,11 +203,15 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
-                  <Search className="w-4 h-4 text-white" />
-                </div>
+            <div className="flex items-center space-x-3 mb-4">
+  <img
+    src="/logo-dark.png"
+    alt="Probe AI Logo"
+    className="h-10 w-auto"
+  />
+  <span className="text-xl font-bold text-foreground">Probe AI</span>
+</div>
+
                 <span className="text-xl font-bold">Probe AI</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">

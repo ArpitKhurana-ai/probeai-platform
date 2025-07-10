@@ -135,9 +135,9 @@ export default function Home() {
   <div className="container mx-auto px-4">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-      {/* 🗞️ Latest AI News */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">🗞️ Latest AI News</h2>
+      {/* 🗞️ Boxed News Section */}
+      <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
+        <h2 className="text-lg font-semibold mb-4">🗞️ Latest AI News</h2>
         <ul className="space-y-3 pl-2">
           {latestNews?.items?.slice(0, 4).map((article: any) => {
             const parsedDate = article.publishedAt ? new Date(article.publishedAt) : null;
@@ -151,9 +151,9 @@ export default function Home() {
 
             return (
               <li key={article.id} className="text-sm">
-                <span className="font-medium text-foreground">• {article.title}</span>{" "}
+                <span className="font-medium text-foreground">• {article.title}</span>
                 {dateStr && (
-                  <span className="text-xs text-muted-foreground">· {dateStr}</span>
+                  <span className="ml-1 text-xs text-muted-foreground">· {dateStr}</span>
                 )}
               </li>
             );
@@ -166,15 +166,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 📚 Featured Blogs */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">📚 Featured Blogs</h2>
+      {/* 📚 Boxed Blog Section */}
+      <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
+        <h2 className="text-lg font-semibold mb-4">📚 Featured Blogs</h2>
         <ul className="space-y-3 pl-2">
           {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
             <li key={blog.id} className="text-sm">
-              <span className="font-medium text-foreground">• {blog.title}</span>{" "}
+              <span className="font-medium text-foreground">• {blog.title}</span>
               {blog.readTime && (
-                <span className="text-xs text-muted-foreground">· {blog.readTime} min read</span>
+                <span className="ml-1 text-xs text-muted-foreground">· {blog.readTime} min read</span>
               )}
             </li>
           ))}
@@ -189,6 +189,7 @@ export default function Home() {
     </div>
   </div>
 </section>
+
 
 
     </Layout>

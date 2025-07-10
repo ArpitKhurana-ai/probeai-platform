@@ -1,3 +1,4 @@
+// Trigger redeploy: 2025-07-10
 import { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { SearchBar } from "@/components/SearchBar";

@@ -12,8 +12,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Search, Moon, Sun, Heart, Plus, LogOut, User,
-  Menu, X, Twitter, Github, Linkedin, Youtube
+  Search,
+  Moon,
+  Sun,
+  Heart,
+  Plus,
+  LogOut,
+  User,
+  Menu,
+  X,
+  Twitter,
+  Github,
+  Linkedin,
+  Youtube,
 } from "lucide-react";
 import { useState } from "react";
 import { signInWithGoogle } from "@/lib/firebaseAuth";
@@ -29,7 +40,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "AI Tools", href: "/tools", active: location === "/" },
+    { name: "AI Tools", href: "/tools", active: location === "/tools" },
     { name: "AI News", href: "/news", active: location === "/news" },
     { name: "Blog", href: "/blog", active: location.startsWith("/blog") },
     { name: "Submit", href: "/submit", active: location === "/submit" },
@@ -43,11 +54,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <img
-                src="/logo-dark.png"
-                alt="Probe AI Logo"
-                className="h-10 w-auto"
-              />
+              <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
               <span className="text-2xl font-extrabold text-foreground tracking-tight">
                 Probe AI
               </span>
@@ -88,9 +95,14 @@ export function Layout({ children }: LayoutProps) {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={(user as any)?.profileImageUrl || ""} alt={(user as any)?.firstName || ""} />
+                        <AvatarImage
+                          src={(user as any)?.profileImageUrl || ""}
+                          alt={(user as any)?.firstName || ""}
+                        />
                         <AvatarFallback>
-                          {(user as any)?.firstName?.[0] || (user as any)?.email?.[0] || "U"}
+                          {(user as any)?.firstName?.[0] ||
+                            (user as any)?.email?.[0] ||
+                            "U"}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -99,7 +111,9 @@ export function Layout({ children }: LayoutProps) {
                     <div className="flex items-center justify-start gap-2 p-2">
                       <div className="flex flex-col space-y-1 leading-none">
                         {(user as any)?.firstName && (
-                          <p className="font-medium">{(user as any)?.firstName} {(user as any)?.lastName}</p>
+                          <p className="font-medium">
+                            {(user as any)?.firstName} {(user as any)?.lastName}
+                          </p>
                         )}
                         {(user as any)?.email && (
                           <p className="w-[200px] truncate text-sm text-muted-foreground">
@@ -122,7 +136,10 @@ export function Layout({ children }: LayoutProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile?tab=submissions" className="w-full cursor-pointer">
+                      <Link
+                        href="/profile?tab=submissions"
+                        className="w-full cursor-pointer"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         My Submissions
                       </Link>
@@ -146,9 +163,7 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={signInWithGoogle}>
-                  Sign In
-                </Button>
+                <Button onClick={signInWithGoogle}>Sign In</Button>
               )}
 
               {/* Mobile menu button */}
@@ -199,52 +214,65 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="bg-muted border-t border-border">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left: Brand */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Company Info */}
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                <img
-                  src="/logo-dark.png"
-                  alt="Probe AI Logo"
-                  className="h-10 w-auto"
-                />
+                <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
                 <span className="text-xl font-bold text-foreground">Probe AI</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
+                Your go-to directory for discovering, comparing, and staying updated with
+                the latest AI tools and technologies.
               </p>
               <div className="flex space-x-4">
-                <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
+                <a
+                  href="https://twitter.com/probeai"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Twitter"
+                >
                   <Twitter className="h-5 w-5" />
                 </a>
-                <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
+                <a
+                  href="https://github.com/probeai"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="GitHub"
+                >
                   <Github className="h-5 w-5" />
                 </a>
-                <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
+                <a
+                  href="https://linkedin.com/company/probeai"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="LinkedIn"
+                >
                   <Linkedin className="h-5 w-5" />
                 </a>
-                <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="YouTube">
+                <a
+                  href="https://youtube.com/@probeai"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="YouTube"
+                >
                   <Youtube className="h-5 w-5" />
                 </a>
               </div>
             </div>
 
-            {/* Right: Newsletter Signup */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">📬 Stay updated with AI trends</h3>
-              <p className="text-muted-foreground mb-4">
+            {/* Newsletter Signup */}
+            <div className="md:col-span-2">
+              <h3 className="text-lg font-semibold mb-2">📬 Stay updated with AI trends</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
               </p>
-              <div className="flex items-center space-x-2">
+              <form className="flex flex-col sm:flex-row items-center gap-4">
                 <input
                   type="email"
                   placeholder="you@example.com"
-                  className="px-4 py-2 w-full rounded-md bg-background text-foreground border border-border"
+                  className="w-full sm:w-2/3 px-4 py-2 rounded-md border border-border bg-background text-sm text-foreground"
                 />
-                <Button className="shrink-0 px-5 py-2 text-sm font-semibold">
+                <Button type="submit" className="w-full sm:w-auto">
                   Subscribe
                 </Button>
-              </div>
+              </form>
             </div>
           </div>
 
@@ -255,8 +283,18 @@ export function Layout({ children }: LayoutProps) {
               © 2024 Probe AI. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              >
+                Privacy Policy
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              >
+                Terms of Service
+              </a>
             </div>
           </div>
         </div>

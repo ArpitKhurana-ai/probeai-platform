@@ -80,24 +80,32 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div>
-              <h2 className="text-2xl font-bold mb-4">✨ Featured Tools</h2>
-              <div className="space-y-4">
-                {featuredTools?.items?.map((tool: any) => <ToolCard key={tool.id} tool={tool} />)}
-              </div>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-4">🔥 Trending Tools</h2>
-              <div className="space-y-4">
-                {trendingTools?.items?.map((tool: any) => <ToolCard key={tool.id} tool={tool} showDescription={false} />)}
-              </div>
-            </div>
-          </div>
+      <section className="py-16 bg-background">
+  <div className="container mx-auto px-4">
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Featured Tools */}
+      <div className="lg:w-2/3">
+        <h2 className="text-2xl font-bold mb-4">⭐ Featured AI Tools</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-1">
+          {featuredTools?.items?.slice(0, 8).map((tool: any) => (
+            <ToolCard key={tool.id} tool={tool} />
+          ))}
         </div>
-      </section>
+      </div>
+
+      {/* Trending Tools */}
+      <div className="lg:w-1/3">
+        <h2 className="text-2xl font-bold mb-4">🔥 Trending This Week</h2>
+        <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-1">
+          {trendingTools?.items?.slice(0, 4).map((tool: any) => (
+            <ToolCard key={tool.id} tool={tool} />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <section className="py-16 bg-muted/50">
   <div className="container mx-auto px-4">

@@ -103,14 +103,16 @@ export default function Home() {
   <div className="container mx-auto px-4">
     <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {featuredVideos?.items?.slice(0, 1).map((video: any) => (
-        <div key={video.id} className="md:col-span-2 xl:col-span-2">
-          <VideoCard video={video} size="large" />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Large video spans full width */}
+      {featuredVideos?.items?.[0] && (
+        <div className="lg:col-span-3">
+          <VideoCard video={featuredVideos.items[0]} size="large" />
         </div>
-      ))}
+      )}
 
-      {featuredVideos?.items?.slice(1, 5).map((video: any) => (
+      {/* Bottom row of 3 small videos */}
+      {featuredVideos?.items?.slice(1, 4).map((video: any) => (
         <div key={video.id}>
           <VideoCard video={video} size="small" />
         </div>

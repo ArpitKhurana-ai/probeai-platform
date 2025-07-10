@@ -1,3 +1,5 @@
+// client/src/components/Layout.tsx
+
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Moon, Sun, Heart, Plus, LogOut, User, Menu, X, Twitter, Github, Linkedin, Youtube } from "lucide-react";
+import {
+  Search, Moon, Sun, Heart, Plus, LogOut, User,
+  Menu, X, Twitter, Github, Linkedin, Youtube
+} from "lucide-react";
 import { useState } from "react";
 import { signInWithGoogle } from "@/lib/firebaseAuth";
 
@@ -26,7 +31,7 @@ export function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "AI Tools", href: "/tools", active: location === "/" },
+    { name: "AI Tools", href: "/tools", active: location === "/tools" },
     { name: "AI News", href: "/news", active: location === "/news" },
     { name: "Blog", href: "/blog", active: location.startsWith("/blog") },
     { name: "Submit", href: "/submit", active: location === "/submit" },
@@ -39,19 +44,10 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-{/* Logo */}
-<Link href="/" className="flex items-center space-x-3">
-  <img
-    src="/logo-dark.png"
-    alt="Probe AI Logo"
-    className="h-10 w-auto" // increase logo height
-  />
-  <span className="text-2xl font-extrabold text-foreground tracking-tight">
-    Probe AI
-  </span>
-</Link>
-
-
+            <Link href="/" className="flex items-center space-x-3">
+              <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
+              <span className="text-2xl font-extrabold text-foreground tracking-tight">Probe AI</span>
+            </Link>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8 ml-12">
@@ -70,7 +66,6 @@ export function Layout({ children }: LayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
-              {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -82,7 +77,6 @@ export function Layout({ children }: LayoutProps) {
                 <span className="sr-only">Toggle theme</span>
               </Button>
 
-              {/* User menu */}
               {isAuthenticated && user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -146,23 +140,16 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={signInWithGoogle}>
-                  Sign In
-                </Button>
+                <Button onClick={signInWithGoogle}>Sign In</Button>
               )}
 
-              {/* Mobile menu button */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                {mobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </div>
           </div>
@@ -194,80 +181,86 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      {/* Footer */}
-<footer className="bg-muted border-t border-border">
-  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-      {/* Company Info */}
-      <div className="col-span-1 md:col-span-2">
-        <div className="flex items-center space-x-3 mb-4">
-          <img
-            src="/logo-dark.png"
-            alt="Probe AI Logo"
-            className="h-10 w-auto"
-          />
-          <span className="text-xl font-bold text-foreground">Probe AI</span>
+      <footer className="bg-muted border-t border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* ✅ Newsletter Section */}
+          <div className="mb-12 bg-muted/30 rounded-xl p-6 w-full max-w-3xl">
+            <h4 className="text-lg font-semibold mb-2">📬 Stay updated with AI trends</h4>
+            <p className="text-muted-foreground text-sm mb-4">
+              Get weekly updates on tools, videos, and news — no spam, just breakthroughs.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-3 w-full max-w-xl">
+              <input
+                type="email"
+                placeholder="you@example.com"
+                className="w-full flex-1 px-4 py-2 rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground"
+                required
+              />
+              <Button type="submit" className="w-full sm:w-auto">
+                Subscribe
+              </Button>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-4">
+                <img src="/logo-dark.png" alt="Probe AI Logo" className="h-10 w-auto" />
+                <span className="text-xl font-bold text-foreground">Probe AI</span>
+              </div>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
+              </p>
+              <div className="flex space-x-4">
+                <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
+                  <Twitter className="h-5 w-5" />
+                </a>
+                <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
+                  <Github className="h-5 w-5" />
+                </a>
+                <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
+                  <Linkedin className="h-5 w-5" />
+                </a>
+                <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="YouTube">
+                  <Youtube className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+              <ul className="space-y-2">
+                <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
+                <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
+                <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
+                <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Resources</h3>
+              <ul className="space-y-2">
+                <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <hr className="border-border my-8" />
+
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-muted-foreground text-sm">© 2024 Probe AI. All rights reserved.</p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>
+            </div>
+          </div>
         </div>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
-        </p>
-        <div className="flex space-x-4">
-          <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
-            <Twitter className="h-5 w-5" />
-          </a>
-          <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
-            <Github className="h-5 w-5" />
-          </a>
-          <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
-            <Linkedin className="h-5 w-5" />
-          </a>
-          <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="YouTube">
-            <Youtube className="h-5 w-5" />
-          </a>
-        </div>
-      </div>
-
-      {/* Quick Links */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-        <ul className="space-y-2">
-          <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
-          <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
-          <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-          <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
-        </ul>
-      </div>
-
-      {/* Resources */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Resources</h3>
-        <ul className="space-y-2">
-          <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
-          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <hr className="border-border my-8" />
-
-    <div className="flex flex-col md:flex-row justify-between items-center">
-      <p className="text-muted-foreground text-sm">
-        © 2024 Probe AI. All rights reserved.
-      </p>
-      <div className="flex space-x-6 mt-4 md:mt-0">
-        <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
-        <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
+      </footer>
     </div>
   );
 }

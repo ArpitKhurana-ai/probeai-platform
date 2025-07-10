@@ -1,197 +1,146 @@
-// Trigger redeploy: 2025-07-10
-import { useEffect } from "react";
-import { Layout } from "@/components/Layout";
-import { SearchBar } from "@/components/SearchBar";
-import { ToolCard } from "@/components/ToolCard";
-import { NewsCard } from "@/components/NewsCard";
-import { VideoCard } from "@/components/VideoCard";
-import { BlogCard } from "@/components/BlogCard";
-import { CategoryCard } from "@/components/CategoryCard";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
-import {
-  Bot, Image, Code, TrendingUp, PenTool, Music, ArrowRight, Sparkles, BarChart3,
-  ShoppingCart, Headphones, Video, Users, Search, Palette, BookOpen, DollarSign,
-  Zap, Share2, Phone, Gauge, Camera
-} from "lucide-react";
-import { trackEvent } from "@/lib/analytics";
+import { Layout } from "@/components/Layout";
+import { apiRequest } from "@/lib/apiRequest";
+import { ToolCard } from "@/components/ToolCard";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
-const categories = [
-  { name: "Marketing", icon: TrendingUp, href: "/category/marketing" },
-  { name: "Sales", icon: DollarSign, href: "/category/sales" },
-  { name: "Analytics", icon: BarChart3, href: "/category/analytics" },
-  { name: "Customer Service", icon: Phone, href: "/category/customer-service" },
-  { name: "Productivity", icon: Gauge, href: "/category/productivity" },
-  { name: "Social Media", icon: Share2, href: "/category/social-media" },
-  { name: "Video", icon: Video, href: "/category/video" },
-  { name: "Image", icon: Image, href: "/category/image" },
-  { name: "Writing", icon: PenTool, href: "/category/writing" },
-  { name: "Audio", icon: Music, href: "/category/audio" },
-  { name: "Coding", icon: Code, href: "/category/coding" },
-  { name: "UI/UX", icon: Palette, href: "/category/ui-ux" },
-  { name: "Studying", icon: BookOpen, href: "/category/studying" },
-  { name: "Research", icon: Search, href: "/category/research" },
-  { name: "E-commerce", icon: ShoppingCart, href: "/category/e-commerce" },
-  { name: "NSFW", icon: Users, href: "/category/nsfw" },
-  { name: "Developer Tools", icon: Code, href: "/category/developer-tools" },
-  { name: "AI Avatars", icon: Users, href: "/category/ai-avatars" },
-  { name: "Investing", icon: TrendingUp, href: "/category/investing" },
-  { name: "Chatbots", icon: Bot, href: "/category/chatbots" },
-  { name: "Automation", icon: Zap, href: "/category/automation" },
-  { name: "Search", icon: Search, href: "/category/search" },
-  { name: "Profile Pic Gen", icon: Camera, href: "/category/profile-pic-gen" },
-];
+interface Tool {
+  id: number;
+  name: string;
+  slug: string;
+  logo: string;
+  description: string;
+  category: string;
+  tags: string[];
+  featured: boolean;
+  hot: boolean;
+}
+
+interface NewsItem {
+  id: number;
+  title: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+}
+
+interface BlogItem {
+  id: number;
+  title: string;
+  slug: string;
+  readTimeMinutes: number;
+}
 
 export default function Home() {
-  const { data: featuredTools } = useQuery({ queryKey: ["/api/tools?featured=true&limit=4"] });
-  const { data: trendingTools } = useQuery({ queryKey: ["/api/tools?hot=true&limit=4"] });
-  const { data: latestNews } = useQuery({ queryKey: ["/api/news?limit=4"] });
-  const { data: featuredVideos } = useQuery({ queryKey: ["/api/videos?limit=5"] });
-  const { data: featuredBlogs } = useQuery({ queryKey: ["/api/blogs?limit=4"] });
+  const { data: featuredTools } = useQuery<Tool[]>({
+    queryKey: ["/api/tools?featured=true&limit=4"],
+    queryFn: () => apiRequest("/api/tools?featured=true&limit=4"),
+  });
 
-  useEffect(() => {
-    trackEvent("page_view", "home");
-  }, []);
+  const { data: hotTools } = useQuery<Tool[]>({
+    queryKey: ["/api/tools?hot=true&limit=4"],
+    queryFn: () => apiRequest("/api/tools?hot=true&limit=4"),
+  });
 
-  const handleSearch = (query: string) => {
-    trackEvent("search", "home", query);
-    if (query.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
-    }
+  const { data: news } = useQuery<NewsItem[]>({
+    queryKey: ["/api/news?limit=4"],
+    queryFn: () => apiRequest("/api/news?limit=4"),
+  });
+
+  const { data: blogs } = useQuery<BlogItem[]>({
+    queryKey: ["/api/blogs?limit=4"],
+    queryFn: () => apiRequest("/api/blogs?limit=4"),
+  });
+
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
+    return !isNaN(d.getTime())
+      ? d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
   };
 
   return (
     <Layout>
-      <section className="hero-gradient py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-            Discover the Best <span className="text-primary">AI Tools</span>
-          </h1>
-          <p className="text-xl text-muted-foreground mt-4 mb-8 max-w-3xl mx-auto">
-            Find, compare, and discover the perfect AI tools for your projects.
-          </p>
-          <SearchBar onSearch={handleSearch} />
-          <div className="flex flex-wrap justify-center gap-1.5 mt-10 max-w-6xl mx-auto">
-            {categories.map((category) => (
-              <CategoryCard key={category.name} {...category} />
+      <div className="max-w-7xl mx-auto px-4 pt-8">
+        {/* Featured Tools */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">🔥 Hot Tools</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {hotTools?.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-  <section className="py-16">
-  <div className="container mx-auto px-4">
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      {/* Featured Tools - 3/5 width */}
-      <div className="lg:col-span-3 border rounded-xl p-6 bg-muted/30">
-        <h2 className="text-xl font-bold mb-4">⭐ Featured AI Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {featuredTools?.items?.slice(0, 8).map((tool: any) => (
-            <ToolCard key={tool.id} tool={tool} />
-          ))}
-        </div>
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">✨ Featured Tools</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {featuredTools?.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
+            ))}
+          </div>
+        </section>
+
+        {/* News & Blogs */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <div className="border rounded-xl p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-2">🗞️ Latest AI News</h2>
+            <ul className="space-y-2">
+              {news?.map((item) => (
+                <li key={item.id} className="flex justify-between text-sm">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-200 hover:underline"
+                  >
+                    {item.title}
+                  </a>
+                  <span className="text-gray-400 ml-2 whitespace-nowrap">
+                    {formatDate(item.publishedAt) || "—"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/news"
+              className="block mt-2 text-sm text-purple-400 hover:underline"
+            >
+              → See all News
+            </Link>
+          </div>
+
+          <div className="border rounded-xl p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-2">📚 Featured Blogs</h2>
+            <ul className="space-y-2 text-sm">
+              {blogs?.map((item) => (
+                <li key={item.id} className="flex justify-between">
+                  <Link
+                    to={`/blog/${item.slug}`}
+                    className="text-sky-200 hover:underline"
+                  >
+                    {item.title}
+                  </Link>
+                  <span className="text-gray-400 ml-2 whitespace-nowrap">
+                    • {item.readTimeMinutes} min read
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/blog"
+              className="block mt-2 text-sm text-purple-400 hover:underline"
+            >
+              → Browse all Blogs
+            </Link>
+          </div>
+        </section>
       </div>
-
-      {/* Trending Tools - 2/5 width */}
-      <div className="lg:col-span-2 border rounded-xl p-6 bg-muted/30">
-        <h2 className="text-xl font-bold mb-4">🔥 Trending This Week</h2>
-        <div className="grid grid-cols-1 gap-4">
-          {trendingTools?.items?.slice(0, 4).map((tool: any) => (
-            <ToolCard key={tool.id} tool={tool} />
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-
-<section className="py-16 bg-muted/50">
-  <div className="container mx-auto px-4">
-    <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
-
-    {/* Large video at top */}
-    <div className="mb-6">
-      {featuredVideos?.items?.[0] && (
-        <VideoCard video={featuredVideos.items[0]} size="large" />
-      )}
-    </div>
-
-    {/* 3 videos below it */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {featuredVideos?.items?.slice(1, 4).map((video: any) => (
-        <VideoCard key={video.id} video={video} size="small" />
-      ))}
-    </div>
-  </div>
-</section>
-
-
-
-
-  <section className="py-16">
-  <div className="container mx-auto px-4">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-      {/* 🗞️ Boxed News Section */}
-      <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
-        <h2 className="text-lg font-semibold mb-4">🗞️ Latest AI News</h2>
-        <ul className="space-y-3 pl-2">
-          {latestNews?.items?.slice(0, 4).map((article: any) => {
-            const parsedDate = article.publishedAt ? new Date(article.publishedAt) : null;
-            const dateStr = parsedDate
-              ? parsedDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : null;
-
-            return (
-              <li key={article.id} className="text-sm">
-                <span className="font-medium text-foreground">• {article.title}</span>
-                {dateStr && (
-                  <span className="ml-1 text-xs text-muted-foreground">· {dateStr}</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-4">
-          <a href="/news" className="text-sm text-primary hover:underline">
-            → See all News
-          </a>
-        </div>
-      </div>
-
-      {/* 📚 Boxed Blog Section */}
-      <div className="bg-muted/10 rounded-xl p-6 shadow-sm border">
-        <h2 className="text-lg font-semibold mb-4">📚 Featured Blogs</h2>
-        <ul className="space-y-3 pl-2">
-          {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
-            <li key={blog.id} className="text-sm">
-              <span className="font-medium text-foreground">• {blog.title}</span>
-              {blog.readTime && (
-                <span className="ml-1 text-xs text-muted-foreground">· {blog.readTime} min read</span>
-              )}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 text-right">
-          <a href="/blogs" className="text-sm text-primary hover:underline">
-            → Browse all Blogs
-          </a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-
-
     </Layout>
   );
 }

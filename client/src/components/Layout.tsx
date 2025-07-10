@@ -199,73 +199,75 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-muted border-t border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Company Info */}
-            <div className="flex items-center space-x-3 mb-4">
-  <img
-    src="/logo-dark.png"
-    alt="Probe AI Logo"
-    className="h-10 w-auto"
-  />
-  <span className="text-xl font-bold text-foreground">Probe AI</span>
-</div>
-
-              <p className="text-muted-foreground mb-6 max-w-md">
-                Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
-              </p>
-              <div className="flex space-x-4">
-                <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on Twitter">
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on GitHub">
-                  <Github className="h-5 w-5" />
-                </a>
-                <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Follow us on LinkedIn">
-                  <Linkedin className="h-5 w-5" />
-                </a>
-                <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Subscribe to our YouTube channel">
-                  <Youtube className="h-5 w-5" />
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
-                <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
-                <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-                <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <hr className="border-border my-8" />
-
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">
-              © 2024 Probe AI. All rights reserved.
-            </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>
-            </div>
-          </div>
+      {/* Footer */}
+<footer className="bg-muted border-t border-border">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      {/* Company Info */}
+      <div className="col-span-1 md:col-span-2">
+        <div className="flex items-center space-x-3 mb-4">
+          <img
+            src="/logo-dark.png"
+            alt="Probe AI Logo"
+            className="h-10 w-auto"
+          />
+          <span className="text-xl font-bold text-foreground">Probe AI</span>
         </div>
-      </footer>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
+        </p>
+        <div className="flex space-x-4">
+          <a href="https://twitter.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
+            <Twitter className="h-5 w-5" />
+          </a>
+          <a href="https://github.com/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
+            <Github className="h-5 w-5" />
+          </a>
+          <a href="https://linkedin.com/company/probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
+            <Linkedin className="h-5 w-5" />
+          </a>
+          <a href="https://youtube.com/@probeai" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="YouTube">
+            <Youtube className="h-5 w-5" />
+          </a>
+        </div>
+      </div>
+
+      {/* Quick Links */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul className="space-y-2">
+          <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
+          <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
+          <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
+          <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
+        </ul>
+      </div>
+
+      {/* Resources */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Resources</h3>
+        <ul className="space-y-2">
+          <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
+          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
+          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <hr className="border-border my-8" />
+
+    <div className="flex flex-col md:flex-row justify-between items-center">
+      <p className="text-muted-foreground text-sm">
+        © 2024 Probe AI. All rights reserved.
+      </p>
+      <div className="flex space-x-6 mt-4 md:mt-0">
+        <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Privacy Policy</a>
+        <a href="#" className="text-muted-foreground hover:text-foreground text-sm transition-colors">Terms of Service</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
     </div>
   );
 }

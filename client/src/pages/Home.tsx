@@ -104,15 +104,15 @@ export default function Home() {
     <h2 className="text-2xl font-bold mb-6 text-center">🎥 Featured Videos</h2>
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left: Large video */}
+      {/* Left column (1 large video) */}
       <div className="lg:col-span-2">
         {featuredVideos?.items?.[0] && (
           <VideoCard video={featuredVideos.items[0]} size="large" />
         )}
       </div>
 
-      {/* Right: 3 stacked small videos */}
-      <div className="flex flex-col gap-4">
+      {/* Right column (stacked 3 small videos) */}
+      <div className="flex flex-col gap-6">
         {featuredVideos?.items?.slice(1, 4).map((video: any) => (
           <VideoCard key={video.id} video={video} size="small" />
         ))}
@@ -120,9 +120,6 @@ export default function Home() {
     </div>
   </div>
 </section>
-
-
-
 
       <section className="py-16">
         <div className="container mx-auto px-4">

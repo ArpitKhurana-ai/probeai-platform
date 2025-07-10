@@ -66,7 +66,7 @@ export default function Home() {
       <section className="hero-gradient py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-            Discover the Best <span className="text-primary">AI Tools</span>
+            Discover the Best <span className="text-primary">Nex-Gen AI Tools</span>
           </h1>
           <p className="text-xl text-muted-foreground mt-4 mb-8 max-w-3xl mx-auto">
             Find, compare, and discover the perfect AI tools for your projects.

@@ -131,27 +131,33 @@ export default function Home() {
 
 
 
-     <section className="py-16">
+   <section className="py-16">
   <div className="container mx-auto px-4">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-      {/* 🗞️ AI News Headlines */}
+      {/* 🗞️ Latest AI News */}
       <div>
-        <h2 className="text-xl font-bold mb-4">🗞️ AI News Headlines</h2>
+        <h2 className="text-xl font-bold mb-4">🗞️ Latest AI News</h2>
         <ul className="space-y-2">
-          {latestNews?.items?.slice(0, 4).map((article: any) => (
-            <li key={article.id} className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">
-                • {article.title}
-              </span>{" "}
-              <span className="text-xs text-muted-foreground">
-                [{new Date(article.publishedAt).toLocaleDateString("en-US", {
+          {latestNews?.items?.slice(0, 4).map((article: any) => {
+            const date = article.publishedAt
+              ? new Date(article.publishedAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
-                })}]
-              </span>
-            </li>
-          ))}
+                })
+              : null;
+
+            return (
+              <li key={article.id} className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">• {article.title}</span>{" "}
+                {date && (
+                  <span className="text-xs text-muted-foreground">
+                    [{date}]
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
         <div className="mt-4">
           <a href="/news" className="text-sm text-primary hover:underline">
@@ -166,12 +172,12 @@ export default function Home() {
         <ul className="space-y-2">
           {featuredBlogs?.items?.slice(0, 4).map((blog: any) => (
             <li key={blog.id} className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">
-                • {blog.title}
-              </span>{" "}
-              <span className="text-xs text-muted-foreground">
-                [{blog.readTime ?? "5 min read"}]
-              </span>
+              <span className="font-medium text-foreground">• {blog.title}</span>{" "}
+              {blog.readTime && (
+                <span className="text-xs text-muted-foreground">
+                  · {blog.readTime} min read
+                </span>
+              )}
             </li>
           ))}
         </ul>
@@ -181,10 +187,11 @@ export default function Home() {
           </a>
         </div>
       </div>
-      
+
     </div>
   </div>
 </section>
+
 
     </Layout>
   );

@@ -169,7 +169,6 @@ export default function ToolPage() {
             </DialogContent>
           </Dialog>
 
-          {/* ❤️ Like + Social Icons */}
           <div className="flex gap-4 justify-center w-full items-center mt-2">
             <Heart
               className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
@@ -248,11 +247,6 @@ export default function ToolPage() {
             )}
           </div>
 
-          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
-            <h2 className="text-xl font-semibold mb-2">Tool Comparison</h2>
-            <p>Comparison Table Placeholder</p>
-          </div>
-
           <div className="bg-yellow-100 dark:bg-yellow-900 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
             Featured Tool Banner Placeholder (728x90)
           </div>
@@ -264,7 +258,6 @@ export default function ToolPage() {
 
         {/* RIGHT SIDEBAR */}
         <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
-          {/* Tool Info */}
           <Card>
             <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
@@ -275,7 +268,6 @@ export default function ToolPage() {
             </CardContent>
           </Card>
 
-          {/* Tags */}
           {tool.tags?.length > 0 && (
             <Card>
               <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
@@ -287,7 +279,6 @@ export default function ToolPage() {
             </Card>
           )}
 
-          {/* Featured Tools with ToolCard */}
           <Card>
             <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -314,7 +305,6 @@ export default function ToolPage() {
         </div>
       </div>
 
-      {/* SIMILAR TOOLS */}
       <div className="container mx-auto px-4 pt-12">
         <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

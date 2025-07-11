@@ -118,13 +118,18 @@ export default function ToolPage() {
 
         {/* LEFT SIDEBAR */}
 <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
-  {tool.logoUrl && (
-    <img
-      src={tool.logoUrl}
-      alt={`${tool.name} logo`}
-      className="w-20 h-20 mx-auto rounded-lg object-cover"
-    />
-  )}
+  <img
+  src={
+    tool.logoUrl
+      ? tool.logoUrl
+      : tool.website
+      ? `https://unavatar.io/${new URL(tool.website).hostname}`
+      : "/placeholder.svg"
+  }
+  alt={`${tool.name} logo`}
+  className="w-20 h-20 mx-auto rounded-lg object-cover"
+/>
+
 
   {tool.badge && (
     <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">
@@ -261,15 +266,30 @@ export default function ToolPage() {
 
         {/* RIGHT SIDEBAR */}
         <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
-          <Card>
-            <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Category</span><span>{tool.category}</span></div>
-              <div className="flex justify-between"><span>Pricing</span><span>{tool.pricingType}</span></div>
-              <div className="flex justify-between"><span>Access</span><span>{Array.isArray(tool.accessType) ? tool.accessType.join(", ") : tool.accessType}</span></div>
-              <div className="flex justify-between"><span>Audience</span><span>{Array.isArray(tool.audience) ? tool.audience.join(", ") : tool.audience}</span></div>
-            </CardContent>
-          </Card>
+       <Card>
+  <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
+  <CardContent className="space-y-3">
+    {tool.featuredTools?.length > 0 ? (
+      tool.featuredTools.map((t: any) => (
+        <ToolCard key={t.id} tool={t} />
+      ))
+    ) : (
+      [1, 2, 3].map((_, i) => (
+        <ToolCard
+          key={i}
+          tool={{
+            name: `Tool ${i + 1}`,
+            slug: `tool-${i + 1}`,
+            logoUrl: "https://placehold.co/64x64",
+            shortDescription: "Short description here",
+            category: "AI",
+          }}
+        />
+      ))
+    )}
+  </CardContent>
+</Card>
+
 
           {tool.tags?.length > 0 && (
             <Card>

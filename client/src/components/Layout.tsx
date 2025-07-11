@@ -216,83 +216,59 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
 <footer className="bg-muted border-t border-border">
   <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
-
-      {/* Company Info */}
-      <div className="col-span-1 md:col-span-2">
-        <div className="flex items-center space-x-2 mb-4">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
-            <Search className="w-4 h-4 text-white" />
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+      {/* Probe AI + Social Icons */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <img src="/logo-dark.png" alt="Probe AI" className="h-8 w-8" />
           <span className="text-xl font-bold">Probe AI</span>
         </div>
-        <p className="text-muted-foreground mb-6 max-w-md">
+        <p className="text-muted-foreground max-w-md">
           Your go-to directory for discovering, comparing, and staying updated with the latest AI tools and technologies.
         </p>
         <div className="flex space-x-4">
           <a 
             href="https://twitter.com/probeai" 
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Follow us on Twitter"
+            aria-label="Twitter"
           >
             <Twitter className="h-5 w-5" />
           </a>
           <a 
             href="https://github.com/probeai" 
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Follow us on GitHub"
+            aria-label="GitHub"
           >
             <Github className="h-5 w-5" />
           </a>
           <a 
             href="https://linkedin.com/company/probeai" 
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Follow us on LinkedIn"
+            aria-label="LinkedIn"
           >
             <Linkedin className="h-5 w-5" />
           </a>
           <a 
             href="https://youtube.com/@probeai" 
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Subscribe to our YouTube channel"
+            aria-label="YouTube"
           >
             <Youtube className="h-5 w-5" />
           </a>
           <a 
             href="https://instagram.com/probeai"
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Follow us on Instagram"
+            aria-label="Instagram"
           >
             <Instagram className="h-5 w-5" />
           </a>
         </div>
       </div>
 
-      {/* Quick Links */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-        <ul className="space-y-2">
-          <li><Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Browse Tools</Link></li>
-          <li><Link href="/news" className="text-muted-foreground hover:text-foreground transition-colors">Latest News</Link></li>
-          <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-          <li><Link href="/videos" className="text-muted-foreground hover:text-foreground transition-colors">Videos</Link></li>
-        </ul>
-      </div>
-
-      {/* Resources */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Resources</h3>
-        <ul className="space-y-2">
-          <li><Link href="/submit" className="text-muted-foreground hover:text-foreground transition-colors">Submit Tool</Link></li>
-          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-          <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
-        </ul>
-      </div>
-
       {/* Newsletter */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">📬 Stay Updated</h3>
-        <p className="text-muted-foreground mb-4 text-sm">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">📬 Stay Updated</h3>
+        <p className="text-muted-foreground text-sm max-w-md">
           Get weekly updates on AI tools, videos & news — no spam, just breakthroughs.
         </p>
         <form className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -321,6 +297,7 @@ export function Layout({ children }: LayoutProps) {
     </div>
   </div>
 </footer>
+
 
 
 

@@ -265,59 +265,55 @@ export default function ToolPage() {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
-       <Card>
-  <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
-  <CardContent className="space-y-3">
-    {tool.featuredTools?.length > 0 ? (
-      tool.featuredTools.map((t: any) => (
-        <ToolCard key={t.id} tool={t} />
-      ))
-    ) : (
-      [1, 2, 3].map((_, i) => (
-        <ToolCard
-          key={i}
-          tool={{
-            name: `Tool ${i + 1}`,
-            slug: `tool-${i + 1}`,
-            logoUrl: "https://placehold.co/64x64",
-            shortDescription: "Short description here",
-            category: "AI",
-          }}
-        />
-      ))
-    )}
-  </CardContent>
-</Card>
+<div className="space-y-4 sticky top-6 h-fit hidden lg:block">
+  {/* ✅ Tool Info */}
+  <Card>
+    <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
+    <CardContent className="space-y-2 text-sm">
+      <div className="flex justify-between"><span>Category</span><span>{tool.category}</span></div>
+      <div className="flex justify-between"><span>Pricing</span><span>{tool.pricingType}</span></div>
+      <div className="flex justify-between"><span>Access</span><span>{Array.isArray(tool.accessType) ? tool.accessType.join(", ") : tool.accessType}</span></div>
+      <div className="flex justify-between"><span>Audience</span><span>{Array.isArray(tool.audience) ? tool.audience.join(", ") : tool.audience}</span></div>
+    </CardContent>
+  </Card>
 
+  {/* ✅ Tags */}
+  {tool.tags?.length > 0 && (
+    <Card>
+      <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {tool.tags.map((tag: string, i: number) => (
+          <span key={i} className="bg-muted px-2 py-1 text-xs rounded">{tag}</span>
+        ))}
+      </CardContent>
+    </Card>
+  )}
 
-          {tool.tags?.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {tool.tags.map((tag: string, i: number) => (
-                  <span key={i} className="bg-muted px-2 py-1 text-xs rounded">{tag}</span>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {[1, 2, 3].map((_, i) => (
-                <div key={i} className="flex gap-2 items-center border rounded p-2">
-                  <img src="https://placehold.co/32x32" className="rounded" />
-                  <div className="text-xs">
-                    <div className="font-semibold">Tool {i + 1}</div>
-                    <div className="text-muted-foreground">Short description here</div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+  {/* ✅ Featured Tools - ToolCard-based */}
+  <Card>
+    <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
+    <CardContent className="space-y-3">
+      {tool.featuredTools?.length > 0 ? (
+        tool.featuredTools.map((t: any) => (
+          <ToolCard key={t.id} tool={t} />
+        ))
+      ) : (
+        [1, 2, 3].map((_, i) => (
+          <ToolCard
+            key={i}
+            tool={{
+              name: `Tool ${i + 1}`,
+              slug: `tool-${i + 1}`,
+              logoUrl: "https://placehold.co/64x64",
+              shortDescription: "Short description here",
+              category: "AI",
+            }}
+          />
+        ))
+      )}
+    </CardContent>
+  </Card>
+</div>
 
       {/* SIMILAR TOOLS */}
       <div className="container mx-auto px-4 pt-12">

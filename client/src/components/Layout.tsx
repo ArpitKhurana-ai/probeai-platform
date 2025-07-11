@@ -216,7 +216,8 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
 <footer className="bg-muted border-t border-border">
   <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
+
       {/* Company Info */}
       <div className="col-span-1 md:col-span-2">
         <div className="flex items-center space-x-2 mb-4">
@@ -287,6 +288,24 @@ export function Layout({ children }: LayoutProps) {
           <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
         </ul>
       </div>
+
+      {/* Newsletter */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">📬 Stay Updated</h3>
+        <p className="text-muted-foreground mb-4 text-sm">
+          Get weekly updates on AI tools, videos & news — no spam, just breakthroughs.
+        </p>
+        <form className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <input
+            type="email"
+            placeholder="you@example.com"
+            className="w-full sm:w-auto px-4 py-2 rounded-md border border-input bg-background text-sm"
+          />
+          <button type="submit" className="bg-primary text-white px-4 py-2 rounded-md text-sm">
+            Subscribe
+          </button>
+        </form>
+      </div>
     </div>
 
     <hr className="border-border my-8" />
@@ -302,6 +321,7 @@ export function Layout({ children }: LayoutProps) {
     </div>
   </div>
 </footer>
+
 
 
     </div>

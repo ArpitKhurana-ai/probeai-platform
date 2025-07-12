@@ -226,10 +226,31 @@ export default function ToolPage() {
             </ul>
           </div>
 
-          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
-            <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
-            <p>Placeholder for pros/cons</p>
-          </div>
+         <div className="bg-card border border-muted rounded p-4 text-card-foreground">
+  <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
+  {tool.prosAndCons ? (
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <h3 className="font-semibold mb-1">Pros</h3>
+        <ul className="list-disc list-inside">
+          {tool.prosAndCons.pros.map((pro: string, i: number) => (
+            <li key={i}>{pro}</li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h3 className="font-semibold mb-1">Cons</h3>
+        <ul className="list-disc list-inside">
+          {tool.prosAndCons.cons.map((con: string, i: number) => (
+            <li key={i}>{con}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  ) : (
+    <p className="text-muted-foreground text-sm">No pros/cons available.</p>
+  )}
+</div>
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">FAQs</h2>

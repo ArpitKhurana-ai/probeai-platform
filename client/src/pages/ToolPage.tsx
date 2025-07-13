@@ -40,6 +40,64 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+// Helper: Always return a valid hostname or ""
+function getValidHostname(website?: string) {
+  try {
+    if (!website) return "";
+    const url = website.startsWith("http") ? website : `https://${website}`;
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+// Helper: Always return a full link for "Visit" button
+function getValidUrl(url?: string) {
+  if (!url) return "#";
+  return url.startsWith("http") ? url : `https://${url}`;
+}
+
+// Helper: Defensive normalization for list fields (array or fallback)
+function safeList(val: any): string[] {
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === "string" && val.trim()) return val.split("\n").map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
+// Helper: Defensive for pros/cons
+function safeProsCons(val: any): { pros: string[]; cons: string[] } {
+  if (val && typeof val === "object") {
+    return {
+      pros: safeList(val.pros),
+      cons: safeList(val.cons),
+    };
+  }
+  return { pros: [], cons: [] };
+}
+
+// Helper: Normalize FAQs
+function normalizeFAQs(rawFaqs: any): { question: string; answer: string }[] {
+  if (!Array.isArray(rawFaqs)) return [];
+  return rawFaqs
+    .map((faq: any) => {
+      if (faq && typeof faq === "object") {
+        return {
+          question: faq.question || faq.q || "",
+          answer: faq.answer || faq.a || "",
+        };
+      } else if (typeof faq === "string") {
+        // Handles lines like "Q: ... A: ..."
+        const match = faq.match(/^Q[:\-]?\s*(.+)\s*A[:\-]?\s*(.+)$/i);
+        if (match) {
+          return { question: match[1], answer: match[2] };
+        }
+        return { question: faq, answer: "" };
+      }
+      return { question: "", answer: "" };
+    })
+    .filter((f) => f.question && f.answer);
+}
+
 export default function ToolPage() {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
@@ -105,12 +163,27 @@ export default function ToolPage() {
   };
 
   if (!tool && !toolIdentifier) {
-    return <Layout><div className="text-center py-10">Tool not found</div></Layout>;
+    return (
+      <Layout>
+        <div className="text-center py-10">Tool not found</div>
+      </Layout>
+    );
   }
 
   if (!tool) {
-    return <Layout><div className="text-center py-10">Loading...</div></Layout>;
+    return (
+      <Layout>
+        <div className="text-center py-10">Loading...</div>
+      </Layout>
+    );
   }
+
+  // Defensive: always fallback
+  const keyFeatures = safeList(tool.keyFeatures);
+  const useCases = safeList(tool.useCases);
+  const tags = safeList(tool.tags);
+  const prosAndCons = safeProsCons(tool.prosAndCons);
+  const faqsArr = normalizeFAQs(tool.faqs);
 
   return (
     <Layout>
@@ -118,29 +191,14 @@ export default function ToolPage() {
 
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
-          function getValidHostname(website: string) {
-  try {
-    if (!website) return "";
-    // If already starts with http, use as is. Else add https://
-    const url = website.startsWith("http") ? website : `https://${website}`;
-    return new URL(url).hostname;
-  } catch {
-    return "";
-  }
-}
-
-<img
-  src={
-    tool.logoUrl
-      ? tool.logoUrl
-      : tool.url
-      ? `https://unavatar.io/${getValidHostname(tool.url)}`
-      : "/placeholder.svg"
-  }
-  alt={`${tool.name} logo`}
-  className="w-20 h-20 mx-auto rounded-lg object-cover"
-/>
-
+          <img
+            src={
+              tool.logoUrl
+                ? tool.logoUrl
+                : tool.url
+                ? `https://unavatar.io/${getValidHostname(tool.url)}`
+                : "/placeholder.svg"
+            }
             alt={`${tool.name} logo`}
             className="w-20 h-20 mx-auto rounded-lg object-cover"
           />
@@ -151,17 +209,16 @@ export default function ToolPage() {
             </span>
           )}
 
-        <a
-  href={tool.url ? (tool.url.startsWith("http") ? tool.url : `https://${tool.url}`) : "#"}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="w-full"
->
-  <Button className="w-full">
-    <ExternalLink className="w-4 h-4 mr-2" /> Visit
-  </Button>
-</a>
-
+          <a
+            href={getValidUrl(tool.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full"
+          >
+            <Button className="w-full">
+              <ExternalLink className="w-4 h-4 mr-2" /> Visit
+            </Button>
+          </a>
 
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>
@@ -187,13 +244,27 @@ export default function ToolPage() {
 
           <div className="flex gap-4 justify-center w-full items-center mt-2">
             <Heart
-              className={`w-5 h-5 cursor-pointer ${isLiked ? "text-red-500" : ""}`}
+              className={`w-5 h-5 cursor-pointer ${
+                isLiked ? "text-red-500" : ""
+              }`}
               onClick={handleLike}
             />
-            <Twitter className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => handleShare("twitter")} />
-            <Linkedin className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => handleShare("linkedin")} />
-            <Facebook className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => handleShare("facebook")} />
-            <Instagram className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => handleShare("instagram")} />
+            <Twitter
+              className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={() => handleShare("twitter")}
+            />
+            <Linkedin
+              className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={() => handleShare("linkedin")}
+            />
+            <Facebook
+              className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={() => handleShare("facebook")}
+            />
+            <Instagram
+              className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground"
+              onClick={() => handleShare("instagram")}
+            />
           </div>
 
           <div className="bg-muted p-3 rounded w-full">
@@ -237,42 +308,61 @@ export default function ToolPage() {
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Key Features</h2>
-            <ul className="list-disc list-inside space-y-1">
-              {tool.keyFeatures?.map((feature: string, idx: number) => <li key={idx}>{feature}</li>)}
-            </ul>
+            {keyFeatures.length > 0 ? (
+              <ul className="list-disc list-inside space-y-1">
+                {keyFeatures.map((feature: string, idx: number) => (
+                  <li key={idx}>{feature}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm">No features listed.</p>
+            )}
           </div>
 
-         <div className="bg-card border border-muted rounded p-4 text-card-foreground">
-  <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
-  {tool.prosAndCons ? (
-    <div className="grid grid-cols-2 gap-4 text-sm">
-      <div>
-        <h3 className="font-semibold mb-1">Pros</h3>
-        <ul className="list-disc list-inside">
-          {tool.prosAndCons.pros.map((pro: string, i: number) => (
-            <li key={i}>{pro}</li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <h3 className="font-semibold mb-1">Cons</h3>
-        <ul className="list-disc list-inside">
-          {tool.prosAndCons.cons.map((con: string, i: number) => (
-            <li key={i}>{con}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  ) : (
-    <p className="text-muted-foreground text-sm">No pros/cons available.</p>
-  )}
-</div>
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
+            <h2 className="text-xl font-semibold mb-2">Use Cases</h2>
+            {useCases.length > 0 ? (
+              <ul className="list-disc list-inside space-y-1">
+                {useCases.map((uc: string, idx: number) => (
+                  <li key={idx}>{uc}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm">No use cases listed.</p>
+            )}
+          </div>
+
+          <div className="bg-card border border-muted rounded p-4 text-card-foreground">
+            <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
+            {prosAndCons.pros.length > 0 || prosAndCons.cons.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h3 className="font-semibold mb-1">Pros</h3>
+                  <ul className="list-disc list-inside">
+                    {prosAndCons.pros.map((pro: string, i: number) => (
+                      <li key={i}>{pro}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Cons</h3>
+                  <ul className="list-disc list-inside">
+                    {prosAndCons.cons.map((con: string, i: number) => (
+                      <li key={i}>{con}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No pros/cons available.</p>
+            )}
+          </div>
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">FAQs</h2>
-            {tool.faqs?.length > 0 ? (
+            {faqsArr.length > 0 ? (
               <Accordion type="multiple">
-                {tool.faqs.map((faq: any, i: number) => (
+                {faqsArr.map((faq, i) => (
                   <AccordionItem value={`faq-${i}`} key={i}>
                     <AccordionTrigger>{faq.question}</AccordionTrigger>
                     <AccordionContent>{faq.answer}</AccordionContent>
@@ -296,28 +386,56 @@ export default function ToolPage() {
         {/* RIGHT SIDEBAR */}
         <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
           <Card>
-            <CardHeader><CardTitle>Tool Info</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Tool Info</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>Category</span><span>{tool.category}</span></div>
-              <div className="flex justify-between"><span>Pricing</span><span>{tool.pricingType}</span></div>
-              <div className="flex justify-between"><span>Access</span><span>{Array.isArray(tool.accessType) ? tool.accessType.join(", ") : tool.accessType}</span></div>
-              <div className="flex justify-between"><span>Audience</span><span>{Array.isArray(tool.audience) ? tool.audience.join(", ") : tool.audience}</span></div>
+              <div className="flex justify-between">
+                <span>Category</span>
+                <span>{tool.category}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Pricing</span>
+                <span>{tool.pricingType}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Access</span>
+                <span>
+                  {Array.isArray(tool.accessType)
+                    ? tool.accessType.join(", ")
+                    : tool.accessType || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Audience</span>
+                <span>
+                  {Array.isArray(tool.audience)
+                    ? tool.audience.join(", ")
+                    : tool.audience || "-"}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
-          {tool.tags?.length > 0 && (
+          {tags.length > 0 && (
             <Card>
-              <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+              </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
-                {tool.tags.map((tag: string, i: number) => (
-                  <span key={i} className="bg-muted px-2 py-1 text-xs rounded">{tag}</span>
+                {tags.map((tag: string, i: number) => (
+                  <span key={i} className="bg-muted px-2 py-1 text-xs rounded">
+                    {tag}
+                  </span>
                 ))}
               </CardContent>
             </Card>
           )}
 
           <Card>
-            <CardHeader><CardTitle>Featured Tools</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Featured Tools</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {tool.featuredTools?.length > 0 ? (
                 tool.featuredTools.map((t: any) => (
@@ -375,13 +493,23 @@ export default function ToolPage() {
 
         <div className="text-center mt-10 border-t pt-6">
           <h2 className="text-lg font-semibold mb-2">Know a tool that belongs here?</h2>
-          <p className="text-sm mb-4 text-muted-foreground">Submit your AI tool and get featured on Probe AI.</p>
+          <p className="text-sm mb-4 text-muted-foreground">
+            Submit your AI tool and get featured on Probe AI.
+          </p>
           <a href="/submit">
             <Button>Submit Your Tool</Button>
           </a>
         </div>
 
-        <div className="bg-muted p-6 text-center mt-6 rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px", margin: "0 auto" }}>
+        <div
+          className="bg-muted p-6 text-center mt-6 rounded font-medium text-sm w-full"
+          style={{
+            minHeight: "90px",
+            width: "100%",
+            maxWidth: "728px",
+            margin: "0 auto",
+          }}
+        >
           Google Ad Banner Placeholder (728x90)
         </div>
       </div>

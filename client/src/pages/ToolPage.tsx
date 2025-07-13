@@ -118,14 +118,29 @@ export default function ToolPage() {
 
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
-          <img
-            src={
-              tool.logoUrl
-                ? tool.logoUrl
-                : tool.website
-                ? `https://unavatar.io/${new URL(tool.website).hostname}`
-                : "/placeholder.svg"
-            }
+          function getValidHostname(website: string) {
+  try {
+    if (!website) return "";
+    // If already starts with http, use as is. Else add https://
+    const url = website.startsWith("http") ? website : `https://${website}`;
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+<img
+  src={
+    tool.logoUrl
+      ? tool.logoUrl
+      : tool.url
+      ? `https://unavatar.io/${getValidHostname(tool.url)}`
+      : "/placeholder.svg"
+  }
+  alt={`${tool.name} logo`}
+  className="w-20 h-20 mx-auto rounded-lg object-cover"
+/>
+
             alt={`${tool.name} logo`}
             className="w-20 h-20 mx-auto rounded-lg object-cover"
           />
@@ -136,16 +151,17 @@ export default function ToolPage() {
             </span>
           )}
 
-          <a
-            href={tool.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full"
-          >
-            <Button className="w-full">
-              <ExternalLink className="w-4 h-4 mr-2" /> Visit
-            </Button>
-          </a>
+        <a
+  href={tool.url ? (tool.url.startsWith("http") ? tool.url : `https://${tool.url}`) : "#"}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="w-full"
+>
+  <Button className="w-full">
+    <ExternalLink className="w-4 h-4 mr-2" /> Visit
+  </Button>
+</a>
+
 
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>

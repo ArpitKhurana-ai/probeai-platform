@@ -52,18 +52,19 @@ function transformToolData(tool: IncomingTool) {
     name: tool.name,
     description: tool.description,
     website: tool.url,
-    logo_url: tool.logo,
+    logoUrl: tool.logo,
     category: tool.category,
     tags: tool.tags || [],
-    key_features: tool.keyFeatures || [],
-    use_cases: tool.useCases || [],
+    keyFeatures: tool.keyFeatures || [],
+    useCases: tool.useCases || [],
     faqs: tool.faqs || [],
-    pricing_type: tool.pricingType || null,
-    is_featured: tool.isFeatured,
-    is_approved: tool.isPublished,
-    updated_at: now,
+    pricingType: tool.pricingType || null,
+    isFeatured: tool.isFeatured,
+    isApproved: tool.isPublished,
+    updatedAt: now,
   };
 }
+
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
   try {

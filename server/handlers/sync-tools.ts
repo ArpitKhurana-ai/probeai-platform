@@ -6,14 +6,13 @@ import algoliasearch from 'algoliasearch';
 import { config } from 'dotenv';
 config();
 
-// ✅ Algolia setup — renamed index from 'probeai_tools' → 'tools'
+// Algolia setup
 const algoliaClient = algoliasearch(
   process.env.ALGOLIA_APP_ID!,
   process.env.ALGOLIA_API_KEY!
 );
 const algoliaIndex = algoliaClient.initIndex('tools');
 
-// Type definitions
 interface IncomingTool {
   name: string;
   slug: string;
@@ -22,6 +21,10 @@ interface IncomingTool {
   logo: string;
   category: string;
   tags: string[];
+  keyFeatures?: string[];
+  useCases?: string[];
+  faqs?: any[];
+  pricingType?: string;
   isFeatured: boolean;
   isPublished: boolean;
 }
@@ -42,10 +45,8 @@ interface SyncResponse {
   errors?: string[];
 }
 
-// Transform incoming tool data to match DB schema
 function transformToolData(tool: IncomingTool) {
   const now = new Date();
-
   return {
     slug: tool.slug,
     name: tool.name,
@@ -53,14 +54,17 @@ function transformToolData(tool: IncomingTool) {
     website: tool.url,
     logo_url: tool.logo,
     category: tool.category,
-    tags: tool.tags,
+    tags: tool.tags || [],
+    key_features: tool.keyFeatures || [],
+    use_cases: tool.useCases || [],
+    faqs: tool.faqs || [],
+    pricing_type: tool.pricingType || null,
     is_featured: tool.isFeatured,
     is_approved: tool.isPublished,
     updated_at: now,
   };
 }
 
-// Main route handler
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
   try {
     const { tools: incomingTools }: SyncRequest = req.body;
@@ -120,7 +124,7 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
           console.log(`➕ Inserted: ${tool.slug}`);
         }
 
-        // ✅ Push to Algolia (now on 'tools' index)
+        // Push to Algolia
         await algoliaIndex.saveObject({
           objectID: tool.slug,
           ...tool,

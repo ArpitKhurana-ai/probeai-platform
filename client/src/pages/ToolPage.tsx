@@ -390,31 +390,32 @@ export default function ToolPage() {
               <CardTitle>Tool Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Category</span>
-                <span>{tool.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Pricing</span>
-                <span>{tool.pricingType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Access</span>
-                <span>
-                  {Array.isArray(tool.accessType)
-                    ? tool.accessType.join(", ")
-                    : tool.accessType || "-"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Audience</span>
-                <span>
-                  {Array.isArray(tool.audience)
-                    ? tool.audience.join(", ")
-                    : tool.audience || "-"}
-                </span>
-              </div>
-            </CardContent>
+  <div className="flex justify-between">
+    <span>Category</span>
+    <span>{tool.category}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Pricing</span>
+    <span>{tool.pricingType || "-"}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Access</span>
+    <span>
+      {Array.isArray(tool.accessType)
+        ? tool.accessType.join(", ")
+        : tool.accessType || "-"}
+    </span>
+  </div>
+  <div className="flex justify-between">
+    <span>Audience</span>
+    <span>
+      {Array.isArray(tool.audience)
+        ? tool.audience.join(", ")
+        : tool.audience || "-"}
+    </span>
+  </div>
+</CardContent>
+
           </Card>
 
           {tags.length > 0 && (

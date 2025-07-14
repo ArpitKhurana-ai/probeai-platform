@@ -51,12 +51,14 @@ interface SyncResponse {
 function normalizeArrayField(input: any): string[] {
   if (Array.isArray(input)) return input;
   if (typeof input === 'string') {
+    const raw = input.trim();
     try {
-      const parsed = JSON.parse(input);
+      const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed.map(String);
     } catch {
-      return input
-        .replace(/[{}[\]"]/g, '')
+      // fallback to split manually
+      return raw
+        .replace(/[\[\]{}"]/g, '')         // remove brackets, braces, quotes
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
@@ -64,6 +66,7 @@ function normalizeArrayField(input: any): string[] {
   }
   return [];
 }
+
 
 function transformToolData(tool: IncomingTool) {
   const now = new Date();

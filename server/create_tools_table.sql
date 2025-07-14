@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS tools (
   tags TEXT[],
   key_features TEXT[],
   use_cases TEXT[],
+  how_it_works TEXT,
   faqs JSONB,
   pricing_type VARCHAR(50),
   access_type VARCHAR(50),

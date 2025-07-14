@@ -415,30 +415,39 @@ export default function ToolPage() {
     <CardTitle>Tool Info</CardTitle>
   </CardHeader>
   <CardContent className="space-y-2 text-sm">
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-col sm:flex-row sm:justify-between">
-        <span className="font-semibold min-w-[90px]">Category</span>
-        <span className="sm:text-right">{tool.category}</span>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:justify-between">
-        <span className="font-semibold min-w-[90px]">Pricing</span>
-        <span className="sm:text-right">{tool.pricingType || "-"}</span>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
-        <span className="font-semibold min-w-[90px]">Access</span>
-        <span className="break-words whitespace-pre-line sm:text-right w-full">
-          {forceArray(tool.accessType).join(", ") || "-"}
-        </span>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
-        <span className="font-semibold min-w-[90px]">Audience</span>
-        <span className="break-words whitespace-pre-line sm:text-right w-full">
-          {forceArray(tool.audience).join(", ") || "-"}
-        </span>
-      </div>
+    <div className="flex justify-between items-start gap-4">
+      <span>Category</span>
+      <span>{tool.category}</span>
+    </div>
+    <div className="flex justify-between items-start gap-4">
+      <span>Pricing</span>
+      <span>{tool.pricingType || "-"}</span>
+    </div>
+    <div className="flex justify-between items-start gap-4">
+      <span>Access</span>
+      <span
+        className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+        style={{ display: "inline-block" }}
+        tabIndex={0}
+        title={forceArray(tool.accessType).join(", ")}
+      >
+        {forceArray(tool.accessType).join(", ") || "-"}
+      </span>
+    </div>
+    <div className="flex justify-between items-start gap-4">
+      <span>Audience</span>
+      <span
+        className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+        style={{ display: "inline-block" }}
+        tabIndex={0}
+        title={forceArray(tool.audience).join(", ")}
+      >
+        {forceArray(tool.audience).join(", ") || "-"}
+      </span>
     </div>
   </CardContent>
 </Card>
+
 
 
           {tags.length > 0 && (

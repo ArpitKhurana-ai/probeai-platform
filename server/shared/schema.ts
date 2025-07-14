@@ -44,6 +44,7 @@ export const tools = pgTable("tools", {
   slug: varchar("slug", { length: 255 }),
   description: text("description").notNull(),
   shortDescription: varchar("short_description", { length: 500 }),
+  howItWorks: text("how_it_works"), // ✅ NEW LINE ADDED
   website: varchar("website", { length: 500 }),
   logoUrl: varchar("logo_url", { length: 500 }),
   category: varchar("category", { length: 100 }).notNull(),
@@ -64,6 +65,7 @@ export const tools = pgTable("tools", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 
 // User likes for tools
 export const userLikes = pgTable("user_likes", {

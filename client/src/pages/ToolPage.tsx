@@ -411,32 +411,35 @@ export default function ToolPage() {
         {/* RIGHT SIDEBAR */}
         <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
           <Card>
-            <CardHeader>
-              <CardTitle>Tool Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Category</span>
-                <span>{tool.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Pricing</span>
-                <span>{tool.pricingType || "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Access</span>
-                <span>
-                  {forceArray(tool.accessType).join(", ") || "-"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Audience</span>
-                <span>
-                  {forceArray(tool.audience).join(", ") || "-"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+  <CardHeader>
+    <CardTitle>Tool Info</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-2 text-sm">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between">
+        <span className="font-semibold min-w-[90px]">Category</span>
+        <span className="sm:text-right">{tool.category}</span>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between">
+        <span className="font-semibold min-w-[90px]">Pricing</span>
+        <span className="sm:text-right">{tool.pricingType || "-"}</span>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+        <span className="font-semibold min-w-[90px]">Access</span>
+        <span className="break-words whitespace-pre-line sm:text-right w-full">
+          {forceArray(tool.accessType).join(", ") || "-"}
+        </span>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+        <span className="font-semibold min-w-[90px]">Audience</span>
+        <span className="break-words whitespace-pre-line sm:text-right w-full">
+          {forceArray(tool.audience).join(", ") || "-"}
+        </span>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 
           {tags.length > 0 && (
             <Card>

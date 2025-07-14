@@ -205,15 +205,20 @@ export default function ToolPage() {
   const prosAndCons = safeProsCons(tool.prosAndCons);
   const faqsArr = normalizeFAQs(tool.faqs);
   // --- HOW IT WORKS FIX ---
-const howItWorks =
+const howItWorksRaw =
   typeof tool.howItWorks === "string" &&
   tool.howItWorks.toLowerCase().trim() !== "null"
     ? tool.howItWorks.trim()
     : "";
 
+const howItWorks = howItWorksRaw
+  ? howItWorksRaw.replace(/(Step\s*\d+:)/g, "\n$1").trim()
+  : "";
+
 if (howItWorks) {
   console.log("💡 howItWorks:", JSON.stringify(howItWorks));
 }
+
 
 
   return (

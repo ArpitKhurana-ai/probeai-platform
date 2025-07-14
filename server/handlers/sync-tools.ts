@@ -50,23 +50,17 @@ interface SyncResponse {
 
 function normalizeArrayField(input: any): string[] {
   if (Array.isArray(input)) return input;
-  if (typeof input === 'string') {
-    const raw = input.trim();
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(String);
-    } catch {
-      // fallback to split manually
-      return raw
-        .replace(/[\[\]{}"]/g, '')         // remove brackets, braces, quotes
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
+  if (typeof input === "string") {
+    const cleaned = input
+      .replace(/^\{|\}$/g, "")      // remove curly braces around {value1,value2}
+      .replace(/"/g, "")            // remove double quotes
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return cleaned;
   }
   return [];
 }
-
 
 function transformToolData(tool: IncomingTool) {
   const now = new Date();
@@ -74,23 +68,23 @@ function transformToolData(tool: IncomingTool) {
     slug: tool.slug,
     name: tool.name,
     description: tool.description,
-    shortDescription: tool.shortDescription || '',
     website: tool.url,
     logoUrl: tool.logo,
     category: tool.category,
     tags: normalizeArrayField(tool.tags),
     keyFeatures: normalizeArrayField(tool.keyFeatures),
     useCases: normalizeArrayField(tool.useCases),
-    faqs: tool.faqs || [],
+    faqs: Array.isArray(tool.faqs) ? tool.faqs : [],
     pricingType: tool.pricingType || null,
-    accessType: normalizeArrayField(tool.accessType),
-    audience: normalizeArrayField(tool.audience),
-    howItWorks: tool.howItWorks || '',
+    accessType: normalizeArrayField(tool.accessType),      // ✅ fixed
+    audience: normalizeArrayField(tool.audience),          // ✅ fixed
+    howItWorks: tool.howItWorks || null,
     isFeatured: tool.isFeatured,
     isApproved: tool.isPublished,
     updatedAt: now,
   };
 }
+
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
   try {

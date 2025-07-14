@@ -25,9 +25,13 @@ interface IncomingTool {
   useCases?: string[];
   faqs?: any[];
   pricingType?: string;
+  accessType?: string[];      // ✅ NEW
+  audience?: string[];        // ✅ NEW
+  howItWorks?: string;        // ✅ NEW
   isFeatured: boolean;
   isPublished: boolean;
 }
+
 
 interface SyncRequest {
   tools: IncomingTool[];
@@ -59,11 +63,15 @@ function transformToolData(tool: IncomingTool) {
     useCases: tool.useCases || [],
     faqs: tool.faqs || [],
     pricingType: tool.pricingType || null,
+    accessType: tool.accessType || null,      // ✅ NEW
+    audience: tool.audience || null,          // ✅ NEW
+    howItWorks: tool.howItWorks || null,      // ✅ NEW
     isFeatured: tool.isFeatured,
     isApproved: tool.isPublished,
     updatedAt: now,
   };
 }
+
 
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {

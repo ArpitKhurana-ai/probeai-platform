@@ -20,18 +20,17 @@ interface IncomingTool {
   url: string;
   logo: string;
   category: string;
-  tags: string[];
-  keyFeatures?: string[];
-  useCases?: string[];
+  tags: any;
+  keyFeatures?: any;
+  useCases?: any;
   faqs?: any[];
   pricingType?: string;
-  accessType?: string[];      // ✅ NEW
-  audience?: string[];        // ✅ NEW
-  howItWorks?: string;        // ✅ NEW
+  accessType?: any;      // ✅ handled below
+  audience?: any;        // ✅ handled below
+  howItWorks?: any;      // ✅ handled below
   isFeatured: boolean;
   isPublished: boolean;
 }
-
 
 interface SyncRequest {
   tools: IncomingTool[];
@@ -49,30 +48,46 @@ interface SyncResponse {
   errors?: string[];
 }
 
+function normalizeArrayField(input: any): string[] {
+  if (Array.isArray(input)) return input;
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      return input
+        .replace(/[{}[\]"]/g, '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+  }
+  return [];
+}
+
 function transformToolData(tool: IncomingTool) {
   const now = new Date();
   return {
     slug: tool.slug,
     name: tool.name,
     description: tool.description,
+    shortDescription: tool.shortDescription || '',
     website: tool.url,
     logoUrl: tool.logo,
     category: tool.category,
-    tags: tool.tags || [],
-    keyFeatures: tool.keyFeatures || [],
-    useCases: tool.useCases || [],
+    tags: normalizeArrayField(tool.tags),
+    keyFeatures: normalizeArrayField(tool.keyFeatures),
+    useCases: normalizeArrayField(tool.useCases),
     faqs: tool.faqs || [],
     pricingType: tool.pricingType || null,
-    accessType: tool.accessType || null,      // ✅ NEW
-    audience: tool.audience || null,          // ✅ NEW
-    howItWorks: tool.howItWorks || null,      // ✅ NEW
+    accessType: normalizeArrayField(tool.accessType),
+    audience: normalizeArrayField(tool.audience),
+    howItWorks: tool.howItWorks || '',
     isFeatured: tool.isFeatured,
     isApproved: tool.isPublished,
     updatedAt: now,
   };
 }
-
-
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
   try {

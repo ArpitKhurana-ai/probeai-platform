@@ -335,12 +335,20 @@ if (howItWorks) {
           </div>
 
           {/* --- HOW IT WORKS FIX --- */}
-          {howItWorks && (
-            <div className="bg-card border border-muted rounded p-4 text-card-foreground">
-              <h2 className="text-xl font-semibold mb-2">How it works</h2>
-              <p>{howItWorks}</p>
-            </div>
-          )}
+         {howItWorks && (
+  <div className="bg-card border border-muted rounded p-4 text-card-foreground">
+    <h2 className="text-xl font-semibold mb-2">How it works</h2>
+    <p>
+      {howItWorks.split("\n").map((line, idx) => (
+        <span key={idx}>
+          {line}
+          <br />
+        </span>
+      ))}
+    </p>
+  </div>
+)}
+
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Key Features</h2>

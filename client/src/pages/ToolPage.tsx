@@ -40,19 +40,17 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-// --- ADD THIS! ---
+// Helper: Defensive normalization for list fields
 function forceArray(val: any): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
-    // Try parsing as JSON array
     try {
       const parsed = JSON.parse(val);
       if (Array.isArray(parsed)) return parsed.map(String);
     } catch {}
-    // Try to clean Postgres style: {"Web App","API"} or "Web App,API"
     return val
-      .replace(/^\{|\}$/g, "")   // remove leading/trailing {}
-      .replace(/"/g, "")         // remove quotes
+      .replace(/^\{|\}$/g, "")
+      .replace(/"/g, "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
@@ -60,14 +58,13 @@ function forceArray(val: any): string[] {
   return [];
 }
 
-// Helper: Defensive normalization for list fields (array or fallback)
 function safeList(val: any): string[] {
   if (Array.isArray(val)) return val.filter(Boolean);
-  if (typeof val === "string" && val.trim()) return val.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (typeof val === "string" && val.trim())
+    return val.split("\n").map((s) => s.trim()).filter(Boolean);
   return [];
 }
 
-// Helper: Defensive for pros/cons
 function safeProsCons(val: any): { pros: string[]; cons: string[] } {
   if (val && typeof val === "object") {
     return {
@@ -78,7 +75,6 @@ function safeProsCons(val: any): { pros: string[]; cons: string[] } {
   return { pros: [], cons: [] };
 }
 
-// Helper: Normalize FAQs
 function normalizeFAQs(rawFaqs: any): { question: string; answer: string }[] {
   if (!Array.isArray(rawFaqs)) return [];
   return rawFaqs
@@ -202,7 +198,7 @@ export default function ToolPage() {
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           <img
-            src={tool.logoUrl || "/placeholder.svg"}
+            src={tool.logo || "/placeholder.svg"}
             alt={`${tool.name || "Tool"} logo`}
             className="w-20 h-20 mx-auto rounded-lg object-cover"
           />
@@ -273,16 +269,42 @@ export default function ToolPage() {
 
           <div className="bg-muted p-3 rounded w-full">
             <h3 className="font-semibold text-sm mb-1">Get more visibility</h3>
-            <p className="text-xs text-muted-foreground mb-3">Add this badge to your site</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Add this badge to your site
+            </p>
 
-            <img src="https://probeai.io/badges/featured-light.png" className="rounded border mb-1 w-full" />
-            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("light")}>
-              {copiedBadge === "light" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <img
+              src="https://probeai.io/badges/featured-light.png"
+              className="rounded border mb-1 w-full"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleCopyEmbed("light")}
+            >
+              {copiedBadge === "light" ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
             </Button>
 
-            <img src="https://probeai.io/badges/featured-dark.png" className="rounded border mt-3 mb-1 w-full" />
-            <Button size="sm" variant="outline" className="w-full" onClick={() => handleCopyEmbed("dark")}>
-              {copiedBadge === "dark" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <img
+              src="https://probeai.io/badges/featured-dark.png"
+              className="rounded border mt-3 mb-1 w-full"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleCopyEmbed("dark")}
+            >
+              {copiedBadge === "dark" ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
             </Button>
           </div>
 
@@ -295,7 +317,9 @@ export default function ToolPage() {
         <div className="flex flex-col gap-6">
           <div>
             <h1 className="text-3xl font-bold">{tool.name}</h1>
-            <p className="text-muted-foreground mt-1">{tool.shortDescription}</p>
+            <p className="text-muted-foreground mt-1">
+              {tool.shortDescription}
+            </p>
           </div>
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">

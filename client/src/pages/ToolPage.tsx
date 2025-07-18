@@ -240,15 +240,16 @@ if (howItWorks) {
           )}
 
           <a
-            href={getValidUrl(tool.url)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full"
-          >
-            <Button className="w-full">
-              <ExternalLink className="w-4 h-4 mr-2" /> Visit
-            </Button>
-          </a>
+  href={tool.url || "#"}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="w-full"
+>
+  <Button className="w-full">
+    <ExternalLink className="w-4 h-4 mr-2" /> Visit
+  </Button>
+</a>
+
 
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>

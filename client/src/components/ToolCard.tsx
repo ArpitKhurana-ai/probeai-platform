@@ -3,13 +3,23 @@ import { Badge } from "@/components/ui/badge";
 
 export function ToolCard({ tool }: { tool: any }) {
   const logoUrl = tool.logo || "/placeholder.svg";
+  const toolLink = tool.slug ? `/tools/${tool.slug}` : "#";
 
   return (
-    <Link to={`/tools/${tool.slug}`} className="block">
+    <Link
+      to={toolLink}
+      className="block"
+      onClick={(e) => {
+        if (!tool.slug) {
+          e.preventDefault();
+          console.warn("Tool slug is missing for:", tool);
+        }
+      }}
+    >
       <div className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/30 transition">
         <img
           src={logoUrl}
-          alt={tool.name}
+          alt={tool.name || "Tool"}
           className="w-10 h-10 rounded object-cover"
         />
         <div className="flex-1 min-w-0">

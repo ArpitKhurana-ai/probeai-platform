@@ -13,6 +13,7 @@ const index = client.initIndex(ALGOLIA_INDEX_NAME);
 
 const router = Router();
 
+// Main search route
 router.get("/", async (req: Request, res: Response) => {
   const query = (req.query.q as string) || "";
   const page = parseInt(req.query.page as string) || 1;
@@ -26,6 +27,7 @@ router.get("/", async (req: Request, res: Response) => {
     const algoliaRes = await index.search(query, {
       page: page - 1,
       hitsPerPage: limit,
+      attributesToRetrieve: ['name', 'slug', 'category', 'logo', 'shortDescription'], // ✅ Ensure slug & logo
     });
 
     console.log("🔍 Search Query:", query);
@@ -42,6 +44,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// Suggestions route
 router.get("/suggestions", async (req: Request, res: Response) => {
   const query = (req.query.q as string) || "";
   const limit = parseInt(req.query.limit as string) || 5;
@@ -53,12 +56,13 @@ router.get("/suggestions", async (req: Request, res: Response) => {
   try {
     const algoliaRes = await index.search(query, {
       hitsPerPage: limit,
-      attributesToRetrieve: ['name', 'category'],
+      attributesToRetrieve: ['name', 'slug', 'category'], // ✅ Added slug
       attributesToHighlight: ['name'],
     });
 
     const suggestions = algoliaRes.hits.map((hit: any) => ({
       name: hit.name,
+      slug: hit.slug, // ✅ Include slug
       category: hit.category,
       highlighted: hit._highlightResult?.name?.value || hit.name
     }));

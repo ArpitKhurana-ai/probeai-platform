@@ -44,7 +44,7 @@ export const tools = pgTable("tools", {
   slug: varchar("slug", { length: 255 }),
   description: text("description").notNull(),
   shortDescription: varchar("short_description", { length: 500 }),
-  howItWorks: text("how_it_works"), // ✅ NEW LINE ADDED
+  howItWorks: text("how_it_works"),
   website: varchar("website", { length: 500 }),
   logoUrl: varchar("logo_url", { length: 500 }),
   category: varchar("category", { length: 100 }).notNull(),
@@ -52,19 +52,22 @@ export const tools = pgTable("tools", {
   keyFeatures: text("key_features").array(),
   useCases: text("use_cases").array(),
   faqs: jsonb("faqs"), // Array of {question, answer}
-  pricingType: varchar("pricing_type", { length: 50 }), // Free, Freemium, Paid, Open Source
-  accessType: varchar("access_type", { length: 50 }), // Web App, API, Chrome Extension, etc.
-  aiTech: varchar("ai_tech", { length: 50 }), // GPT-4, SDXL, etc.
-  audience: varchar("audience", { length: 50 }), // Developers, Marketers, etc.
+  prosAndCons: jsonb("pros_and_cons"), // JSON with { pros: [], cons: [] }
+  pricingType: varchar("pricing_type", { length: 50 }),
+  audience: varchar("audience", { length: 100 }).array(),
+  access: varchar("audience", { length: 100 }).array(),
+  metaTitle: varchar("meta_title", { length: 500 }),
+  metaDescription: varchar("meta_description", { length: 500 }),
+  schema: jsonb("schema"),
   isFeatured: boolean("is_featured").default(false),
-  isHot: boolean("is_hot").default(false),
-  featuredUntil: timestamp("featured_until"),
+  isTrending: boolean("is_hot").default(false),
   likes: integer("likes").default(0),
   submittedBy: varchar("submitted_by"),
   isApproved: boolean("is_approved").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
 
 
 // User likes for tools

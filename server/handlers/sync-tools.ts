@@ -16,21 +16,29 @@ const algoliaIndex = algoliaClient.initIndex('tools');
 interface IncomingTool {
   name: string;
   slug: string;
-  description: string;
   url: string;
   logo: string;
-  category: string;
-  tags: any;
+  shortDescription?: string;
+  description: string;
+  howItWorks?: string;
   keyFeatures?: any;
-  useCases?: any;
+  prosAndCons?: any;
   faqs?: any[];
+  useCases?: any;
+  category: string;
+  tags?: any;
+  audience?: any;
+  access?: any;
   pricingType?: string;
-  accessType?: any;      // ✅ handled below
-  audience?: any;        // ✅ handled below
-  howItWorks?: any;      // ✅ handled below
-  isFeatured: boolean;
-  isPublished: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  schema?: any;
+  isTrending?: boolean;
+  isFeatured?: boolean;
+  isPublished?: boolean;
+  isApproved?: boolean;
 }
+
 
 interface SyncRequest {
   tools: IncomingTool[];
@@ -68,6 +76,7 @@ function transformToolData(tool: IncomingTool) {
     slug: tool.slug,
     name: tool.name,
     description: tool.description,
+    shortDescription: tool.shortDescription || null,
     website: tool.url,
     logoUrl: tool.logo,
     category: tool.category,
@@ -75,15 +84,21 @@ function transformToolData(tool: IncomingTool) {
     keyFeatures: normalizeArrayField(tool.keyFeatures),
     useCases: normalizeArrayField(tool.useCases),
     faqs: Array.isArray(tool.faqs) ? tool.faqs : [],
+    prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
     pricingType: tool.pricingType || null,
-    accessType: normalizeArrayField(tool.accessType),      // ✅ fixed
-    audience: normalizeArrayField(tool.audience),          // ✅ fixed
+    audience: normalizeArrayField(tool.audience),
+    access: normalizeArrayField(tool.access),
     howItWorks: tool.howItWorks || null,
-    isFeatured: tool.isFeatured,
-    isApproved: tool.isPublished,
+    metaTitle: tool.metaTitle || null,
+    metaDescription: tool.metaDescription || null,
+    schema: tool.schema ? JSON.parse(tool.schema) : null,
+    isFeatured: !!tool.isFeatured,
+    isHot: !!tool.isTrending,
+    isApproved: !!tool.isPublished || !!tool.isApproved,
     updatedAt: now,
   };
 }
+
 
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
@@ -146,10 +161,43 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
         }
 
         // Push to Algolia
-        await algoliaIndex.saveObject({
-          objectID: tool.slug,
-          ...tool,
-        });
+       // Push to Algolia with all content-rich fields
+await algoliaIndex.saveObject({
+  objectID: tool.slug,
+  name: tool.name,
+  description: tool.description,
+  shortDescription: tool.shortDescription || "",
+  howItWorks: tool.howItWorks || "",
+  keyFeatures: normalizeArrayField(tool.keyFeatures),
+  useCases: normalizeArrayField(tool.useCases),
+  prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
+  faqs: tool.faqs || [],
+  category: tool.category,
+  tags: normalizeArrayField(tool.tags),
+  audience: normalizeArrayField(tool.audience),
+  access: normalizeArrayField(tool.access),
+  pricingType: tool.pricingType || "",
+  metaTitle: tool.metaTitle || "",
+  metaDescription: tool.metaDescription || "",
+  isFeatured: !!tool.isFeatured,
+  isTrending: !!tool.isTrending,
+  _searchData: [
+    tool.name,
+    tool.description,
+    tool.shortDescription,
+    tool.howItWorks,
+    (tool.keyFeatures || []).join(" "),
+    (tool.useCases || []).join(" "),
+    (tool.tags || []).join(" "),
+    (tool.audience || []).join(" "),
+    (tool.access || []).join(" "),
+    tool.metaTitle,
+    tool.metaDescription,
+  ]
+  .filter(Boolean)
+  .join(" "),
+});
+
 
       } catch (err) {
         errorsCount++;

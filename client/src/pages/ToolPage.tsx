@@ -60,23 +60,6 @@ function forceArray(val: any): string[] {
   return [];
 }
 
-// Helper: Always return a valid hostname or ""
-function getValidHostname(website?: string) {
-  try {
-    if (!website) return "";
-    const url = website.startsWith("http") ? website : `https://${website}`;
-    return new URL(url).hostname;
-  } catch {
-    return "";
-  }
-}
-
-// Helper: Always return a full link for "Visit" button
-function getValidUrl(url?: string) {
-  if (!url) return "#";
-  return url.startsWith("http") ? url : `https://${url}`;
-}
-
 // Helper: Defensive normalization for list fields (array or fallback)
 function safeList(val: any): string[] {
   if (Array.isArray(val)) return val.filter(Boolean);
@@ -106,7 +89,6 @@ function normalizeFAQs(rawFaqs: any): { question: string; answer: string }[] {
           answer: faq.answer || faq.a || "",
         };
       } else if (typeof faq === "string") {
-        // Handles lines like "Q: ... A: ..."
         const match = faq.match(/^Q[:\-]?\s*(.+)\s*A[:\-]?\s*(.+)$/i);
         if (match) {
           return { question: match[1], answer: match[2] };
@@ -198,28 +180,21 @@ export default function ToolPage() {
     );
   }
 
-  // Defensive: always fallback
   const keyFeatures = safeList(tool.keyFeatures);
   const useCases = safeList(tool.useCases);
   const tags = safeList(tool.tags);
   const prosAndCons = safeProsCons(tool.prosAndCons);
   const faqsArr = normalizeFAQs(tool.faqs);
-  // --- HOW IT WORKS FIX ---
-const howItWorksRaw =
-  typeof tool.howItWorks === "string" &&
-  tool.howItWorks.toLowerCase().trim() !== "null"
-    ? tool.howItWorks.trim()
+
+  const howItWorksRaw =
+    typeof tool.howItWorks === "string" &&
+    tool.howItWorks.toLowerCase().trim() !== "null"
+      ? tool.howItWorks.trim()
+      : "";
+
+  const howItWorks = howItWorksRaw
+    ? howItWorksRaw.replace(/(Step\s*\d+:)/g, "\n$1").trim()
     : "";
-
-const howItWorks = howItWorksRaw
-  ? howItWorksRaw.replace(/(Step\s*\d+:)/g, "\n$1").trim()
-  : "";
-
-if (howItWorks) {
-  console.log("💡 howItWorks:", JSON.stringify(howItWorks));
-}
-
-
 
   return (
     <Layout>
@@ -227,11 +202,10 @@ if (howItWorks) {
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           <img
-  src={tool.logoUrl || "/placeholder.svg"}
-  alt={`${tool.name || "Tool"} logo`}
-  className="w-20 h-20 mx-auto rounded-lg object-cover"
-/>
-
+            src={tool.logoUrl || "/placeholder.svg"}
+            alt={`${tool.name || "Tool"} logo`}
+            className="w-20 h-20 mx-auto rounded-lg object-cover"
+          />
 
           {tool.badge && (
             <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">
@@ -240,16 +214,15 @@ if (howItWorks) {
           )}
 
           <a
-  href={tool.url || "#"}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="w-full"
->
-  <Button className="w-full">
-    <ExternalLink className="w-4 h-4 mr-2" /> Visit
-  </Button>
-</a>
-
+            href={tool.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full"
+          >
+            <Button className="w-full">
+              <ExternalLink className="w-4 h-4 mr-2" /> Visit
+            </Button>
+          </a>
 
           <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
             <DialogTrigger asChild>
@@ -330,21 +303,19 @@ if (howItWorks) {
             <p>{tool.description}</p>
           </div>
 
-          {/* --- HOW IT WORKS FIX --- */}
-         {howItWorks && (
-  <div className="bg-card border border-muted rounded p-4 text-card-foreground">
-    <h2 className="text-xl font-semibold mb-2">How it works</h2>
-    <p>
-      {howItWorks.split("\n").map((line, idx) => (
-        <span key={idx}>
-          {line}
-          <br />
-        </span>
-      ))}
-    </p>
-  </div>
-)}
-
+          {howItWorks && (
+            <div className="bg-card border border-muted rounded p-4 text-card-foreground">
+              <h2 className="text-xl font-semibold mb-2">How it works</h2>
+              <p>
+                {howItWorks.split("\n").map((line, idx) => (
+                  <span key={idx}>
+                    {line}
+                    <br />
+                  </span>
+                ))}
+              </p>
+            </div>
+          )}
 
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Key Features</h2>
@@ -426,44 +397,42 @@ if (howItWorks) {
         {/* RIGHT SIDEBAR */}
         <div className="space-y-4 sticky top-6 h-fit hidden lg:block">
           <Card>
-  <CardHeader>
-    <CardTitle>Tool Info</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-2 text-sm">
-    <div className="flex justify-between items-start gap-4">
-      <span>Category</span>
-      <span>{tool.category}</span>
-    </div>
-    <div className="flex justify-between items-start gap-4">
-      <span>Pricing</span>
-      <span>{tool.pricingType || "-"}</span>
-    </div>
-    <div className="flex justify-between items-start gap-4">
-      <span>Access</span>
-      <span
-        className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
-        style={{ display: "inline-block" }}
-        tabIndex={0}
-        title={forceArray(tool.access).join(", ")}
-      >
-        {forceArray(tool.access).join(", ") || "-"}
-      </span>
-    </div>
-    <div className="flex justify-between items-start gap-4">
-      <span>Audience</span>
-      <span
-        className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
-        style={{ display: "inline-block" }}
-        tabIndex={0}
-        title={forceArray(tool.audience).join(", ")}
-      >
-        {forceArray(tool.audience).join(", ") || "-"}
-      </span>
-    </div>
-  </CardContent>
-</Card>
-
-
+            <CardHeader>
+              <CardTitle>Tool Info</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between items-start gap-4">
+                <span>Category</span>
+                <span>{tool.category}</span>
+              </div>
+              <div className="flex justify-between items-start gap-4">
+                <span>Pricing</span>
+                <span>{tool.pricingType || "-"}</span>
+              </div>
+              <div className="flex justify-between items-start gap-4">
+                <span>Access</span>
+                <span
+                  className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+                  style={{ display: "inline-block" }}
+                  tabIndex={0}
+                  title={forceArray(tool.access).join(", ")}
+                >
+                  {forceArray(tool.access).join(", ") || "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-start gap-4">
+                <span>Audience</span>
+                <span
+                  className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+                  style={{ display: "inline-block" }}
+                  tabIndex={0}
+                  title={forceArray(tool.audience).join(", ")}
+                >
+                  {forceArray(tool.audience).join(", ") || "-"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
           {tags.length > 0 && (
             <Card>

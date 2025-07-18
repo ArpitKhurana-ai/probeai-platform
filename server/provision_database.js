@@ -2,16 +2,15 @@
 
 /**
  * Railway Production Database Provisioning
- * Automatically provisions tables and seeds data during deployment
+ * Automatically provisions tables during deployment
  */
 
 import dotenv from "dotenv";
 dotenv.config();
 
 import { Pool } from 'pg';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,10 +33,9 @@ const pool = new Pool({
 async function checkExistingData() {
   const client = await pool.connect();
   try {
-    // Check if all 4 tables exist and have data
     const tables = ['tools', 'news', 'blogs', 'videos'];
     let allTablesHaveData = true;
-    
+
     for (const table of tables) {
       try {
         const result = await client.query(`SELECT COUNT(*) FROM ${table}`);
@@ -53,7 +51,7 @@ async function checkExistingData() {
         allTablesHaveData = false;
       }
     }
-    
+
     return allTablesHaveData;
   } catch (error) {
     console.log('⚠️  Could not check existing data (tables may not exist yet):', error.message);
@@ -67,41 +65,39 @@ async function createTables() {
   const client = await pool.connect();
   try {
     console.log('🔧 Dropping and recreating tools table to match new schema...');
-    
     await client.query('DROP TABLE IF EXISTS tools CASCADE;');
 
-    // Tools table (with how_it_works)
+    // Tools table
     await client.query(`
       CREATE TABLE IF NOT EXISTS tools (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) UNIQUE,
-  description TEXT NOT NULL,
-  short_description VARCHAR(500),
-  how_it_works TEXT,
-  website VARCHAR(500),
-  logo_url VARCHAR(500),
-  category VARCHAR(100) NOT NULL,
-  tags TEXT[],
-  key_features TEXT[],
-  use_cases TEXT[],
-  faqs JSONB,
-  pros_and_cons JSONB,
-  pricing_type VARCHAR(50),
-  access TEXT[], -- Changed from access_type to access (array)
-  audience TEXT[],
-  meta_title VARCHAR(500),
-  meta_description VARCHAR(500),
-  schema JSONB,
-  is_featured BOOLEAN DEFAULT false,
-  is_trending BOOLEAN DEFAULT false,
-  likes INTEGER DEFAULT 0,
-  submitted_by VARCHAR(255),
-  is_approved BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) UNIQUE,
+        description TEXT NOT NULL,
+        short_description VARCHAR(500),
+        how_it_works TEXT,
+        website VARCHAR(500),
+        logo_url VARCHAR(500),
+        category VARCHAR(100) NOT NULL,
+        tags TEXT[],
+        key_features TEXT[],
+        use_cases TEXT[],
+        faqs JSONB,
+        pros_and_cons JSONB,
+        pricing_type VARCHAR(50),
+        access TEXT[],
+        audience TEXT[],
+        meta_title VARCHAR(500),
+        meta_description VARCHAR(500),
+        schema JSONB,
+        is_featured BOOLEAN DEFAULT false,
+        is_trending BOOLEAN DEFAULT false,
+        likes INTEGER DEFAULT 0,
+        submitted_by VARCHAR(255),
+        is_approved BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log('✅ Tools table ready');
 
@@ -169,29 +165,17 @@ async function createTables() {
     console.log('✅ Videos table ready');
 
     console.log('🎉 All tables verified or created');
-  } finally {
-    client.release();
-  }
-}
 
-
-async function seedData() {
-  console.log('⏭ Skipping seeding of tools/blogs/news/videos because Google Sheet sync is the source of truth.');
-}
-
-    
-    // Verify counts
     const newsCount = await client.query('SELECT COUNT(*) FROM news');
     const blogsCount = await client.query('SELECT COUNT(*) FROM blogs');
     const videosCount = await client.query('SELECT COUNT(*) FROM videos');
     const toolsCount = await client.query('SELECT COUNT(*) FROM tools');
-    
+
     console.log(`📊 Provisioned data:`);
     console.log(`   News: ${newsCount.rows[0].count} articles`);
     console.log(`   Blogs: ${blogsCount.rows[0].count} posts`);
     console.log(`   Videos: ${videosCount.rows[0].count} videos`);
     console.log(`   Tools: ${toolsCount.rows[0].count} tools`);
-    
   } finally {
     client.release();
   }
@@ -199,30 +183,20 @@ async function seedData() {
 
 async function main() {
   try {
-    // Test connection
     const client = await pool.connect();
     const result = await client.query('SELECT current_database()');
     console.log(`✅ Connected to database: ${result.rows[0].current_database}`);
     client.release();
-    
-    // Check if data already exists
+
     const alreadyProvisioned = await checkExistingData();
-    
     console.log('🚀 Starting database provisioning...');
-    
-    // Always ensure tables exist
     await createTables();
 
-    // Only seed if empty
-    if (!alreadyProvisioned) {
-      console.log('🚀 Seeding initial data...');
-      await seedData();
-    } else {
+    if (alreadyProvisioned) {
       console.log('⏭ Skipping seeding — data already exists.');
     }
 
     console.log('🎉 Railway database provisioning complete!');
-    
   } catch (error) {
     console.error('❌ Database provisioning failed:', error.message);
     console.log('⚠️  Continuing deployment without database provisioning');

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0",
+    "drizzle-kit": "^0.31.4"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.2",
+    "pg": "^8.16.3"
+  }
+}

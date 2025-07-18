@@ -78,6 +78,7 @@ var init_schema = __esm({
       slug: varchar("slug", { length: 255 }),
       description: text("description").notNull(),
       shortDescription: varchar("short_description", { length: 500 }),
+      howItWorks: text("how_it_works"),
       website: varchar("website", { length: 500 }),
       logoUrl: varchar("logo_url", { length: 500 }),
       category: varchar("category", { length: 100 }).notNull(),
@@ -86,17 +87,16 @@ var init_schema = __esm({
       useCases: text("use_cases").array(),
       faqs: jsonb("faqs"),
       // Array of {question, answer}
+      prosAndCons: jsonb("pros_and_cons"),
+      // JSON with { pros: [], cons: [] }
       pricingType: varchar("pricing_type", { length: 50 }),
-      // Free, Freemium, Paid, Open Source
-      accessType: varchar("access_type", { length: 50 }),
-      // Web App, API, Chrome Extension, etc.
-      aiTech: varchar("ai_tech", { length: 50 }),
-      // GPT-4, SDXL, etc.
-      audience: varchar("audience", { length: 50 }),
-      // Developers, Marketers, etc.
+      audience: varchar("audience", { length: 100 }).array(),
+      access: varchar("audience", { length: 100 }).array(),
+      metaTitle: varchar("meta_title", { length: 500 }),
+      metaDescription: varchar("meta_description", { length: 500 }),
+      schema: jsonb("schema"),
       isFeatured: boolean("is_featured").default(false),
-      isHot: boolean("is_hot").default(false),
-      featuredUntil: timestamp("featured_until"),
+      isTrending: boolean("is_hot").default(false),
       likes: integer("likes").default(0),
       submittedBy: varchar("submitted_by"),
       isApproved: boolean("is_approved").default(false),
@@ -757,8 +757,8 @@ var getOidcConfig = memoize(
   async () => {
     try {
       const issuerUrl = new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc");
-      const config = await client.discovery(issuerUrl, process.env.REPL_ID);
-      return config;
+      const config2 = await client.discovery(issuerUrl, process.env.REPL_ID);
+      return config2;
     } catch (error) {
       console.error("OpenID Discovery failed:", error);
       throw error;
@@ -811,7 +811,7 @@ async function setupAuth(app2) {
   app2.use(getSession());
   app2.use(passport.initialize());
   app2.use(passport.session());
-  const config = await getOidcConfig();
+  const config2 = await getOidcConfig();
   const verify = async (tokens, verified) => {
     const user = {};
     updateUserSession(user, tokens);
@@ -822,7 +822,7 @@ async function setupAuth(app2) {
     const strategy = new OpenIDStrategy(
       {
         name: `replitauth:${domain}`,
-        config,
+        config: config2,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`
       },
@@ -847,7 +847,7 @@ async function setupAuth(app2) {
   app2.get("/api/logout", (req, res) => {
     req.logout(() => {
       res.redirect(
-        client.buildEndSessionUrl(config, {
+        client.buildEndSessionUrl(config2, {
           client_id: process.env.REPL_ID,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`
         }).href
@@ -921,23 +921,186 @@ init_db();
 init_schema();
 import { Router as Router2 } from "express";
 import { sql as sql2 } from "drizzle-orm";
+
+// handlers/sync-tools.ts
+init_db();
+init_schema();
+import { eq as eq2 } from "drizzle-orm";
+import algoliasearch2 from "algoliasearch";
+import { config } from "dotenv";
+config();
+var algoliaClient = algoliasearch2(
+  process.env.ALGOLIA_APP_ID,
+  process.env.ALGOLIA_API_KEY
+);
+var algoliaIndex = algoliaClient.initIndex("tools");
+function normalizeArrayField(input) {
+  if (Array.isArray(input))
+    return input;
+  if (typeof input === "string") {
+    const cleaned = input.replace(/^\{|\}$/g, "").replace(/"/g, "").split(",").map((s) => s.trim()).filter(Boolean);
+    return cleaned;
+  }
+  return [];
+}
+function transformToolData(tool) {
+  const now = /* @__PURE__ */ new Date();
+  return {
+    slug: tool.slug,
+    name: tool.name,
+    description: tool.description,
+    shortDescription: tool.shortDescription || null,
+    website: tool.url,
+    logoUrl: tool.logo,
+    category: tool.category,
+    tags: normalizeArrayField(tool.tags),
+    keyFeatures: normalizeArrayField(tool.keyFeatures),
+    useCases: normalizeArrayField(tool.useCases),
+    faqs: Array.isArray(tool.faqs) ? tool.faqs : [],
+    prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
+    pricingType: tool.pricingType || null,
+    audience: normalizeArrayField(tool.audience),
+    access: normalizeArrayField(tool.access),
+    howItWorks: tool.howItWorks || null,
+    metaTitle: tool.metaTitle || null,
+    metaDescription: tool.metaDescription || null,
+    schema: tool.schema ? JSON.parse(tool.schema) : null,
+    isFeatured: !!tool.isFeatured,
+    isHot: !!tool.isTrending,
+    isApproved: !!tool.isPublished || !!tool.isApproved,
+    updatedAt: now
+  };
+}
+async function syncToolsFromSheet(req, res) {
+  try {
+    const { tools: incomingTools } = req.body;
+    if (!incomingTools || !Array.isArray(incomingTools)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid request: tools array is required",
+        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
+      });
+      return;
+    }
+    if (incomingTools.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid request: tools array cannot be empty",
+        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
+      });
+      return;
+    }
+    const requiredFields = ["name", "slug", "description", "url", "logo", "category"];
+    for (const tool of incomingTools) {
+      for (const field of requiredFields) {
+        if (!tool[field]) {
+          res.status(400).json({
+            success: false,
+            message: `Missing field '${field}' in tool '${tool.slug || "unknown"}'`,
+            stats: { total: incomingTools.length, inserted: 0, updated: 0, errors: 1 }
+          });
+          return;
+        }
+      }
+    }
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let errorsCount = 0;
+    const errors = [];
+    for (const tool of incomingTools) {
+      try {
+        const exists = await db.select().from(tools).where(eq2(tools.slug, tool.slug)).limit(1);
+        const transformed = transformToolData(tool);
+        if (exists.length > 0) {
+          await db.update(tools).set(transformed).where(eq2(tools.slug, tool.slug));
+          updatedCount++;
+          console.log(`\u2705 Updated: ${tool.slug}`);
+        } else {
+          await db.insert(tools).values({
+            ...transformed,
+            created_at: /* @__PURE__ */ new Date()
+          });
+          insertedCount++;
+          console.log(`\u2795 Inserted: ${tool.slug}`);
+        }
+        await algoliaIndex.saveObject({
+          objectID: tool.slug,
+          name: tool.name,
+          description: tool.description,
+          shortDescription: tool.shortDescription || "",
+          howItWorks: tool.howItWorks || "",
+          keyFeatures: normalizeArrayField(tool.keyFeatures),
+          useCases: normalizeArrayField(tool.useCases),
+          prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
+          faqs: tool.faqs || [],
+          category: tool.category,
+          tags: normalizeArrayField(tool.tags),
+          audience: normalizeArrayField(tool.audience),
+          access: normalizeArrayField(tool.access),
+          pricingType: tool.pricingType || "",
+          metaTitle: tool.metaTitle || "",
+          metaDescription: tool.metaDescription || "",
+          isFeatured: !!tool.isFeatured,
+          isTrending: !!tool.isTrending,
+          _searchData: [
+            tool.name,
+            tool.description,
+            tool.shortDescription,
+            tool.howItWorks,
+            (tool.keyFeatures || []).join(" "),
+            (tool.useCases || []).join(" "),
+            (tool.tags || []).join(" "),
+            (tool.audience || []).join(" "),
+            (tool.access || []).join(" "),
+            tool.metaTitle,
+            tool.metaDescription
+          ].filter(Boolean).join(" ")
+        });
+      } catch (err) {
+        errorsCount++;
+        errors.push(`\u274C ${tool.slug}: ${err instanceof Error ? err.message : "Unknown error"}`);
+      }
+    }
+    const response = {
+      success: errorsCount === 0,
+      message: errorsCount === 0 ? `Successfully synced ${incomingTools.length} tools` : `Synced with ${errorsCount} errors`,
+      stats: {
+        total: incomingTools.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+        errors: errorsCount
+      }
+    };
+    if (errors.length > 0) {
+      response.errors = errors;
+    }
+    res.status(errorsCount === 0 ? 200 : 207).json(response);
+  } catch (error) {
+    console.error("\u274C Sync failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during sync",
+      stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
+      errors: [error instanceof Error ? error.message : "Unknown error"]
+    });
+  }
+}
+
+// routes/tools.ts
 var router2 = Router2();
 router2.get("/:slug", async (req, res) => {
   const { slug } = req.params;
-  console.log("\u{1F50D} Requested tool slug:", slug);
   try {
     const result = await db.select().from(tools).where(sql2`LOWER(${tools.slug}) = LOWER(${slug})`);
-    if (result.length === 0) {
-      console.warn("\u26A0\uFE0F Tool not found for slug:", slug);
+    if (result.length === 0)
       return res.status(404).json({ error: "Tool not found" });
-    }
-    console.log("\u2705 Tool found:", result[0].name);
     res.json(result[0]);
   } catch (error) {
-    console.error("\u274C FULL ERROR fetching tool by slug:", error);
+    console.error(error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router2.post("/sync-from-sheet", syncToolsFromSheet);
 var tools_default = router2;
 
 // routes.ts
@@ -1020,11 +1183,11 @@ async function registerRoutes(app2) {
 
 // algoliaSync.ts
 init_storage();
-import algoliasearch2 from "algoliasearch";
+import algoliasearch3 from "algoliasearch";
 var ALGOLIA_APP_ID2 = process.env.ALGOLIA_APP_ID;
 var ALGOLIA_API_KEY2 = process.env.ALGOLIA_API_KEY;
 var ALGOLIA_INDEX_NAME2 = "tools";
-var client3 = algoliasearch2(ALGOLIA_APP_ID2, ALGOLIA_API_KEY2);
+var client3 = algoliasearch3(ALGOLIA_APP_ID2, ALGOLIA_API_KEY2);
 var index3 = client3.initIndex(ALGOLIA_INDEX_NAME2);
 async function initializeAlgolia() {
   if (!ALGOLIA_APP_ID2 || !ALGOLIA_API_KEY2) {

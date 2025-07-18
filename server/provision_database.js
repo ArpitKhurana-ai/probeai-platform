@@ -205,7 +205,7 @@ async function seedData() {
       ('Vector Databases Explained: Choosing the Right Solution', 'Comprehensive comparison of leading vector database solutions including Pinecone, Weaviate, and Chroma, with practical guidance for selecting the optimal solution for your AI applications.', 'https://youtube.com/watch?v=dQw4w9WgXcQ', 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg', 'Database Review Channel', '28:45', '112K views', 'Review', true);
     `);
     
-    // Seed tools data directly
+    // Seed tools data directly yo
     await client.query(`
       INSERT INTO tools (
   name, slug, description, short_description, website, logo_url, category, tags,

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { tools } from '../shared/schema';
-import { syncToolsFromSheet } from '../handlers/sync-tools'; // ✅ NEW
+import { syncToolsFromSheet } from '../handlers/sync-tools';
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get('/:slug', async (req, res) => {
     const result = await db
       .select()
       .from(tools)
-      .where(sql`LOWER(${tools.slug}) = LOWER(${slug})`);
+      .where(eq(sql`LOWER(${tools.slug})`, slug.toLowerCase()));
 
     if (result.length === 0) return res.status(404).json({ error: 'Tool not found' });
     res.json(result[0]);
@@ -23,7 +23,7 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// ✅ NEW POST /api/tools/sync-from-sheet
+// POST /api/tools/sync-from-sheet
 router.post('/sync-from-sheet', syncToolsFromSheet);
 
 export default router;

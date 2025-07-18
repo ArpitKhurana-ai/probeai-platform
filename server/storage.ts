@@ -40,7 +40,7 @@ export interface IStorage {
   getTools(options: {
     category?: string;
     featured?: boolean;
-    hot?: boolean;
+    isTrending?: boolean;
     limit: number;
     offset: number;
     sort?: string;
@@ -56,7 +56,7 @@ export interface IStorage {
   updateTool(id: number, tool: Partial<InsertTool>): Promise<Tool>;
   getSimilarTools(toolId: number): Promise<Tool[]>;
   setToolFeatured(toolId: number, featured: boolean, days?: number): Promise<void>;
-  setToolHot(toolId: number, hot: boolean): Promise<void>;
+  setToolHot(toolId: number, isTrending: boolean): Promise<void>;
 
   // User likes
   toggleToolLike(userId: string, toolId: number): Promise<void>;
@@ -144,7 +144,7 @@ export class DatabaseStorage implements IStorage {
   async getTools(options: {
     category?: string;
     featured?: boolean;
-    hot?: boolean;
+    isTrending?: boolean;
     limit: number;
     offset: number;
     sort?: string;
@@ -157,8 +157,8 @@ export class DatabaseStorage implements IStorage {
     if (options.featured) {
       conditions.push(eq(tools.isFeatured, true));
     }
-    if (options.hot) {
-      conditions.push(eq(tools.isHot, true));
+    if (options.isTrending) {
+      conditions.push(eq(tools.isTrending, true));
     }
 
     let orderBy;
@@ -334,11 +334,11 @@ async getToolBySlug(slug: string): Promise<Tool | undefined> {
       .where(eq(tools.id, toolId));
   }
 
-  async setToolHot(toolId: number, hot: boolean): Promise<void> {
+  async setToolHot(toolId: number, isTrending: boolean): Promise<void> {
     await db
       .update(tools)
       .set({ 
-        isHot: hot,
+        isTrending: isTrending,
         updatedAt: new Date()
       })
       .where(eq(tools.id, toolId));
@@ -391,7 +391,7 @@ async getToolBySlug(slug: string): Promise<Tool | undefined> {
         aiTech: tools.aiTech,
         audience: tools.audience,
         isFeatured: tools.isFeatured,
-        isHot: tools.isHot,
+        isTrending: tools.isTrending,
         featuredUntil: tools.featuredUntil,
         likes: tools.likes,
         submittedBy: tools.submittedBy,

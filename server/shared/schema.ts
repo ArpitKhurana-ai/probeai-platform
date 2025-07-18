@@ -230,7 +230,7 @@ export const insertToolSchema = z.object({
   submittedBy: z.string().optional(),
   approved: z.boolean().default(false),
   featured: z.boolean().default(false),
-  hot: z.boolean().default(false),
+  isTrending: z.boolean().default(false),
 });
 
 export type News = typeof news.$inferSelect;

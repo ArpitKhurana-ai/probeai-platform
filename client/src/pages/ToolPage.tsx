@@ -227,16 +227,11 @@ if (howItWorks) {
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           <img
-            src={
-              tool.logoUrl
-                ? tool.logoUrl
-                : tool.url
-                ? `https://unavatar.io/${getValidHostname(tool.url)}`
-                : "/placeholder.svg"
-            }
-            alt={`${tool.name} logo`}
-            className="w-20 h-20 mx-auto rounded-lg object-cover"
-          />
+  src={tool.logoUrl || "/placeholder.svg"}
+  alt={`${tool.name || "Tool"} logo`}
+  className="w-20 h-20 mx-auto rounded-lg object-cover"
+/>
+
 
           {tool.badge && (
             <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-center">

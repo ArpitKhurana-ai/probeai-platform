@@ -66,7 +66,9 @@ async function checkExistingData() {
 async function createTables() {
   const client = await pool.connect();
   try {
-    console.log('🔍 Checking existing tables (no dropping)...');
+    console.log('🔧 Dropping and recreating tools table to match new schema...');
+    
+    await client.query('DROP TABLE IF EXISTS tools CASCADE;');
 
     // Tools table (with how_it_works)
     await client.query(`

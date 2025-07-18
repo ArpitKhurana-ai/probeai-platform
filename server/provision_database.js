@@ -66,46 +66,41 @@ async function checkExistingData() {
 async function createTables() {
   const client = await pool.connect();
   try {
-    console.log('🔧 Dropping existing tables...');
-    await client.query('DROP TABLE IF EXISTS tools, news, blogs, videos CASCADE;');
-    console.log('✅ All tables dropped successfully');
-    
-    console.log('🔧 Creating tables...');
-    
-    // Create tools table first (critical for homepage)
-    await client.query(`
-  CREATE TABLE IF NOT EXISTS tools (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) UNIQUE,
-    description TEXT,
-    short_description VARCHAR(500),
-    website VARCHAR(500),
-    logo_url VARCHAR(500),
-    category VARCHAR(100),
-    tags TEXT[],
-    key_features TEXT[],
-    use_cases TEXT[],
-    how_it_works TEXT,
-    faqs JSONB,
-    pricing_type VARCHAR(50),
-    access_type VARCHAR(50),
-    ai_tech VARCHAR(100),
-    audience VARCHAR(100),
-    is_featured BOOLEAN DEFAULT false,
-    is_hot BOOLEAN DEFAULT false,
-    featured_until TIMESTAMP,
-    likes INTEGER DEFAULT 0,
-    submitted_by VARCHAR(255),
-    is_approved BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-  );
-`);
+    console.log('🔍 Checking existing tables (no dropping)...');
 
-    console.log('✅ Tools table created');
-    
-    // Create news table
+    // Tools table (with how_it_works)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tools (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) UNIQUE,
+        description TEXT,
+        short_description VARCHAR(500),
+        website VARCHAR(500),
+        logo_url VARCHAR(500),
+        category VARCHAR(100),
+        tags TEXT[],
+        key_features TEXT[],
+        use_cases TEXT[],
+        how_it_works TEXT,
+        faqs JSONB,
+        pricing_type VARCHAR(50),
+        access_type VARCHAR(50),
+        ai_tech VARCHAR(100),
+        audience VARCHAR(100),
+        is_featured BOOLEAN DEFAULT false,
+        is_hot BOOLEAN DEFAULT false,
+        featured_until TIMESTAMP,
+        likes INTEGER DEFAULT 0,
+        submitted_by VARCHAR(255),
+        is_approved BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log('✅ Tools table ready');
+
+    // News table
     await client.query(`
       CREATE TABLE IF NOT EXISTS news (
         id SERIAL PRIMARY KEY,
@@ -120,9 +115,9 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ News table created');
-    
-    // Create blogs table
+    console.log('✅ News table ready');
+
+    // Blogs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS blogs (
         id SERIAL PRIMARY KEY,
@@ -146,9 +141,9 @@ async function createTables() {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ Blogs table created');
-    
-    // Create videos table
+    console.log('✅ Blogs table ready');
+
+    // Videos table
     await client.query(`
       CREATE TABLE IF NOT EXISTS videos (
         id SERIAL PRIMARY KEY,
@@ -166,13 +161,14 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ Videos table created');
-    
-    console.log('✅ All tables created successfully');
+    console.log('✅ Videos table ready');
+
+    console.log('🎉 All tables verified or created');
   } finally {
     client.release();
   }
 }
+
 
 async function seedData() {
   const client = await pool.connect();
@@ -358,24 +354,26 @@ async function main() {
     console.log(`✅ Connected to database: ${result.rows[0].current_database}`);
     client.release();
     
-    // Check if already provisioned
-    const alreadyProvisioned = false; // Force provisioning to fix tools table
-    if (alreadyProvisioned) {
-      console.log('✅ All tables provisioned with data - skipping');
-      return;
-    }
+    // Check if data already exists
+    const alreadyProvisioned = await checkExistingData();
     
     console.log('🚀 Starting database provisioning...');
     
-    // Provision database
+    // Always ensure tables exist
     await createTables();
-    await seedData();
-    
+
+    // Only seed if empty
+    if (!alreadyProvisioned) {
+      console.log('🚀 Seeding initial data...');
+      await seedData();
+    } else {
+      console.log('⏭ Skipping seeding — data already exists.');
+    }
+
     console.log('🎉 Railway database provisioning complete!');
     
   } catch (error) {
     console.error('❌ Database provisioning failed:', error.message);
-    // Don't fail the deployment if database provisioning fails
     console.log('⚠️  Continuing deployment without database provisioning');
   } finally {
     await pool.end();

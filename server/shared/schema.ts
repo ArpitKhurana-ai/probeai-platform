@@ -60,7 +60,7 @@ export const tools = pgTable("tools", {
   metaDescription: varchar("meta_description", { length: 500 }),
   schema: jsonb("schema"),
   isFeatured: boolean("is_featured").default(false),
-  isTrending: boolean("is_hot").default(false),
+  isTrending: boolean("is_trending").default(false),
   likes: integer("likes").default(0),
   submittedBy: varchar("submitted_by"),
   isApproved: boolean("is_approved").default(false),

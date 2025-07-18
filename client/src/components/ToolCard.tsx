@@ -2,10 +2,7 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 export function ToolCard({ tool }: { tool: any }) {
-  const domain = tool.website ? new URL(tool.website).hostname : "";
-  const logoUrl = domain
-    ? `https://unavatar.io/${domain}`
-    : "/placeholder.svg";
+  const logoUrl = tool.logo || "/placeholder.svg";
 
   return (
     <Link to={`/tools/${tool.slug}`} className="block">

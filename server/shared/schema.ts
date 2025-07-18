@@ -55,7 +55,7 @@ export const tools = pgTable("tools", {
   prosAndCons: jsonb("pros_and_cons"), // JSON with { pros: [], cons: [] }
   pricingType: varchar("pricing_type", { length: 50 }),
   audience: varchar("audience", { length: 100 }).array(),
-  access: varchar("audience", { length: 100 }).array(),
+  access: varchar("access", { length: 100 }).array(),
   metaTitle: varchar("meta_title", { length: 500 }),
   metaDescription: varchar("meta_description", { length: 500 }),
   schema: jsonb("schema"),

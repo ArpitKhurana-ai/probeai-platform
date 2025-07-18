@@ -74,33 +74,35 @@ async function createTables() {
     
     // Create tools table first (critical for homepage)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS tools (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        slug VARCHAR(255) UNIQUE,
-        description TEXT,
-        short_description VARCHAR(500),
-        website VARCHAR(500),
-        logo_url VARCHAR(500),
-        category VARCHAR(100),
-        tags TEXT[],
-        key_features TEXT[],
-        use_cases TEXT[],
-        faqs JSONB,
-        pricing_type VARCHAR(50),
-        access_type VARCHAR(50),
-        ai_tech VARCHAR(100),
-        audience VARCHAR(100),
-        is_featured BOOLEAN DEFAULT false,
-        is_hot BOOLEAN DEFAULT false,
-        featured_until TIMESTAMP,
-        likes INTEGER DEFAULT 0,
-        submitted_by VARCHAR(255),
-        is_approved BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
+  CREATE TABLE IF NOT EXISTS tools (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE,
+    description TEXT,
+    short_description VARCHAR(500),
+    website VARCHAR(500),
+    logo_url VARCHAR(500),
+    category VARCHAR(100),
+    tags TEXT[],
+    key_features TEXT[],
+    use_cases TEXT[],
+    how_it_works TEXT,
+    faqs JSONB,
+    pricing_type VARCHAR(50),
+    access_type VARCHAR(50),
+    ai_tech VARCHAR(100),
+    audience VARCHAR(100),
+    is_featured BOOLEAN DEFAULT false,
+    is_hot BOOLEAN DEFAULT false,
+    featured_until TIMESTAMP,
+    likes INTEGER DEFAULT 0,
+    submitted_by VARCHAR(255),
+    is_approved BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+  );
+`);
+
     console.log('✅ Tools table created');
     
     // Create news table

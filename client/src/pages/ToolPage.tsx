@@ -119,7 +119,7 @@ function normalizeFAQs(rawFaqs: any): { question: string; answer: string }[] {
 }
 
 export default function ToolPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -127,7 +127,7 @@ export default function ToolPage() {
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
-  const toolIdentifier = id;
+  const toolIdentifier = slug;
 
   const { data: tool } = useQuery({
     queryKey: [`/api/tools/${toolIdentifier}`],
@@ -448,9 +448,9 @@ if (howItWorks) {
         className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
         style={{ display: "inline-block" }}
         tabIndex={0}
-        title={forceArray(tool.accessType).join(", ")}
+        title={forceArray(tool.access).join(", ")}
       >
-        {forceArray(tool.accessType).join(", ") || "-"}
+        {forceArray(tool.access).join(", ") || "-"}
       </span>
     </div>
     <div className="flex justify-between items-start gap-4">
@@ -503,7 +503,7 @@ if (howItWorks) {
                       logoUrl: "https://placehold.co/64x64",
                       shortDescription: "Short description here",
                       category: "AI",
-                      accessType: ["Web App", "API"],
+                      access: ["Web App", "API"],
                       audience: ["Startups", "Founders"],
                     }}
                   />
@@ -533,10 +533,10 @@ if (howItWorks) {
                     logoUrl: "https://placehold.co/64x64",
                     shortDescription: "This is a placeholder tool.",
                     category: "Example Category",
-                    accessType: ["Web App", "API"],
+                    access: ["Web App", "API"],
                     audience: ["Developers", "Startups"],
                     isFeatured: i === 0,
-                    isHot: i === 1,
+                    isTrending: i === 1,
                     views: 1200 + i * 200,
                     likes: 50 + i * 10,
                   }}

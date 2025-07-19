@@ -39,7 +39,6 @@ interface IncomingTool {
   isApproved?: boolean;
 }
 
-
 interface SyncRequest {
   tools: IncomingTool[];
 }
@@ -60,14 +59,22 @@ function normalizeArrayField(input: any): string[] {
   if (Array.isArray(input)) return input;
   if (typeof input === "string") {
     const cleaned = input
-      .replace(/^\{|\}$/g, "")      // remove curly braces around {value1,value2}
-      .replace(/"/g, "")            // remove double quotes
+      .replace(/^\{|\}$/g, "")
+      .replace(/"/g, "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
     return cleaned;
   }
   return [];
+}
+
+function safeJsonParse(data: any, fallback: any = null) {
+  try {
+    return typeof data === 'string' ? JSON.parse(data) : data;
+  } catch {
+    return fallback;
+  }
 }
 
 function transformToolData(tool: IncomingTool) {
@@ -83,23 +90,21 @@ function transformToolData(tool: IncomingTool) {
     tags: normalizeArrayField(tool.tags),
     keyFeatures: normalizeArrayField(tool.keyFeatures),
     useCases: normalizeArrayField(tool.useCases),
-    faqs: Array.isArray(tool.faqs) ? tool.faqs : [],
-    prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
+    faqs: safeJsonParse(tool.faqs, []),
+    prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
     pricingType: tool.pricingType || null,
     audience: normalizeArrayField(tool.audience),
     access: normalizeArrayField(tool.access),
     howItWorks: tool.howItWorks || null,
     metaTitle: tool.metaTitle || null,
     metaDescription: tool.metaDescription || null,
-    schema: tool.schema ? JSON.parse(tool.schema) : null,
+    schema: safeJsonParse(tool.schema, {}),
     isFeatured: !!tool.isFeatured,
-    isHot: !!tool.isTrending,
+    isTrending: !!tool.isTrending,
     isApproved: !!tool.isPublished || !!tool.isApproved,
     updatedAt: now,
   };
 }
-
-
 
 export async function syncToolsFromSheet(req: Request, res: Response): Promise<void> {
   try {
@@ -109,15 +114,6 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
       res.status(400).json({
         success: false,
         message: 'Invalid request: tools array is required',
-        stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
-      });
-      return;
-    }
-
-    if (incomingTools.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid request: tools array cannot be empty',
         stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
       });
       return;
@@ -160,44 +156,46 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
           console.log(`➕ Inserted: ${tool.slug}`);
         }
 
-        // Push to Algolia
-       // Push to Algolia with all content-rich fields
-await algoliaIndex.saveObject({
-  objectID: tool.slug,
-  name: tool.name,
-  description: tool.description,
-  shortDescription: tool.shortDescription || "",
-  howItWorks: tool.howItWorks || "",
-  keyFeatures: normalizeArrayField(tool.keyFeatures),
-  useCases: normalizeArrayField(tool.useCases),
-  prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
-  faqs: tool.faqs || [],
-  category: tool.category,
-  tags: normalizeArrayField(tool.tags),
-  audience: normalizeArrayField(tool.audience),
-  access: normalizeArrayField(tool.access),
-  pricingType: tool.pricingType || "",
-  metaTitle: tool.metaTitle || "",
-  metaDescription: tool.metaDescription || "",
-  isFeatured: !!tool.isFeatured,
-  isTrending: !!tool.isTrending,
-  _searchData: [
-    tool.name,
-    tool.description,
-    tool.shortDescription,
-    tool.howItWorks,
-    (tool.keyFeatures || []).join(" "),
-    (tool.useCases || []).join(" "),
-    (tool.tags || []).join(" "),
-    (tool.audience || []).join(" "),
-    (tool.access || []).join(" "),
-    tool.metaTitle,
-    tool.metaDescription,
-  ]
-  .filter(Boolean)
-  .join(" "),
-});
+        // Debug log for Algolia payload
+        const algoliaPayload = {
+          objectID: tool.slug,
+          slug: tool.slug,
+          name: tool.name,
+          description: tool.description,
+          shortDescription: tool.shortDescription || "",
+          howItWorks: tool.howItWorks || "",
+          keyFeatures: normalizeArrayField(tool.keyFeatures),
+          useCases: normalizeArrayField(tool.useCases),
+          prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
+          faqs: safeJsonParse(tool.faqs, []),
+          category: tool.category,
+          tags: normalizeArrayField(tool.tags),
+          audience: normalizeArrayField(tool.audience),
+          access: normalizeArrayField(tool.access),
+          pricingType: tool.pricingType || "",
+          metaTitle: tool.metaTitle || "",
+          metaDescription: tool.metaDescription || "",
+          isFeatured: !!tool.isFeatured,
+          isTrending: !!tool.isTrending,
+          _searchData: [
+            tool.name,
+            tool.description,
+            tool.shortDescription,
+            tool.howItWorks,
+            (tool.keyFeatures || []).join(" "),
+            (tool.useCases || []).join(" "),
+            (tool.tags || []).join(" "),
+            (tool.audience || []).join(" "),
+            (tool.access || []).join(" "),
+            tool.metaTitle,
+            tool.metaDescription,
+          ]
+          .filter(Boolean)
+          .join(" "),
+        };
 
+        console.log("🚀 Sending to Algolia:", algoliaPayload);
+        await algoliaIndex.saveObject(algoliaPayload);
 
       } catch (err) {
         errorsCount++;

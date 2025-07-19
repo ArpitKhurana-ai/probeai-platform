@@ -91,12 +91,12 @@ var init_schema = __esm({
       // JSON with { pros: [], cons: [] }
       pricingType: varchar("pricing_type", { length: 50 }),
       audience: varchar("audience", { length: 100 }).array(),
-      access: varchar("audience", { length: 100 }).array(),
+      access: varchar("access", { length: 100 }).array(),
       metaTitle: varchar("meta_title", { length: 500 }),
       metaDescription: varchar("meta_description", { length: 500 }),
       schema: jsonb("schema"),
       isFeatured: boolean("is_featured").default(false),
-      isTrending: boolean("is_hot").default(false),
+      isTrending: boolean("is_trending").default(false),
       likes: integer("likes").default(0),
       submittedBy: varchar("submitted_by"),
       isApproved: boolean("is_approved").default(false),
@@ -243,7 +243,7 @@ var init_schema = __esm({
       submittedBy: z.string().optional(),
       approved: z.boolean().default(false),
       featured: z.boolean().default(false),
-      hot: z.boolean().default(false)
+      isTrending: z.boolean().default(false)
     });
     insertNewsSchema = z.object({
       title: z.string().min(1),
@@ -349,8 +349,8 @@ var init_storage = __esm({
         if (options.featured) {
           conditions.push(eq(tools.isFeatured, true));
         }
-        if (options.hot) {
-          conditions.push(eq(tools.isHot, true));
+        if (options.isTrending) {
+          conditions.push(eq(tools.isTrending, true));
         }
         let orderBy;
         switch (options.sort) {
@@ -464,9 +464,9 @@ var init_storage = __esm({
           updatedAt: /* @__PURE__ */ new Date()
         }).where(eq(tools.id, toolId));
       }
-      async setToolHot(toolId, hot) {
+      async setToolHot(toolId, isTrending) {
         await db.update(tools).set({
-          isHot: hot,
+          isTrending,
           updatedAt: /* @__PURE__ */ new Date()
         }).where(eq(tools.id, toolId));
       }
@@ -498,7 +498,7 @@ var init_storage = __esm({
           aiTech: tools.aiTech,
           audience: tools.audience,
           isFeatured: tools.isFeatured,
-          isHot: tools.isHot,
+          isTrending: tools.isTrending,
           featuredUntil: tools.featuredUntil,
           likes: tools.likes,
           submittedBy: tools.submittedBy,
@@ -877,7 +877,16 @@ router.get("/", async (req, res) => {
   try {
     const algoliaRes = await index2.search(query, {
       page: page - 1,
-      hitsPerPage: limit
+      hitsPerPage: limit,
+      attributesToRetrieve: [
+        "name",
+        "slug",
+        "category",
+        "logo",
+        "shortDescription",
+        "description"
+      ]
+      // Ensure all required fields
     });
     console.log("\u{1F50D} Search Query:", query);
     console.log("\u{1F9E0} Results:", algoliaRes.hits.map((hit) => hit.name));
@@ -900,12 +909,15 @@ router.get("/suggestions", async (req, res) => {
   try {
     const algoliaRes = await index2.search(query, {
       hitsPerPage: limit,
-      attributesToRetrieve: ["name", "category"],
+      attributesToRetrieve: ["name", "slug", "category", "logo"],
+      // Added logo
       attributesToHighlight: ["name"]
     });
     const suggestions = algoliaRes.hits.map((hit) => ({
       name: hit.name,
+      slug: hit.slug,
       category: hit.category,
+      logo: hit.logo,
       highlighted: hit._highlightResult?.name?.value || hit.name
     }));
     res.json(suggestions);
@@ -966,7 +978,7 @@ function transformToolData(tool) {
     metaDescription: tool.metaDescription || null,
     schema: tool.schema ? JSON.parse(tool.schema) : null,
     isFeatured: !!tool.isFeatured,
-    isHot: !!tool.isTrending,
+    isTrending: !!tool.isTrending,
     isApproved: !!tool.isPublished || !!tool.isApproved,
     updatedAt: now
   };
@@ -1025,6 +1037,8 @@ async function syncToolsFromSheet(req, res) {
         }
         await algoliaIndex.saveObject({
           objectID: tool.slug,
+          slug: tool.slug,
+          // ✅ Added slug
           name: tool.name,
           description: tool.description,
           shortDescription: tool.shortDescription || "",

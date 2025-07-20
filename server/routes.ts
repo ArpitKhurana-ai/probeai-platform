@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
 import searchRoutes from "./routes/search";
 import toolRoutes from "./routes/tools"; // ✅ added
+import newsRoutes from "./routes/news"; // ✅ added
 
 export async function registerRoutes(app: Express): Promise<void> {
   const { healthCheck } = await import("./health.js");
@@ -25,37 +26,25 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   app.get("/api/tools", async (req, res) => {
-  try {
-    const { category, featured, trending, limit = 20, offset = 0 } = req.query;
-    const tools = await storage.getTools({
-      category: category as string,
-      featured: featured === "true",
-      isTrending: trending === "true", // ✅ Fix trending filter
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string)
-    });
-
-    res.json(tools);
-  } catch (error) {
-    console.error("Error fetching tools:", error);
-    res.status(500).json({ message: "Failed to fetch tools" });
-  }
-});
-
-
-  app.get("/api/news", async (req, res) => {
     try {
-      const { limit = 10, offset = 0 } = req.query;
-      const news = await storage.getNews({
+      const { category, featured, trending, limit = 20, offset = 0 } = req.query;
+      const tools = await storage.getTools({
+        category: category as string,
+        featured: featured === "true",
+        isTrending: trending === "true", // ✅ Fix trending filter
         limit: parseInt(limit as string),
         offset: parseInt(offset as string)
       });
-      res.json(news);
+
+      res.json(tools);
     } catch (error) {
-      console.error("Error fetching news:", error);
-      res.status(500).json({ message: "Failed to fetch news" });
+      console.error("Error fetching tools:", error);
+      res.status(500).json({ message: "Failed to fetch tools" });
     }
   });
+
+  // ✅ News route now handled by newsRoutes (removed inline GET /api/news)
+  app.use("/api/news", newsRoutes);
 
   app.get("/api/blogs", async (req, res) => {
     try {

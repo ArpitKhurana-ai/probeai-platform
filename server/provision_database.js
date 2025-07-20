@@ -64,8 +64,7 @@ async function checkExistingData() {
 async function createTables() {
   const client = await pool.connect();
   try {
-    console.log('🔧 Dropping and recreating tools table to match new schema...');
-    await client.query('DROP TABLE IF EXISTS tools CASCADE;');
+    console.log('🔧 Ensuring tools table exists (no drop)...');
 
     // Tools table
     await client.query(`
@@ -101,22 +100,20 @@ async function createTables() {
     `);
     console.log('✅ Tools table ready');
 
-    // News table
+    // News table (updated)
     await client.query(`
       CREATE TABLE IF NOT EXISTS news (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        excerpt TEXT,
         source VARCHAR(255),
         source_url VARCHAR(500),
         publish_date TIMESTAMP DEFAULT NOW(),
-        category VARCHAR(100),
-        submitted_by VARCHAR(255),
-        is_approved BOOLEAN DEFAULT true,
+        is_approved BOOLEAN DEFAULT false,
+        is_published BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ News table ready');
+    console.log('✅ News table ready (updated)');
 
     // Blogs table
     await client.query(`

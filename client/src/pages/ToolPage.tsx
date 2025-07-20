@@ -59,11 +59,44 @@ function forceArray(val: any): string[] {
 }
 
 function safeList(val: any): string[] {
-  if (Array.isArray(val)) return val.filter(Boolean);
-  if (typeof val === "string" && val.trim())
-    return val.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (Array.isArray(val)) {
+    return val.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof val === "string" && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.map((s) => String(s).trim());
+    } catch {}
+
+    // Split only on newlines or semicolons, NOT commas
+    return val
+      .split(/\r?\n|;/)
+      .map((s) => s.replace(/^\s*[-•]\s*/, "").trim())
+      .filter(Boolean);
+  }
+
   return [];
 }
+
+
+function safeKeyFeatures(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val.map((s) => String(s).trim()).filter(Boolean);
+  }
+  if (typeof val === "string" && val.trim()) {
+    // Do NOT split on commas
+    return val
+      .split(/\r?\n|(?=\s*-\s)/)
+      .map((s) => s.replace(/^\s*[-•]\s*/, "").trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+
+
 
 function safeProsCons(val: any): { pros: string[]; cons: string[] } {
   if (val && typeof val === "object") {
@@ -108,25 +141,23 @@ export default function ToolPage() {
 
   const toolIdentifier = slug;
 
-console.log("ToolPage slug:", toolIdentifier);
+  console.log("ToolPage slug:", toolIdentifier);
 
-const { data: tool, isLoading, isError } = useQuery({
-  queryKey: [`/api/tools/${toolIdentifier}`],
-  enabled: !!toolIdentifier,
-  select: (data) => {
-    console.log("Raw data fetched for tool:", data);
-    return Array.isArray(data) ? data[0] : data; // If backend returns an array
-  },
-});
-console.log("Tool data fetched:", tool);
+  const { data: tool, isLoading, isError } = useQuery({
+    queryKey: [`/api/tools/${toolIdentifier}`],
+    enabled: !!toolIdentifier,
+    select: (data) => {
+      console.log("Raw data fetched for tool:", data);
+      return Array.isArray(data) ? data[0] : data;
+    },
+  });
+  console.log("Tool data fetched:", tool);
 
-
- const { data: similarTools = [] } = useQuery({
-  queryKey: toolIdentifier ? [`/api/tools/${toolIdentifier}/similar`] : [],
-  enabled: !!toolIdentifier,
-  retry: false,
-});
-
+  const { data: similarTools = [] } = useQuery({
+    queryKey: toolIdentifier ? [`/api/tools/${toolIdentifier}/similar`] : [],
+    enabled: !!toolIdentifier,
+    retry: false,
+  });
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -171,7 +202,6 @@ console.log("Tool data fetched:", tool);
     setTimeout(() => setCopiedBadge(null), 2000);
   };
 
-  // Loading and Error states
   if (isLoading) {
     return (
       <Layout>
@@ -190,8 +220,7 @@ console.log("Tool data fetched:", tool);
     );
   }
 
-  // Normalized fields
-  const keyFeatures = safeList(tool.keyFeatures);
+  const keyFeatures = safeKeyFeatures(tool.keyFeatures);
   const useCases = safeList(tool.useCases);
   const tags = safeList(tool.tags);
   const prosAndCons = safeProsCons(tool.prosAndCons);
@@ -207,7 +236,6 @@ console.log("Tool data fetched:", tool);
     ? howItWorksRaw.replace(/(Step\s*\d+:)/g, "\n$1").trim()
     : "";
 
-  // ------------------ JSX ------------------
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
@@ -389,26 +417,36 @@ console.log("Tool data fetched:", tool);
             )}
           </div>
 
+          {/* Updated Pros & Cons Block */}
           <div className="bg-card border border-muted rounded p-4 text-card-foreground">
             <h2 className="text-xl font-semibold mb-2">Pros & Cons</h2>
             {prosAndCons.pros.length > 0 || prosAndCons.cons.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <h3 className="font-semibold mb-1">Pros</h3>
-                  <ul className="list-disc list-inside">
-                    {prosAndCons.pros.map((pro: string, i: number) => (
-                      <li key={i}>{pro}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Cons</h3>
-                  <ul className="list-disc list-inside">
-                    {prosAndCons.cons.map((con: string, i: number) => (
-                      <li key={i}>{con}</li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="flex flex-col gap-4 text-sm">
+                {prosAndCons.pros.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-1">Pros</h3>
+                    <ul className="list-disc list-inside space-y-1 pl-5">
+                      {prosAndCons.pros.map((pro: string, i: number) => (
+                        <li key={i} className="leading-relaxed">
+                          {pro}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {prosAndCons.cons.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-1">Cons</h3>
+                    <ul className="list-disc list-inside space-y-1 pl-5">
+                      {prosAndCons.cons.map((con: string, i: number) => (
+                        <li key={i} className="leading-relaxed">
+                          {con}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">No pros/cons available.</p>
@@ -466,17 +504,17 @@ console.log("Tool data fetched:", tool);
                   {forceArray(tool.access).join(", ") || "-"}
                 </span>
               </div>
-             <div className="flex justify-between items-start gap-4">
-  <span>Audience</span>
-  <span
-    className="max-w-[160px] overflow-x-auto whitespace-nowrap audience-scrollbar"
-    style={{ display: "inline-block" }}
-    tabIndex={0}
-    title={forceArray(tool.audience).join(", ")}
-  >
-    {forceArray(tool.audience).join(", ") || "-"}
-  </span>
-</div>
+              <div className="flex justify-between items-start gap-4">
+                <span>Audience</span>
+                <span
+                  className="max-w-[160px] overflow-x-auto whitespace-nowrap audience-scrollbar"
+                  style={{ display: "inline-block" }}
+                  tabIndex={0}
+                  title={forceArray(tool.audience).join(", ")}
+                >
+                  {forceArray(tool.audience).join(", ") || "-"}
+                </span>
+              </div>
             </CardContent>
           </Card>
 

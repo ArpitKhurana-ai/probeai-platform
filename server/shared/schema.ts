@@ -81,14 +81,12 @@ export const userLikes = pgTable("user_likes", {
 // News articles
 export const news = pgTable("news", {
   id: serial("id").primaryKey(),
-  title: varchar("title", { length: 500 }).notNull(),
-  excerpt: text("excerpt"),
-  source: varchar("source", { length: 100 }).notNull(),
-  sourceUrl: varchar("source_url", { length: 500 }).notNull(),
-  publishDate: timestamp("publish_date").notNull(),
-  category: varchar("category", { length: 100 }),
-  submittedBy: varchar("submitted_by"),
+  title: varchar("title", { length: 255 }).notNull(),
+  source: varchar("source", { length: 255 }),
+  sourceUrl: varchar("source_url", { length: 500 }),
+  publishDate: timestamp("publish_date").defaultNow(),
   isApproved: boolean("is_approved").default(false),
+  isPublished: boolean("is_published").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -237,12 +235,11 @@ export type News = typeof news.$inferSelect;
 export type InsertNews = typeof news.$inferInsert;
 export const insertNewsSchema = z.object({
   title: z.string().min(1),
-  content: z.string().min(1),
-  url: z.string().url(),
-  imageUrl: z.string().url().optional(),
-  source: z.string().min(1),
-  submittedBy: z.string().optional(),
-  approved: z.boolean().default(false),
+  source: z.string().optional(),
+  sourceUrl: z.string().url().optional(),
+  publishDate: z.string().optional(),
+  isApproved: z.boolean().default(false),
+  isPublished: z.boolean().default(false),
 });
 
 export type Blog = typeof blogs.$inferSelect;

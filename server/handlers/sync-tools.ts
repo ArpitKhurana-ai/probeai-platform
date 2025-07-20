@@ -55,19 +55,32 @@ interface SyncResponse {
   errors?: string[];
 }
 
+// FIX: Do not split on commas
 function normalizeArrayField(input: any): string[] {
-  if (Array.isArray(input)) return input;
+  if (Array.isArray(input)) return input.map((s) => String(s).trim()).filter(Boolean);
+
   if (typeof input === "string") {
-    const cleaned = input
-      .replace(/^\{|\}$/g, "")
-      .replace(/"/g, "")
-      .split(",")
+    return input
+      .split(/\r?\n|;/) // split only on newlines or semicolons
       .map((s) => s.trim())
       .filter(Boolean);
-    return cleaned;
   }
   return [];
 }
+
+// FIX: Do not split on commas, only newlines or leading dashes
+function parseBulletPoints(input: any): string[] {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.map((s) => String(s).trim());
+
+  // Split only at newlines or when a dash starts a new bullet
+  return input
+    .split(/\s*-\s+/) // split only at dash + space
+    .map((s: string) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+
 
 function safeJsonParse(data: any, fallback: any = null) {
   try {
@@ -88,8 +101,8 @@ function transformToolData(tool: IncomingTool) {
     logoUrl: tool.logo,
     category: tool.category,
     tags: normalizeArrayField(tool.tags),
-    keyFeatures: normalizeArrayField(tool.keyFeatures),
-    useCases: normalizeArrayField(tool.useCases),
+    keyFeatures: parseBulletPoints(tool.keyFeatures), // FIXED
+    useCases: parseBulletPoints(tool.useCases),       // FIXED
     faqs: safeJsonParse(tool.faqs, []),
     prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
     pricingType: tool.pricingType || null,
@@ -165,8 +178,8 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
           shortDescription: tool.shortDescription || "",
           logo: tool.logo || tool.logoUrl || "",
           howItWorks: tool.howItWorks || "",
-          keyFeatures: normalizeArrayField(tool.keyFeatures),
-          useCases: normalizeArrayField(tool.useCases),
+          keyFeatures: parseBulletPoints(tool.keyFeatures), // FIXED
+          useCases: parseBulletPoints(tool.useCases),       // FIXED
           prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
           faqs: safeJsonParse(tool.faqs, []),
           category: tool.category,

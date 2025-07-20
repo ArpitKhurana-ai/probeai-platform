@@ -111,14 +111,12 @@ var init_schema = __esm({
     });
     news = pgTable("news", {
       id: serial("id").primaryKey(),
-      title: varchar("title", { length: 500 }).notNull(),
-      excerpt: text("excerpt"),
-      source: varchar("source", { length: 100 }).notNull(),
-      sourceUrl: varchar("source_url", { length: 500 }).notNull(),
-      publishDate: timestamp("publish_date").notNull(),
-      category: varchar("category", { length: 100 }),
-      submittedBy: varchar("submitted_by"),
+      title: varchar("title", { length: 255 }).notNull(),
+      source: varchar("source", { length: 255 }),
+      sourceUrl: varchar("source_url", { length: 500 }),
+      publishDate: timestamp("publish_date").defaultNow(),
       isApproved: boolean("is_approved").default(false),
+      isPublished: boolean("is_published").default(false),
       createdAt: timestamp("created_at").defaultNow()
     });
     blogs = pgTable("blogs", {
@@ -247,12 +245,11 @@ var init_schema = __esm({
     });
     insertNewsSchema = z.object({
       title: z.string().min(1),
-      content: z.string().min(1),
-      url: z.string().url(),
-      imageUrl: z.string().url().optional(),
-      source: z.string().min(1),
-      submittedBy: z.string().optional(),
-      approved: z.boolean().default(false)
+      source: z.string().optional(),
+      sourceUrl: z.string().url().optional(),
+      publishDate: z.string().optional(),
+      isApproved: z.boolean().default(false),
+      isPublished: z.boolean().default(false)
     });
     insertBlogSchema = z.object({
       title: z.string().min(1),
@@ -949,12 +946,18 @@ var algoliaClient = algoliasearch2(
 var algoliaIndex = algoliaClient.initIndex("tools");
 function normalizeArrayField(input) {
   if (Array.isArray(input))
-    return input;
+    return input.map((s) => String(s).trim()).filter(Boolean);
   if (typeof input === "string") {
-    const cleaned = input.replace(/^\{|\}$/g, "").replace(/"/g, "").split(",").map((s) => s.trim()).filter(Boolean);
-    return cleaned;
+    return input.split(/\r?\n|;/).map((s) => s.trim()).filter(Boolean);
   }
   return [];
+}
+function parseBulletPoints(input) {
+  if (!input)
+    return [];
+  if (Array.isArray(input))
+    return input.map((s) => String(s).trim());
+  return input.split(/\s*-\s+/).map((s) => s.trim()).filter((s) => s.length > 0);
 }
 function safeJsonParse(data, fallback = null) {
   try {
@@ -974,8 +977,10 @@ function transformToolData(tool) {
     logoUrl: tool.logo,
     category: tool.category,
     tags: normalizeArrayField(tool.tags),
-    keyFeatures: normalizeArrayField(tool.keyFeatures),
-    useCases: normalizeArrayField(tool.useCases),
+    keyFeatures: parseBulletPoints(tool.keyFeatures),
+    // FIXED
+    useCases: parseBulletPoints(tool.useCases),
+    // FIXED
     faqs: safeJsonParse(tool.faqs, []),
     prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
     pricingType: tool.pricingType || null,
@@ -1043,8 +1048,10 @@ async function syncToolsFromSheet(req, res) {
           shortDescription: tool.shortDescription || "",
           logo: tool.logo || tool.logoUrl || "",
           howItWorks: tool.howItWorks || "",
-          keyFeatures: normalizeArrayField(tool.keyFeatures),
-          useCases: normalizeArrayField(tool.useCases),
+          keyFeatures: parseBulletPoints(tool.keyFeatures),
+          // FIXED
+          useCases: parseBulletPoints(tool.useCases),
+          // FIXED
           prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
           faqs: safeJsonParse(tool.faqs, []),
           category: tool.category,
@@ -1148,6 +1155,95 @@ router2.get("/:slug", async (req, res) => {
 router2.post("/sync-from-sheet", syncToolsFromSheet);
 var tools_default = router2;
 
+// routes/news.ts
+init_db();
+init_schema();
+import { Router as Router3 } from "express";
+import { eq as eq4 } from "drizzle-orm";
+var router3 = Router3();
+function transformNewsItem(item) {
+  return {
+    title: item.title.trim(),
+    source: item.source || null,
+    sourceUrl: item.sourceUrl || null,
+    publishDate: item.publishDate ? new Date(item.publishDate) : /* @__PURE__ */ new Date(),
+    isApproved: !!item.isApproved,
+    isPublished: !!item.isPublished,
+    createdAt: /* @__PURE__ */ new Date()
+  };
+}
+router3.post("/sync-from-sheet", async (req, res) => {
+  try {
+    const { news: incomingNews } = req.body;
+    if (!incomingNews || !Array.isArray(incomingNews)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request: 'news' array is required",
+        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
+      });
+    }
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let errorsCount = 0;
+    const errors = [];
+    for (const item of incomingNews) {
+      try {
+        if (!item.title) {
+          errors.push("\u274C Missing title in one of the news items.");
+          errorsCount++;
+          continue;
+        }
+        const existing = await db.select().from(news).where(eq4(news.title, item.title)).limit(1);
+        const transformed = transformNewsItem(item);
+        if (existing.length > 0) {
+          await db.update(news).set({ ...transformed }).where(eq4(news.title, item.title));
+          updatedCount++;
+          console.log(`\u{1F504} Updated: ${item.title}`);
+        } else {
+          await db.insert(news).values(transformed);
+          insertedCount++;
+          console.log(`\u2795 Inserted: ${item.title}`);
+        }
+      } catch (err) {
+        console.error(`Error processing news item '${item.title}':`, err);
+        errorsCount++;
+        errors.push(`\u274C ${item.title}: ${err instanceof Error ? err.message : "Unknown error"}`);
+      }
+    }
+    const response = {
+      success: errorsCount === 0,
+      message: errorsCount === 0 ? `Successfully synced ${incomingNews.length} news items` : `Synced with ${errorsCount} errors`,
+      stats: {
+        total: incomingNews.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+        errors: errorsCount
+      },
+      errors: errors.length > 0 ? errors : void 0
+    };
+    res.status(errorsCount === 0 ? 200 : 207).json(response);
+  } catch (error) {
+    console.error("\u274C Sync failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during sync",
+      stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
+      errors: [error instanceof Error ? error.message : "Unknown error"]
+    });
+  }
+});
+router3.get("/", async (req, res) => {
+  try {
+    const { limit = 10, offset = 0 } = req.query;
+    const items = await db.select().from(news).limit(parseInt(limit)).offset(parseInt(offset));
+    res.json({ items, total: items.length });
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    res.status(500).json({ message: "Failed to fetch news" });
+  }
+});
+var news_default = router3;
+
 // routes.ts
 async function registerRoutes(app2) {
   const { healthCheck: healthCheck2 } = await Promise.resolve().then(() => (init_health(), health_exports));
@@ -1183,19 +1279,7 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to fetch tools" });
     }
   });
-  app2.get("/api/news", async (req, res) => {
-    try {
-      const { limit = 10, offset = 0 } = req.query;
-      const news2 = await storage.getNews({
-        limit: parseInt(limit),
-        offset: parseInt(offset)
-      });
-      res.json(news2);
-    } catch (error) {
-      console.error("Error fetching news:", error);
-      res.status(500).json({ message: "Failed to fetch news" });
-    }
-  });
+  app2.use("/api/news", news_default);
   app2.get("/api/blogs", async (req, res) => {
     try {
       const { limit = 10, offset = 0 } = req.query;

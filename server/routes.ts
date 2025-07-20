@@ -25,21 +25,23 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   app.get("/api/tools", async (req, res) => {
-    try {
-      const { category, featured, hot, limit = 20, offset = 0 } = req.query;
-      const tools = await storage.getTools({
-        category: category as string,
-        featured: featured === "true",
-        hot: hot === "true",
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string)
-      });
-      res.json(tools);
-    } catch (error) {
-      console.error("Error fetching tools:", error);
-      res.status(500).json({ message: "Failed to fetch tools" });
-    }
-  });
+  try {
+    const { category, featured, trending, limit = 20, offset = 0 } = req.query;
+    const tools = await storage.getTools({
+      category: category as string,
+      featured: featured === "true",
+      isTrending: trending === "true", // ✅ Fix trending filter
+      limit: parseInt(limit as string),
+      offset: parseInt(offset as string)
+    });
+
+    res.json(tools);
+  } catch (error) {
+    console.error("Error fetching tools:", error);
+    res.status(500).json({ message: "Failed to fetch tools" });
+  }
+});
+
 
   app.get("/api/news", async (req, res) => {
     try {

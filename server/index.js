@@ -1041,6 +1041,7 @@ async function syncToolsFromSheet(req, res) {
           name: tool.name,
           description: tool.description,
           shortDescription: tool.shortDescription || "",
+          logo: tool.logo || tool.logoUrl || "",
           howItWorks: tool.howItWorks || "",
           keyFeatures: normalizeArrayField(tool.keyFeatures),
           useCases: normalizeArrayField(tool.useCases),
@@ -1106,15 +1107,24 @@ var router2 = Router2();
 router2.get("/", async (req, res) => {
   try {
     const { trending, featured, category, limit = 10, offset = 0, sort } = req.query;
+    const isTrending = trending === "true";
+    const isFeatured = featured === "true";
     const options = {
       category: category ? String(category) : void 0,
-      featured: featured === "true",
-      isTrending: trending === "true",
+      featured: isFeatured,
+      isTrending,
       limit: Number(limit),
       offset: Number(offset),
       sort: sort ? String(sort) : void 0
     };
     const result = await storage.getTools(options);
+    if (isTrending) {
+      const trendingOnly = result.items.filter((tool) => tool.isTrending);
+      if (trendingOnly.length === 0) {
+        return res.json({ items: [], total: 0 });
+      }
+      return res.json({ items: trendingOnly, total: trendingOnly.length });
+    }
     return res.json(result);
   } catch (error) {
     console.error("Error fetching tools:", error);
@@ -1158,11 +1168,12 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/tools", async (req, res) => {
     try {
-      const { category, featured, hot, limit = 20, offset = 0 } = req.query;
+      const { category, featured, trending, limit = 20, offset = 0 } = req.query;
       const tools2 = await storage.getTools({
         category,
         featured: featured === "true",
-        hot: hot === "true",
+        isTrending: trending === "true",
+        // ✅ Fix trending filter
         limit: parseInt(limit),
         offset: parseInt(offset)
       });
@@ -1238,7 +1249,9 @@ async function initializeAlgolia() {
         "description",
         "shortDescription",
         "category",
-        "tags"
+        "tags",
+        "logo",
+        "logoUrl"
       ],
       attributesForFaceting: ["category"],
       customRanking: ["desc(featured)", "desc(hot)"],
@@ -1250,19 +1263,21 @@ async function initializeAlgolia() {
     });
     const allTools = await storage.getTools({ limit: 1e3, offset: 0 });
     const records = allTools.items.map((tool) => ({
-      objectID: tool.name.toLowerCase().replace(/\s+/g, "-"),
+      objectID: tool.slug || tool.name.toLowerCase().replace(/\s+/g, "-"),
+      slug: tool.slug,
       name: tool.name,
       description: tool.description,
       shortDescription: tool.shortDescription,
       category: tool.category,
       tags: tool.tags || [],
       website: tool.website,
-      logoUrl: tool.logoUrl,
+      logo: tool.logo || tool.logoUrl || "",
+      logoUrl: tool.logoUrl || "",
       featured: tool.isFeatured || false,
-      hot: tool.isHot || false
+      hot: tool.isTrending || false
     }));
     await index3.saveObjects(records);
-    console.log(`\u2705 Synced ${records.length} tools to Algolia (by name).`);
+    console.log(`\u2705 Synced ${records.length} tools to Algolia (with logo).`);
   } catch (err) {
     console.error("Algolia sync failed:", err.message);
   }

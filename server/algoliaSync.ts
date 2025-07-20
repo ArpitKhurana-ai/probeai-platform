@@ -25,7 +25,9 @@ export async function initializeAlgolia() {
         "description",
         "shortDescription",
         "category",
-        "tags"
+        "tags",
+        "logo",
+        "logoUrl"
       ],
       attributesForFaceting: ["category"],
       customRanking: ["desc(featured)", "desc(hot)"],
@@ -40,21 +42,23 @@ export async function initializeAlgolia() {
     const allTools = await storage.getTools({ limit: 1000, offset: 0 });
 
     const records = allTools.items.map((tool) => ({
-      objectID: tool.name.toLowerCase().replace(/\s+/g, "-"),
+      objectID: tool.slug || tool.name.toLowerCase().replace(/\s+/g, "-"),
+      slug: tool.slug,
       name: tool.name,
       description: tool.description,
       shortDescription: tool.shortDescription,
       category: tool.category,
       tags: tool.tags || [],
       website: tool.website,
-      logoUrl: tool.logoUrl,
+      logo: tool.logo || tool.logoUrl || "",
+      logoUrl: tool.logoUrl || "",
       featured: tool.isFeatured || false,
-      hot: tool.isHot || false
+      hot: tool.isTrending || false
     }));
 
     await index.saveObjects(records);
 
-    console.log(`✅ Synced ${records.length} tools to Algolia (by name).`);
+    console.log(`✅ Synced ${records.length} tools to Algolia (with logo).`);
   } catch (err: any) {
     console.error("Algolia sync failed:", err.message);
   }
@@ -71,18 +75,20 @@ export async function syncSingleToolToAlgoliaByName(toolName: string) {
   }
 
   const record = {
-    objectID: tool.name.toLowerCase().replace(/\s+/g, "-"),
+    objectID: tool.slug || tool.name.toLowerCase().replace(/\s+/g, "-"),
+    slug: tool.slug,
     name: tool.name,
     description: tool.description,
     shortDescription: tool.shortDescription,
     category: tool.category,
     tags: tool.tags || [],
     website: tool.website,
-    logoUrl: tool.logoUrl,
+    logo: tool.logo || tool.logoUrl || "",
+    logoUrl: tool.logoUrl || "",
     featured: tool.isFeatured || false,
-    hot: tool.isHot || false
+    hot: tool.isTrending || false
   };
 
   await index.saveObject(record);
-  console.log(`🔄 Synced tool "${tool.name}" to Algolia (by name).`);
+  console.log(`🔄 Synced tool "${tool.name}" to Algolia (with logo).`);
 }

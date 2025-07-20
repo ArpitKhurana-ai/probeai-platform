@@ -50,7 +50,12 @@ export default function SearchPage() {
           hitsPerPage: toolsPerPage,
           page: currentPage - 1,
         });
-        setTools(result.hits as Tool[]);
+        const normalizedHits = result.hits.map((hit: any) => ({
+  ...hit,
+  logo: hit.logo || hit.logoUrl || "/placeholder.svg",
+}));
+setTools(normalizedHits);
+
         setTotalResults(result.nbHits);
       } catch (err: any) {
         console.error("Algolia search error:", err);

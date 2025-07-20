@@ -163,6 +163,7 @@ export async function syncToolsFromSheet(req: Request, res: Response): Promise<v
           name: tool.name,
           description: tool.description,
           shortDescription: tool.shortDescription || "",
+          logo: tool.logo || tool.logoUrl || "",
           howItWorks: tool.howItWorks || "",
           keyFeatures: normalizeArrayField(tool.keyFeatures),
           useCases: normalizeArrayField(tool.useCases),

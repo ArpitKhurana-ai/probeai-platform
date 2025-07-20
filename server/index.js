@@ -147,8 +147,6 @@ var init_schema = __esm({
       slug: varchar("slug", { length: 500 }).notNull().unique(),
       youtubeUrl: varchar("youtube_url", { length: 500 }).notNull(),
       // YouTube URL
-      category: varchar("category", { length: 100 }),
-      // for internal use
       publishDate: timestamp("publish_date").defaultNow(),
       isApproved: boolean("is_approved").default(false),
       isPublished: boolean("is_published").default(false),
@@ -261,7 +259,6 @@ var init_schema = __esm({
       title: z.string().min(1),
       slug: z.string().min(1),
       youtubeUrl: z.string().url(),
-      category: z.string().optional(),
       publishDate: z.string().optional(),
       isApproved: z.boolean().default(false),
       isPublished: z.boolean().default(false)
@@ -1245,13 +1242,13 @@ init_schema();
 import { Router as Router4 } from "express";
 import { eq as eq5 } from "drizzle-orm";
 var router4 = Router4();
-function generateSlug(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
 function transformVideoItem(item) {
+  if (!item.slug) {
+    throw new Error(`Slug is missing for video "${item.title}"`);
+  }
   return {
     title: item.title.trim(),
-    slug: item.slug ? item.slug : generateSlug(item.title),
+    slug: item.slug.trim(),
     youtubeUrl: item.youtubeUrl,
     publishDate: item.publishDate ? new Date(item.publishDate) : /* @__PURE__ */ new Date(),
     isApproved: !!item.isApproved,
@@ -1275,49 +1272,34 @@ router4.post("/sync-from-sheet", async (req, res) => {
     const errors = [];
     for (const item of incomingVideos) {
       try {
-        if (!item.title || !item.youtubeUrl) {
-          errors.push("\u274C Missing title or youtubeUrl in one of the videos.");
+        if (!item.title || !item.youtubeUrl || !item.slug) {
+          errors.push(`\u274C Missing title, youtubeUrl, or slug for: ${item.title}`);
           errorsCount++;
           continue;
         }
-        const videoSlug = item.slug ? item.slug : generateSlug(item.title);
-        const existing = await db.select().from(videos).where(eq5(videos.slug, videoSlug)).limit(1);
-        const transformed = transformVideoItem({ ...item, slug: videoSlug });
+        const existing = await db.select().from(videos).where(eq5(videos.slug, item.slug)).limit(1);
+        const transformed = transformVideoItem(item);
         if (existing.length > 0) {
-          await db.update(videos).set({ ...transformed }).where(eq5(videos.slug, videoSlug));
+          await db.update(videos).set(transformed).where(eq5(videos.slug, item.slug));
           updatedCount++;
-          console.log(`\u{1F504} Updated: ${videoSlug}`);
         } else {
           await db.insert(videos).values(transformed);
           insertedCount++;
-          console.log(`\u2795 Inserted: ${videoSlug}`);
         }
       } catch (err) {
-        console.error(`Error processing video item '${item.title}':`, err);
-        errorsCount++;
         errors.push(`\u274C ${item.title}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        errorsCount++;
       }
     }
     const response = {
       success: errorsCount === 0,
-      message: errorsCount === 0 ? `Successfully synced ${incomingVideos.length} video items` : `Synced with ${errorsCount} errors`,
-      stats: {
-        total: incomingVideos.length,
-        inserted: insertedCount,
-        updated: updatedCount,
-        errors: errorsCount
-      },
+      message: errorsCount === 0 ? `Synced ${incomingVideos.length} videos` : `Synced with ${errorsCount} errors`,
+      stats: { total: incomingVideos.length, inserted: insertedCount, updated: updatedCount, errors: errorsCount },
       errors: errors.length > 0 ? errors : void 0
     };
     res.status(errorsCount === 0 ? 200 : 207).json(response);
   } catch (error) {
-    console.error("\u274C Sync failed:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error during sync",
-      stats: { total: 0, inserted: 0, updated: 0, errors: 1 },
-      errors: [error instanceof Error ? error.message : "Unknown error"]
-    });
+    res.status(500).json({ success: false, message: "Internal server error", stats: { total: 0, inserted: 0, updated: 0, errors: 1 } });
   }
 });
 router4.get("/", async (req, res) => {
@@ -1326,7 +1308,6 @@ router4.get("/", async (req, res) => {
     const items = await db.select().from(videos).limit(parseInt(limit)).offset(parseInt(offset));
     res.json({ items, total: items.length });
   } catch (error) {
-    console.error("Error fetching videos:", error);
     res.status(500).json({ message: "Failed to fetch videos" });
   }
 });

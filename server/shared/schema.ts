@@ -119,7 +119,6 @@ export const videos = pgTable("videos", {
   title: varchar("title", { length: 500 }).notNull(),
   slug: varchar("slug", { length: 500 }).notNull().unique(),
   youtubeUrl: varchar("youtube_url", { length: 500 }).notNull(), // YouTube URL
-  category: varchar("category", { length: 100 }), // for internal use
   publishDate: timestamp("publish_date").defaultNow(),
   isApproved: boolean("is_approved").default(false),
   isPublished: boolean("is_published").default(false),
@@ -259,7 +258,6 @@ export const insertVideoSchema = z.object({
   title: z.string().min(1),
   slug: z.string().min(1),
   youtubeUrl: z.string().url(),
-  category: z.string().optional(),
   publishDate: z.string().optional(),
   isApproved: z.boolean().default(false),
   isPublished: z.boolean().default(false),

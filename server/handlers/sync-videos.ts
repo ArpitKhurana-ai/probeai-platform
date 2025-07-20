@@ -5,7 +5,7 @@ import { videos } from "../shared/schema";
 
 interface IncomingVideo {
   title: string;
-  slug?: string;
+  slug: string; // Required now
   youtubeUrl: string;
   publishDate?: string;
   isApproved?: boolean;
@@ -28,20 +28,17 @@ interface SyncResponse {
   errors?: string[];
 }
 
-// Generate slug from title (lowercase and hyphenated)
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .trim();
-}
-
+// ------------------------------
 // Transform Google Sheet row into DB-friendly object
+// ------------------------------
 function transformVideo(item: IncomingVideo) {
+  if (!item.slug) {
+    throw new Error(`Slug is missing for video "${item.title}"`);
+  }
+
   return {
     title: item.title.trim(),
-    slug: item.slug || generateSlug(item.title),
+    slug: item.slug.trim(),
     youtubeUrl: item.youtubeUrl,
     publishDate: item.publishDate ? new Date(item.publishDate) : new Date(),
     isApproved: !!item.isApproved,
@@ -73,18 +70,17 @@ export async function syncVideosFromSheet(req: Request, res: Response): Promise<
 
     for (const video of incomingVideos) {
       try {
-        if (!video.title || !video.youtubeUrl) {
-          errors.push(`❌ Missing required fields (title/youtubeUrl) for: ${video.title || "unknown"}`);
+        if (!video.title || !video.youtubeUrl || !video.slug) {
+          errors.push(`❌ Missing required fields (title/youtubeUrl/slug) for: ${video.title || "unknown"}`);
           errorsCount++;
           continue;
         }
 
-        const slug = video.slug || generateSlug(video.title);
-        const existing = await db.select().from(videos).where(eq(videos.slug, slug)).limit(1);
-        const transformed = transformVideo({ ...video, slug });
+        const existing = await db.select().from(videos).where(eq(videos.slug, video.slug)).limit(1);
+        const transformed = transformVideo(video);
 
         if (existing.length > 0) {
-          await db.update(videos).set(transformed).where(eq(videos.slug, slug));
+          await db.update(videos).set(transformed).where(eq(videos.slug, video.slug));
           updatedCount++;
           console.log(`🔄 Updated video: ${video.title}`);
         } else {

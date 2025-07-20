@@ -143,26 +143,24 @@ async function createTables() {
     console.log('✅ Blogs table ready');
 
     // Videos table
-    console.log('🗑 Dropping old videos table (if exists)...');
-    await client.query(`DROP TABLE IF EXISTS videos;`);
-    console.log('✅ Old videos table dropped.');
+   console.log('🗑 Dropping old videos table (if exists)...');
+await client.query(`DROP TABLE IF EXISTS videos;`);
+console.log('✅ Old videos table dropped.');
 
-    await client.query(`
-      CREATE TABLE videos (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(500) NOT NULL,
-        slug VARCHAR(500) NOT NULL UNIQUE,
-        youtube_url VARCHAR(500) NOT NULL,
-        category VARCHAR(100),
-        publish_date TIMESTAMP DEFAULT NOW(),
-        is_approved BOOLEAN DEFAULT false,
-        is_published BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    console.log('✅ Videos table ready (new structure)');
-
-    console.log('🎉 All tables verified or created');
+await client.query(`
+  CREATE TABLE videos (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    slug VARCHAR(500) NOT NULL UNIQUE,
+    youtube_url VARCHAR(500) NOT NULL,
+    category VARCHAR(100),
+    publish_date TIMESTAMP DEFAULT NOW(),
+    is_approved BOOLEAN DEFAULT false,
+    is_published BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+`);
+console.log('✅ Videos table ready (new structure)');
 
     const newsCount = await client.query('SELECT COUNT(*) FROM news');
     const blogsCount = await client.query('SELECT COUNT(*) FROM blogs');

@@ -35,10 +35,9 @@ function Router() {
 
       {/* ✅ Public routes */}
       <Route path="/tools" component={ToolsPage} />
+      <Route path="/tools/:slug" component={ToolPage} /> {/* FIXED */}
       <Route path="/category/:category" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
-      <Route path="/tool/:id" component={ToolPage} />
-      <Route path="/tools/:id" component={ToolPage} />
       <Route path="/news" component={NewsPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPage} />

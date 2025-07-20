@@ -707,10 +707,10 @@ var health_exports = {};
 __export(health_exports, {
   healthCheck: () => healthCheck
 });
-import { sql as sql3 } from "drizzle-orm";
+import { sql as sql2 } from "drizzle-orm";
 async function healthCheck(req, res) {
   try {
-    await db.execute(sql3`SELECT 1`);
+    await db.execute(sql2`SELECT 1`);
     res.json({
       status: "healthy",
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -932,7 +932,7 @@ var search_default = router;
 init_db();
 init_schema();
 import { Router as Router2 } from "express";
-import { sql as sql2 } from "drizzle-orm";
+import { eq as eq3 } from "drizzle-orm";
 
 // handlers/sync-tools.ts
 init_db();
@@ -955,6 +955,13 @@ function normalizeArrayField(input) {
   }
   return [];
 }
+function safeJsonParse(data, fallback = null) {
+  try {
+    return typeof data === "string" ? JSON.parse(data) : data;
+  } catch {
+    return fallback;
+  }
+}
 function transformToolData(tool) {
   const now = /* @__PURE__ */ new Date();
   return {
@@ -968,15 +975,15 @@ function transformToolData(tool) {
     tags: normalizeArrayField(tool.tags),
     keyFeatures: normalizeArrayField(tool.keyFeatures),
     useCases: normalizeArrayField(tool.useCases),
-    faqs: Array.isArray(tool.faqs) ? tool.faqs : [],
-    prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
+    faqs: safeJsonParse(tool.faqs, []),
+    prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
     pricingType: tool.pricingType || null,
     audience: normalizeArrayField(tool.audience),
     access: normalizeArrayField(tool.access),
     howItWorks: tool.howItWorks || null,
     metaTitle: tool.metaTitle || null,
     metaDescription: tool.metaDescription || null,
-    schema: tool.schema ? JSON.parse(tool.schema) : null,
+    schema: safeJsonParse(tool.schema, {}),
     isFeatured: !!tool.isFeatured,
     isTrending: !!tool.isTrending,
     isApproved: !!tool.isPublished || !!tool.isApproved,
@@ -990,14 +997,6 @@ async function syncToolsFromSheet(req, res) {
       res.status(400).json({
         success: false,
         message: "Invalid request: tools array is required",
-        stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
-      });
-      return;
-    }
-    if (incomingTools.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid request: tools array cannot be empty",
         stats: { total: 0, inserted: 0, updated: 0, errors: 1 }
       });
       return;
@@ -1035,18 +1034,17 @@ async function syncToolsFromSheet(req, res) {
           insertedCount++;
           console.log(`\u2795 Inserted: ${tool.slug}`);
         }
-        await algoliaIndex.saveObject({
+        const algoliaPayload = {
           objectID: tool.slug,
           slug: tool.slug,
-          // ✅ Added slug
           name: tool.name,
           description: tool.description,
           shortDescription: tool.shortDescription || "",
           howItWorks: tool.howItWorks || "",
           keyFeatures: normalizeArrayField(tool.keyFeatures),
           useCases: normalizeArrayField(tool.useCases),
-          prosAndCons: tool.prosAndCons || { pros: [], cons: [] },
-          faqs: tool.faqs || [],
+          prosAndCons: safeJsonParse(tool.prosAndCons, { pros: [], cons: [] }),
+          faqs: safeJsonParse(tool.faqs, []),
           category: tool.category,
           tags: normalizeArrayField(tool.tags),
           audience: normalizeArrayField(tool.audience),
@@ -1069,7 +1067,9 @@ async function syncToolsFromSheet(req, res) {
             tool.metaTitle,
             tool.metaDescription
           ].filter(Boolean).join(" ")
-        });
+        };
+        console.log("\u{1F680} Sending to Algolia:", algoliaPayload);
+        await algoliaIndex.saveObject(algoliaPayload);
       } catch (err) {
         errorsCount++;
         errors.push(`\u274C ${tool.slug}: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -1104,13 +1104,15 @@ async function syncToolsFromSheet(req, res) {
 var router2 = Router2();
 router2.get("/:slug", async (req, res) => {
   const { slug } = req.params;
+  console.log("Fetching tool with slug:", slug);
   try {
-    const result = await db.select().from(tools).where(sql2`LOWER(${tools.slug}) = LOWER(${slug})`);
-    if (result.length === 0)
+    const result = await db.select().from(tools).where(eq3(tools.slug, slug.toLowerCase()));
+    if (result.length === 0) {
       return res.status(404).json({ error: "Tool not found" });
+    }
     res.json(result[0]);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching tool:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

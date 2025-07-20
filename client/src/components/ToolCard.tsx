@@ -2,18 +2,19 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 export function ToolCard({ tool }: { tool: any }) {
-  const logoUrl = tool.logo || "/placeholder.svg";
+  const logoUrl = tool.logo || tool.logoUrl || "/placeholder.svg";
   const toolLink = tool.slug ? `/tools/${tool.slug}` : "#";
+
+  if (!tool.slug) {
+    console.error("Missing slug in tool:", tool);
+  }
 
   return (
     <Link
       to={toolLink}
       className="block"
       onClick={(e) => {
-        if (!tool.slug) {
-          e.preventDefault();
-          console.warn("Tool slug is missing for:", tool);
-        }
+        if (!tool.slug) e.preventDefault();
       }}
     >
       <div className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/30 transition">

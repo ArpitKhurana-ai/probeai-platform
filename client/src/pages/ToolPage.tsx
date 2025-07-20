@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-// Helper: Defensive normalization for list fields
+// ------------------ Helper functions ------------------
 function forceArray(val: any): string[] {
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
@@ -96,6 +96,7 @@ function normalizeFAQs(rawFaqs: any): { question: string; answer: string }[] {
     .filter((f) => f.question && f.answer);
 }
 
+// ------------------ Component ------------------
 export default function ToolPage() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuth();
@@ -107,15 +108,25 @@ export default function ToolPage() {
 
   const toolIdentifier = slug;
 
-  const { data: tool } = useQuery({
-    queryKey: [`/api/tools/${toolIdentifier}`],
-  });
+console.log("ToolPage slug:", toolIdentifier);
 
-  const { data: similarTools = [] } = useQuery({
-    queryKey: [`/api/tools/${toolIdentifier}/similar`],
-    enabled: !!toolIdentifier,
-    retry: false,
-  });
+const { data: tool, isLoading, isError } = useQuery({
+  queryKey: [`/api/tools/${toolIdentifier}`],
+  enabled: !!toolIdentifier,
+  select: (data) => {
+    console.log("Raw data fetched for tool:", data);
+    return Array.isArray(data) ? data[0] : data; // If backend returns an array
+  },
+});
+console.log("Tool data fetched:", tool);
+
+
+ const { data: similarTools = [] } = useQuery({
+  queryKey: toolIdentifier ? [`/api/tools/${toolIdentifier}/similar`] : [],
+  enabled: !!toolIdentifier,
+  retry: false,
+});
+
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -160,15 +171,8 @@ export default function ToolPage() {
     setTimeout(() => setCopiedBadge(null), 2000);
   };
 
-  if (!tool && !toolIdentifier) {
-    return (
-      <Layout>
-        <div className="text-center py-10">Tool not found</div>
-      </Layout>
-    );
-  }
-
-  if (!tool) {
+  // Loading and Error states
+  if (isLoading) {
     return (
       <Layout>
         <div className="text-center py-10">Loading...</div>
@@ -176,6 +180,17 @@ export default function ToolPage() {
     );
   }
 
+  if (isError || !tool) {
+    return (
+      <Layout>
+        <div className="text-center py-10 text-red-500">
+          Tool not found or failed to load.
+        </div>
+      </Layout>
+    );
+  }
+
+  // Normalized fields
   const keyFeatures = safeList(tool.keyFeatures);
   const useCases = safeList(tool.useCases);
   const tags = safeList(tool.tags);
@@ -192,14 +207,15 @@ export default function ToolPage() {
     ? howItWorksRaw.replace(/(Step\s*\d+:)/g, "\n$1").trim()
     : "";
 
+  // ------------------ JSX ------------------
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-6">
         {/* LEFT SIDEBAR */}
         <div className="flex flex-col gap-4 border p-4 rounded-md sticky top-6 h-fit">
           <img
-            src={tool.logo || "/placeholder.svg"}
-            alt={`${tool.name || "Tool"} logo`}
+            src={tool.logo || tool.logoUrl || "/placeholder.svg"}
+            alt={tool.name ? `${tool.name} logo` : "Tool logo"}
             className="w-20 h-20 mx-auto rounded-lg object-cover"
           />
 
@@ -210,7 +226,13 @@ export default function ToolPage() {
           )}
 
           <a
-            href={tool.url || "#"}
+            href={
+              tool.url
+                ? tool.url.startsWith("http")
+                  ? tool.url
+                  : `https://${tool.url}`
+                : "#"
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="w-full"
@@ -409,11 +431,11 @@ export default function ToolPage() {
             )}
           </div>
 
-          <div className="bg-yellow-100 dark:bg-yellow-900 p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+          <div className="bg-yellow-100 dark:bg-yellow-900 p-6 text-center rounded font-medium text-sm w-full">
             Featured Tool Banner Placeholder (728x90)
           </div>
 
-          <div className="bg-muted p-6 text-center rounded font-medium text-sm w-full" style={{ minHeight: "90px", width: "100%", maxWidth: "728px" }}>
+          <div className="bg-muted p-6 text-center rounded font-medium text-sm w-full">
             Google Ad Banner Placeholder (728x90)
           </div>
         </div>
@@ -436,7 +458,7 @@ export default function ToolPage() {
               <div className="flex justify-between items-start gap-4">
                 <span>Access</span>
                 <span
-                  className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+                  className="max-w-[160px] overflow-x-auto whitespace-nowrap"
                   style={{ display: "inline-block" }}
                   tabIndex={0}
                   title={forceArray(tool.access).join(", ")}
@@ -447,7 +469,7 @@ export default function ToolPage() {
               <div className="flex justify-between items-start gap-4">
                 <span>Audience</span>
                 <span
-                  className="max-w-[160px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted-foreground/60 scrollbar-track-muted-foreground/10"
+                  className="max-w-[160px] overflow-x-auto whitespace-nowrap"
                   style={{ display: "inline-block" }}
                   tabIndex={0}
                   title={forceArray(tool.audience).join(", ")}
@@ -503,6 +525,7 @@ export default function ToolPage() {
         </div>
       </div>
 
+      {/* SIMILAR TOOLS */}
       <div className="container mx-auto px-4 pt-12">
         <h2 className="text-2xl font-semibold mb-4 text-center">Similar Tools</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -524,10 +547,6 @@ export default function ToolPage() {
                     category: "Example Category",
                     access: ["Web App", "API"],
                     audience: ["Developers", "Startups"],
-                    isFeatured: i === 0,
-                    isTrending: i === 1,
-                    views: 1200 + i * 200,
-                    likes: 50 + i * 10,
                   }}
                   showDescription={true}
                 />

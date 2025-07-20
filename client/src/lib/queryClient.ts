@@ -7,13 +7,13 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:8787' // ✅ Fixed: correctly targets backend in dev
-  : 'https://probeai-platform-production.up.railway.app';
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:8787" // ✅ Correct backend URL in dev
+    : "https://probeai-platform-production.up.railway.app";
 
 const getApiUrl = (path: string): string => {
-  const fullUrl = API_BASE_URL + path;
-  return fullUrl;
+  return API_BASE_URL + path;
 };
 
 export async function apiRequest(
@@ -25,7 +25,7 @@ export async function apiRequest(
   }
 ): Promise<Response> {
   const fullUrl = getApiUrl(url);
-  
+
   try {
     const res = await fetch(fullUrl, {
       method: options?.method || "GET",
@@ -40,7 +40,7 @@ export async function apiRequest(
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
-    console.error('API Request failed:', fullUrl, error);
+    console.error("API Request failed:", fullUrl, error);
     throw error;
   }
 }
@@ -53,7 +53,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const fullUrl = getApiUrl(queryKey[0] as string);
-    
+
     try {
       const res = await fetch(fullUrl, {
         credentials: "include",
@@ -64,33 +64,36 @@ export const getQueryFn: <T>(options: {
       }
 
       await throwIfResNotOk(res);
-      return await res.json();
+      const json = await res.json();
+      console.log("Fetched JSON from API:", json); // Debug log
+      return json;
     } catch (error) {
-      console.error('Query failed:', fullUrl, error);
-      console.error('Error details:', {
+      console.error("Query failed:", fullUrl, error);
+      console.error("Error details:", {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         apiUrl: fullUrl,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
-      if (fullUrl.includes('/api/tools')) {
-        console.warn('Returning empty tools array due to API failure');
-        return { items: [], total: 0 };
+
+      // FIX: Return empty array for /api/tools, not an object
+      if (fullUrl.includes("/api/tools")) {
+        console.warn("Returning empty tools array due to API failure");
+        return [];
       }
-      if (fullUrl.includes('/api/news')) {
-        console.warn('Returning empty news array due to API failure');
-        return { items: [], total: 0 };
+      if (fullUrl.includes("/api/news")) {
+        console.warn("Returning empty news array due to API failure");
+        return [];
       }
-      if (fullUrl.includes('/api/videos')) {
-        console.warn('Returning empty videos array due to API failure');
-        return { items: [], total: 0 };
+      if (fullUrl.includes("/api/videos")) {
+        console.warn("Returning empty videos array due to API failure");
+        return [];
       }
-      if (fullUrl.includes('/api/blogs')) {
-        console.warn('Returning empty blogs array due to API failure');
-        return { items: [], total: 0 };
+      if (fullUrl.includes("/api/blogs")) {
+        console.warn("Returning empty blogs array due to API failure");
+        return [];
       }
-      
+
       throw error;
     }
   };

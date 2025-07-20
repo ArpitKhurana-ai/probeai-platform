@@ -466,17 +466,17 @@ console.log("Tool data fetched:", tool);
                   {forceArray(tool.access).join(", ") || "-"}
                 </span>
               </div>
-              <div className="flex justify-between items-start gap-4">
-                <span>Audience</span>
-                <span
-                  className="max-w-[160px] overflow-x-auto whitespace-nowrap"
-                  style={{ display: "inline-block" }}
-                  tabIndex={0}
-                  title={forceArray(tool.audience).join(", ")}
-                >
-                  {forceArray(tool.audience).join(", ") || "-"}
-                </span>
-              </div>
+             <div className="flex justify-between items-start gap-4">
+  <span>Audience</span>
+  <span
+    className="max-w-[160px] overflow-x-auto whitespace-nowrap audience-scrollbar"
+    style={{ display: "inline-block" }}
+    tabIndex={0}
+    title={forceArray(tool.audience).join(", ")}
+  >
+    {forceArray(tool.audience).join(", ") || "-"}
+  </span>
+</div>
             </CardContent>
           </Card>
 

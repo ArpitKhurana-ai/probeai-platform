@@ -52,7 +52,7 @@ const formatDate = (dateStr: string) => {
 
 export default function Home() {
   const { data: featuredTools } = useQuery({ queryKey: ["/api/tools?featured=true&limit=4"] });
-  const { data: trendingTools } = useQuery({ queryKey: ["/api/tools?hot=true&limit=4"] });
+  const { data: trendingTools } = useQuery({ queryKey: ["/api/tools?trending=true&limit=4"] });
   const { data: latestNews } = useQuery({ queryKey: ["/api/news?limit=4"] });
   const { data: featuredVideos } = useQuery({ queryKey: ["/api/videos?limit=5"] });
   const { data: featuredBlogs } = useQuery({ queryKey: ["/api/blogs?limit=4"] });

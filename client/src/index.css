@@ -199,3 +199,16 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: var(--foreground);
 }
+/* Audience-specific thin scrollbar */
+.audience-scrollbar::-webkit-scrollbar {
+  height: 3px; /* Very thin horizontal scrollbar */
+}
+
+.audience-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 100, 100, 0.4);
+  border-radius: 2px;
+}
+
+.audience-scrollbar::-webkit-scrollbar-track {
+  background-color: transparent;
+}

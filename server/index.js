@@ -929,6 +929,7 @@ router.get("/suggestions", async (req, res) => {
 var search_default = router;
 
 // routes/tools.ts
+init_storage();
 init_db();
 init_schema();
 import { Router as Router2 } from "express";
@@ -1102,6 +1103,24 @@ async function syncToolsFromSheet(req, res) {
 
 // routes/tools.ts
 var router2 = Router2();
+router2.get("/", async (req, res) => {
+  try {
+    const { trending, featured, category, limit = 10, offset = 0, sort } = req.query;
+    const options = {
+      category: category ? String(category) : void 0,
+      featured: featured === "true",
+      isTrending: trending === "true",
+      limit: Number(limit),
+      offset: Number(offset),
+      sort: sort ? String(sort) : void 0
+    };
+    const result = await storage.getTools(options);
+    return res.json(result);
+  } catch (error) {
+    console.error("Error fetching tools:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 router2.get("/:slug", async (req, res) => {
   const { slug } = req.params;
   console.log("Fetching tool with slug:", slug);

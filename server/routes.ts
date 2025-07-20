@@ -4,6 +4,7 @@ import { setupAuth } from "./replitAuth";
 import searchRoutes from "./routes/search";
 import toolRoutes from "./routes/tools"; // ✅ added
 import newsRoutes from "./routes/news"; // ✅ added
+import videosRoutes from "./routes/videos"; // ✅ added
 
 export async function registerRoutes(app: Express): Promise<void> {
   const { healthCheck } = await import("./health.js");
@@ -46,6 +47,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // ✅ News route now handled by newsRoutes (removed inline GET /api/news)
   app.use("/api/news", newsRoutes);
 
+  // ✅ Videos route now handled by videosRoutes
+  app.use("/api/videos", videosRoutes);
+
   app.get("/api/blogs", async (req, res) => {
     try {
       const { limit = 10, offset = 0 } = req.query;
@@ -57,20 +61,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Error fetching blogs:", error);
       res.status(500).json({ message: "Failed to fetch blogs" });
-    }
-  });
-
-  app.get("/api/videos", async (req, res) => {
-    try {
-      const { limit = 10, offset = 0 } = req.query;
-      const videos = await storage.getVideos({
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string)
-      });
-      res.json(videos);
-    } catch (error) {
-      console.error("Error fetching videos:", error);
-      res.status(500).json({ message: "Failed to fetch videos" });
     }
   });
 
